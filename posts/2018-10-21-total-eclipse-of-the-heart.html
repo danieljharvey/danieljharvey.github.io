@@ -72,6 +72,9 @@
 <p>A function like this allows us to turn a regular list into a NonEmpty list, by returning a <code>Just NonEmpty</code> for a list with one or more items, or a <code>Nothing</code> if the original List is empty. This still means we have a possibility of failure (expressed by the Maybe), however our <code>head</code> function expects that to be dealt with elsewhere before it gets involved with the data, and is thus total whilst always returning a value.</p>
 <p>Like all somewhat trivial examples, perhaps this seems like a lot of work for nothing (plus the overhead of dealing with a new datatype) - however this concept of doing a piece of validation once, capturing it in the type, and then having a much simpler time dealing with it onwards is very powerful indeed.</p>
 <p>(btw, Haskell actually has a NonEmpty list type, in <code>Data.List.NonEmpty</code>, but it’s more fun to make our own)</p>
+<p>Anyway, that’s quite enough for now I feel.</p>
+<p>Further reading:</p>
+<p><a href="https://adamdrake.com/are-your-functions-total.html">Are your functions total?</a> <a href="http://hackage.haskell.org/package/base-4.12.0.0/docs/Data-Maybe.html">Data.Maybe</a> <a href="https://hackage.haskell.org/package/semigroups-0.16.0.1/docs/Data-List-NonEmpty.html">Data.List.NonEmpty</a></p>
     </section>
 </article>
     </main>
