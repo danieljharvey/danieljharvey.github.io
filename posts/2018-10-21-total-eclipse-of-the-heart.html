@@ -5,7 +5,7 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Daniel J. Harvey - Total Eclipse of the Heart</title>
+    <title>Daniel J. Harvey - Total Eclipse Of The Heart</title>
     <link rel="stylesheet" href="../css/default.css" />
 </head>
 
@@ -23,21 +23,21 @@
     </header>
 
     <main role="main">
-        <h1>Total Eclipse of the Heart</h1>
+        <h1>Total Eclipse Of The Heart</h1>
         <article>
     <section class="header">
         Posted on October 21, 2018
         
     </section>
     <section>
-        <p>I recently read a piece of useful advice on Twitter about total functions which I enjoyed. A total function is a function that</p>
-<ol type="1">
-<li>always returns some valid data (rather than just when it feels like doing so) and</li>
-<li>does not go into an infinite loop.</li>
-</ol>
-<p>The advice (which I will definitely accurately source at some point in the future, lol) goes something like this:</p>
+        <p>I recently read a piece of useful advice on Twitter about total functions which I enjoyed. The advice (which I will definitely accurately source at some point in the future, lol) goes something like this:</p>
 <h4 id="you-start-making-your-functions-total-by-adding-maybe-but-then-you-move-onto-removing-maybe.">“You start making your functions total by adding Maybe, but then you move onto removing Maybe.”</h4>
 <p>Like all my favourite advice this sounds like it doesn’t make any sense, so I figured I’d try and get to the bottom of this.</p>
+<p>Firstly, to clarify, a total function is a function that:</p>
+<ol type="1">
+<li>Always returns some valid data (rather than just when it feels like doing so) and</li>
+<li>Does not go into an infinite loop.</li>
+</ol>
 <p>Let’s start with a non-total function. The canonical example is Head from the Haskell Prelude, which returns you the first item in a list, and looks something like this:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="fu">head</span><span class="ot"> ::</span> [a] <span class="ot">-&gt;</span> a</a>
 <a class="sourceLine" id="cb1-2" title="2"><span class="fu">head</span> (x<span class="fu">:</span> xs) <span class="fu">=</span> x</a></code></pre></div>
@@ -74,7 +74,9 @@
 <p>(btw, Haskell actually has a NonEmpty list type, in <code>Data.List.NonEmpty</code>, but it’s more fun to make our own)</p>
 <p>Anyway, that’s quite enough for now I feel.</p>
 <p>Further reading:</p>
-<p><a href="https://adamdrake.com/are-your-functions-total.html">Are your functions total?</a> <a href="http://hackage.haskell.org/package/base-4.12.0.0/docs/Data-Maybe.html">Data.Maybe</a> <a href="https://hackage.haskell.org/package/semigroups-0.16.0.1/docs/Data-List-NonEmpty.html">Data.List.NonEmpty</a></p>
+<p><a href="https://adamdrake.com/are-your-functions-total.html">Are your functions total?</a></p>
+<p><a href="http://hackage.haskell.org/package/base-4.12.0.0/docs/Data-Maybe.html">Data.Maybe</a></p>
+<p><a href="https://hackage.haskell.org/package/semigroups-0.16.0.1/docs/Data-List-NonEmpty.html">Data.List.NonEmpty</a></p>
     </section>
 </article>
     </main>
