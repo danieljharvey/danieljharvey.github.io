@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - Typeclasses - Ord</title>
+    <link rel="stylesheet" href="../css/default.css" />
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="../">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="../">Home</a>
+            <a href="../about.html">About</a>
+            <a href="../contact.html">Contact</a>
+            <a href="../archive.html">Archive</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        <h1>Typeclasses - Ord</h1>
+        <article>
+    <section class="header">
+        Posted on November  3, 2018
+        
+    </section>
+    <section>
+        <p>Let’s think about moods. Psychologists all agree there are only 5 real emotional states.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="kw">data</span> <span class="dt">Mood</span> <span class="fu">=</span> <span class="dt">Awful</span> <span class="fu">|</span> <span class="dt">QuiteBad</span> <span class="fu">|</span> <span class="dt">OK</span> <span class="fu">|</span> <span class="dt">Good</span> <span class="fu">|</span> <span class="dt">Great</span></a></code></pre></div>
+<p>Which one is better? Is <code>Great</code> better than <code>Awful</code>?</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" title="1"><span class="ot">broken ::</span> <span class="dt">Bool</span></a>
+<a class="sourceLine" id="cb2-2" title="2">broken <span class="fu">=</span> <span class="dt">Awful</span> <span class="fu">&lt;</span> <span class="dt">Great</span></a></code></pre></div>
+<p>Shit!</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" title="1">• <span class="dt">No</span> <span class="kw">instance</span> for (<span class="dt">Ord</span> <span class="dt">Mood</span>) arising from a use <span class="kw">of</span> ‘<span class="fu">&lt;</span>’</a>
+<a class="sourceLine" id="cb3-2" title="2">• <span class="dt">In</span> the expression<span class="fu">:</span> <span class="dt">Awful</span> <span class="fu">&lt;</span> <span class="dt">Great</span></a>
+<a class="sourceLine" id="cb3-3" title="3">    <span class="dt">In</span> an equation for ‘broken’<span class="fu">:</span> broken <span class="fu">=</span> <span class="dt">Awful</span> <span class="fu">&lt;</span> <span class="dt">Great</span></a></code></pre></div>
+<p>These cannot be ordered! We need to implement the <code>Ord</code> typeclass (short for “ordering”) so that we can compare these values and sort them.</p>
+<p>What will we need to do that then?</p>
+<p>We can find out more by firing up <code>ghci</code>, the GHC repl.</p>
+<p>You should see a prompt with the following:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb4-1" title="1"><span class="ex">Prelude</span><span class="op">&gt;</span></a></code></pre></div>
+<p><code>Prelude</code> is telling us that we’ve loaded the Haskell Prelude, a standard library of functions. <code>Ord</code> is part of that, so let’s get some info.</p>
+<p>Enter <code>:info Ord</code> into the repl (and press enter). You should see something like this:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" title="1"><span class="kw">class</span> <span class="dt">Eq</span> a <span class="ot">=&gt;</span> <span class="dt">Ord</span> a <span class="kw">where</span></a>
+<a class="sourceLine" id="cb5-2" title="2"><span class="ot">  compare ::</span> a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">Ordering</span></a>
+<a class="sourceLine" id="cb5-3" title="3"><span class="ot">  (&lt;) ::</span> a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">Bool</span></a>
+<a class="sourceLine" id="cb5-4" title="4"><span class="ot">  (&lt;=) ::</span> a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">Bool</span></a>
+<a class="sourceLine" id="cb5-5" title="5"><span class="ot">  (&gt;) ::</span> a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">Bool</span></a>
+<a class="sourceLine" id="cb5-6" title="6"><span class="ot">  (&gt;=) ::</span> a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">Bool</span></a>
+<a class="sourceLine" id="cb5-7" title="7"><span class="ot">  max ::</span> a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a</a>
+<a class="sourceLine" id="cb5-8" title="8"><span class="ot">  min ::</span> a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a</a>
+<a class="sourceLine" id="cb5-9" title="9">  <span class="ot">{-# MINIMAL compare | (&lt;=) #-}</span></a></code></pre></div>
+<p>This is a list of functions that the <code>Ord</code> typeclass implements. Looks like hard work. What’s interesting here?</p>
+<p>Firstly - the <code>Eq a =&gt;</code> constraint means that we can only define an <code>Ord</code> instance for something that has an <code>Eq</code> instance. I guess if we can’t tell if two values are the same, how can we dream of putting them in some sort of order?</p>
+<p>Secondly - the slighly cryptic <code>{-# MINIMAL compare | (&lt;=) #-}</code> line is telling us that we can define <code>Ord</code> by either defining the <code>compare</code> or <code>&lt;=</code> functions. Haskell can generate the other functions by using either of these ones. That’s great news because hard work is hard and we don’t want to do hard work.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" title="1"><span class="kw">data</span> <span class="dt">SuperMood</span> <span class="fu">=</span> <span class="dt">Worse</span> <span class="fu">|</span> <span class="dt">PrettyAverage</span> <span class="fu">|</span> <span class="dt">Fine</span> <span class="kw">deriving</span> (<span class="dt">Eq</span>)</a></code></pre></div>
+<p>We’re auto-generating the <code>Eq</code> because why have a bad time. Let’s make our <code>Ord</code> instance.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" title="1"><span class="kw">instance</span> <span class="dt">Ord</span> <span class="dt">SuperMood</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb7-2" title="2">    _ <span class="fu">&lt;=</span> <span class="dt">Fine</span> <span class="fu">=</span> <span class="dt">True</span></a>
+<a class="sourceLine" id="cb7-3" title="3">    <span class="dt">Worse</span> <span class="fu">&lt;=</span> <span class="dt">PrettyAverage</span> <span class="fu">=</span> <span class="dt">True</span></a>
+<a class="sourceLine" id="cb7-4" title="4">    _ <span class="fu">&lt;=</span> _ <span class="fu">=</span> <span class="dt">False</span></a></code></pre></div>
+<p>We’re implementing it in terms of <code>&lt;=</code> as it returns a <code>Bool</code> which is more straightforward than the <code>Ordering</code> datatype that <code>compare</code> uses).</p>
+<ol type="1">
+<li><code>_ &lt;= Fine = True</code> means that all values are equal to or less than <code>Fine</code>.</li>
+<li><code>Worse &lt;= PrettyAverage = True</code> means that <code>Worse</code> is less than or equal to <code>PrettyAverage</code>.</li>
+<li><code>_ &lt;= _ = False</code> means any other combination returns <code>False</code>.</li>
+</ol>
+<p>Even though we’ve only implemented one function, since the others can defined using it we get all of them for free:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" title="1"><span class="ot">yep ::</span> <span class="dt">Bool</span></a>
+<a class="sourceLine" id="cb8-2" title="2">yep <span class="fu">=</span> <span class="dt">Worse</span> <span class="fu">&lt;</span> <span class="dt">PrettyAverage</span></a>
+<a class="sourceLine" id="cb8-3" title="3"><span class="co">-- yep = True</span></a></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" title="1"><span class="ot">yep2 ::</span> <span class="dt">Bool</span></a>
+<a class="sourceLine" id="cb9-2" title="2">yep2 <span class="fu">=</span> <span class="dt">Fine</span> <span class="fu">&gt;=</span> <span class="dt">Worse</span></a>
+<a class="sourceLine" id="cb9-3" title="3"><span class="co">-- yep2 = True</span></a></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" title="1"><span class="ot">yep3 ::</span> <span class="dt">Bool</span></a>
+<a class="sourceLine" id="cb10-2" title="2">yep3 <span class="fu">=</span> <span class="dt">Fine</span> <span class="fu">&gt;=</span> <span class="dt">Fine</span></a>
+<a class="sourceLine" id="cb10-3" title="3"><span class="co">-- yep2 = True</span></a></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" title="1"><span class="ot">nope ::</span> <span class="dt">Bool</span></a>
+<a class="sourceLine" id="cb11-2" title="2">nope <span class="fu">=</span> <span class="dt">Fine</span> <span class="fu">&lt;</span> <span class="dt">Fine</span></a>
+<a class="sourceLine" id="cb11-3" title="3"><span class="co">-- nope = False</span></a></code></pre></div>
+<p>We also get to use any function that requires an <code>Ord</code> instance for free, like <code>sort</code> from <code>Data.List</code>, which has the following type signature:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" title="1"><span class="fu">sort</span><span class="ot"> ::</span> <span class="dt">Ord</span> a <span class="ot">=&gt;</span> [a] <span class="ot">-&gt;</span> [a]</a></code></pre></div>
+<p>This means “if you pass me a list of any <code>a</code> which is orderable, I can return you a sorted list”. Thanks!</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb13-1" title="1"><span class="kw">import</span> <span class="dt">Data.List</span></a>
+<a class="sourceLine" id="cb13-2" title="2"></a>
+<a class="sourceLine" id="cb13-3" title="3"><span class="ot">moods ::</span> [<span class="dt">SuperMood</span>]</a>
+<a class="sourceLine" id="cb13-4" title="4">moods <span class="fu">=</span> [<span class="dt">Fine</span>, <span class="dt">Fine</span>, <span class="dt">Worse</span>, <span class="dt">PrettyAverage</span>]</a>
+<a class="sourceLine" id="cb13-5" title="5"></a>
+<a class="sourceLine" id="cb13-6" title="6"><span class="ot">sorted ::</span> [<span class="dt">SuperMood</span>]</a>
+<a class="sourceLine" id="cb13-7" title="7">sorted <span class="fu">=</span> <span class="fu">sort</span> moods</a>
+<a class="sourceLine" id="cb13-8" title="8"><span class="co">-- sorted = [Worse, PrettyAverage, Fine, Fine]</span></a></code></pre></div>
+<p>Great job!</p>
+<p>Still seems like hard work though, can we auto generate this typeclass too? Yes!</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" title="1"><span class="kw">data</span> <span class="dt">LazyMood</span> <span class="fu">=</span> <span class="dt">Sloppy</span></a>
+<a class="sourceLine" id="cb14-2" title="2">              <span class="fu">|</span> <span class="dt">Ploppy</span></a>
+<a class="sourceLine" id="cb14-3" title="3">              <span class="fu">|</span> <span class="dt">Poopy</span></a>
+<a class="sourceLine" id="cb14-4" title="4">              <span class="fu">|</span> <span class="dt">Nicey</span> <span class="kw">deriving</span> (<span class="dt">Eq</span>, <span class="dt">Ord</span>)</a>
+<a class="sourceLine" id="cb14-5" title="5"></a>
+<a class="sourceLine" id="cb14-6" title="6"><span class="ot">lazySorted ::</span> [<span class="dt">LazyMood</span>]</a>
+<a class="sourceLine" id="cb14-7" title="7">lazySorted <span class="fu">=</span> <span class="fu">sort</span> [<span class="dt">Nicey</span>, <span class="dt">Poopy</span>, <span class="dt">Ploppy</span>, <span class="dt">Sloppy</span>]</a>
+<a class="sourceLine" id="cb14-8" title="8"><span class="co">-- lazySorted = [Sloppy, Ploppy, Poopy, Nicey]</span></a></code></pre></div>
+<p>Nice.</p>
+<p>Further reading:</p>
+<p><a href="http://hackage.haskell.org/package/base-4.12.0.0/docs/Data-Ord.html">Data.Ord</a></p>
+    </section>
+</article>
+    </main>
+
+    <footer>
+        Site proudly generated by
+        <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+    </footer>
+</body>
+
+</html>
