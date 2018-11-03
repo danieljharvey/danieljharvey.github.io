@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - Typeclasses - Eq</title>
+    <link rel="stylesheet" href="../css/default.css" />
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="../">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="../">Home</a>
+            <a href="../about.html">About</a>
+            <a href="../contact.html">Contact</a>
+            <a href="../archive.html">Archive</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        <h1>Typeclasses - Eq</h1>
+        <article>
+    <section class="header">
+        Posted on November  3, 2018
+        
+    </section>
+    <section>
+        <p>Let’s think about horses. There are three kinds of Horse:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="kw">data</span> <span class="dt">Horse</span> <span class="fu">=</span> <span class="dt">SmallHorse</span> <span class="fu">|</span> <span class="dt">LargeHorse</span> <span class="fu">|</span> <span class="dt">OtherHorse</span></a></code></pre></div>
+<p>Let’s make a function to check whether two Horses are in fact equivalently sized.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" title="1"><span class="ot">isSameHorse ::</span> <span class="dt">Horse</span> <span class="ot">-&gt;</span> <span class="dt">Horse</span> <span class="ot">-&gt;</span> <span class="dt">Bool</span></a>
+<a class="sourceLine" id="cb2-2" title="2">isSameHorse first second <span class="fu">=</span> first <span class="fu">==</span> second</a></code></pre></div>
+<p>Looks like a classic. Let’s run it!</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" title="1">isSameHorse <span class="dt">SmallHorse</span> <span class="dt">LargeHorse</span></a></code></pre></div>
+<p>Shit!</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" title="1">• <span class="dt">No</span> <span class="kw">instance</span> for (<span class="dt">Eq</span> <span class="dt">Horse</span>) arising from a use <span class="kw">of</span> ‘<span class="fu">==</span>’</a>
+<a class="sourceLine" id="cb4-2" title="2">• <span class="dt">In</span> the expression<span class="fu">:</span> first <span class="fu">==</span> second</a>
+<a class="sourceLine" id="cb4-3" title="3">    <span class="dt">In</span> an equation for ‘isSameHorse’<span class="fu">:</span></a>
+<a class="sourceLine" id="cb4-4" title="4">        isSameHorse first second <span class="fu">=</span> first <span class="fu">==</span> second</a></code></pre></div>
+<p>That’s terrible news. What’s wrong here? Apprently, we need to make an instance of the <code>Eq</code> (short for ‘equality’) typeclass for <code>Horse</code> before they can be compared.</p>
+<p>Let’s start again and make a better horse.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" title="1"><span class="kw">data</span> <span class="dt">BetterHorse</span> <span class="fu">=</span> <span class="dt">Tiny</span> <span class="fu">|</span> <span class="dt">Average</span> <span class="fu">|</span> <span class="dt">Huge</span></a></code></pre></div>
+<p>Let’s not make the same mistake this time - let’s make an instance of the <code>Eq</code> typeclass for them.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" title="1"><span class="kw">instance</span> <span class="dt">Eq</span> <span class="dt">BetterHorse</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb6-2" title="2">    <span class="dt">Tiny</span> <span class="fu">==</span> <span class="dt">Tiny</span> <span class="fu">=</span> <span class="dt">True</span></a>
+<a class="sourceLine" id="cb6-3" title="3">    <span class="dt">Average</span> <span class="fu">==</span> <span class="dt">Average</span> <span class="fu">=</span> <span class="dt">True</span></a>
+<a class="sourceLine" id="cb6-4" title="4">    <span class="dt">Huge</span> <span class="fu">==</span> <span class="dt">Huge</span> <span class="fu">=</span> <span class="dt">True</span></a>
+<a class="sourceLine" id="cb6-5" title="5">    _ <span class="fu">==</span> _ <span class="fu">=</span> <span class="dt">False</span></a></code></pre></div>
+<p>OK, seems fine. We’ve listed all the times two <code>BetterHorse</code> are the same and used <code>_ == _ = False</code> to mean “anything else is not equal” to save ourselves listing every alternative.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" title="1"><span class="ot">isSameBetterHorse ::</span> <span class="dt">BetterHorse</span> <span class="ot">-&gt;</span> <span class="dt">BetterHorse</span> <span class="ot">-&gt;</span> <span class="dt">Bool</span></a>
+<a class="sourceLine" id="cb7-2" title="2">isSameBetterHorse first second <span class="fu">=</span> first <span class="fu">==</span> second</a></code></pre></div>
+<p>Now our <code>BetterHorse</code> comparing function works. Let’s give it a go.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" title="1"><span class="ot">nope ::</span> <span class="dt">Bool</span></a>
+<a class="sourceLine" id="cb8-2" title="2">nope <span class="fu">=</span> isSameBetterHorse <span class="dt">Tiny</span> <span class="dt">Huge</span></a></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" title="1"><span class="ot">yep ::</span> <span class="dt">Bool</span></a>
+<a class="sourceLine" id="cb9-2" title="2">yep <span class="fu">=</span> isSameBetterHorse <span class="dt">Average</span> <span class="dt">Average</span></a></code></pre></div>
+<p>All seems to be fine here. We even get the <code>/=</code> function for free by defining <code>==</code>.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" title="1"><span class="ot">nice ::</span> <span class="dt">Bool</span></a>
+<a class="sourceLine" id="cb10-2" title="2">nice <span class="fu">=</span> <span class="dt">Average</span> <span class="fu">/=</span> <span class="dt">Tiny</span></a>
+<a class="sourceLine" id="cb10-3" title="3"><span class="co">-- nice = True</span></a></code></pre></div>
+<p>If you’re thinking “this seems laborious”, you’d be right. Fortunately, for basic data types like this, we can simply auto-generate an <code>Eq</code> instance in the data definition like this:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" title="1"><span class="kw">data</span> <span class="dt">LazyHorse</span> <span class="fu">=</span> <span class="dt">LazyTiny</span> <span class="fu">|</span> <span class="dt">LazyOther</span> <span class="kw">deriving</span> (<span class="dt">Eq</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" title="1">workingNow <span class="fu">=</span> <span class="dt">LazyTiny</span> <span class="fu">==</span> <span class="dt">LazyTiny</span></a>
+<a class="sourceLine" id="cb12-2" title="2"><span class="co">-- workingNow == True</span></a></code></pre></div>
+<p>Great!</p>
+<p>Further reading:</p>
+<p><a href="http://hackage.haskell.org/package/base-4.12.0.0/docs/Data-Eq.html">Data.Eq</a></p>
+    </section>
+</article>
+    </main>
+
+    <footer>
+        Site proudly generated by
+        <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+    </footer>
+</body>
+
+</html>
