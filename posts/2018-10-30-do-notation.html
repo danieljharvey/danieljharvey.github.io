@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - What does the do word do?</title>
+    <link rel="stylesheet" href="../css/default.css" />
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="../">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="../">Home</a>
+            <a href="../about.html">About</a>
+            <a href="../contact.html">Contact</a>
+            <a href="../archive.html">Archive</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        <h1>What does the do word do?</h1>
+        <article>
+    <section class="header">
+        Posted on October 30, 2018
+        
+    </section>
+    <section>
+        <p>Do notation is a strange thing. You first see it in examples of <code>IO ()</code> with something like:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="ot">main ::</span> <span class="dt">IO</span> ()</a>
+<a class="sourceLine" id="cb1-2" title="2">main <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb1-3" title="3">    firstName <span class="ot">&lt;-</span> <span class="fu">getLine</span></a>
+<a class="sourceLine" id="cb1-4" title="4">    surname <span class="ot">&lt;-</span> <span class="fu">getLine</span></a>
+<a class="sourceLine" id="cb1-5" title="5">    <span class="fu">print</span> (<span class="st">&quot;Hello &quot;</span> <span class="fu">++</span> firstName <span class="fu">++</span> <span class="st">&quot; &quot;</span> <span class="fu">++</span> surname)</a></code></pre></div>
+<p>And all seems well! This functional programming seems fine! But what’s going on here?</p>
+<p>Actually what’s really going on here is</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" title="1"><span class="ot">main2 ::</span> <span class="dt">IO</span> ()</a>
+<a class="sourceLine" id="cb2-2" title="2">main2 <span class="fu">=</span> <span class="fu">getLine</span></a>
+<a class="sourceLine" id="cb2-3" title="3">    <span class="fu">&gt;&gt;=</span> (\firstName <span class="ot">-&gt;</span> <span class="fu">getLine</span></a>
+<a class="sourceLine" id="cb2-4" title="4">    <span class="fu">&gt;&gt;=</span> (\surname <span class="ot">-&gt;</span></a>
+<a class="sourceLine" id="cb2-5" title="5">        <span class="fu">print</span> (<span class="st">&quot;Hello &quot;</span> <span class="fu">++</span> firstName <span class="fu">++</span> <span class="st">&quot; &quot;</span> <span class="fu">++</span> surname)))</a></code></pre></div>
+<p>OK. That’s a little scarier. Quite a lot of weird arrows and stuff. What’s this mean then?</p>
+<p>So <code>getStrLn</code> is a function that returns an <code>IO String</code>, which means <code>a string wrapped in the IO monad</code>. With a bit of hand-waving, the <code>&gt;&gt;=</code> (bind) function runs it, unwraps the <code>String</code> inside and passes it into the anonymous function (the one starting with <code>(\firstName -&gt; ...)</code>). This function runs it AGAIN and passes the unwrapped result into the next function. As you can see, the layers could get quite deep, hence the do notation which aims to make everything clearer.</p>
+<p>So is do notation it just an <code>IO</code> thing?</p>
+<p>No!</p>
+<p>Here’s an example with Maybe. <code>safeHead</code> is a function that returns the first item of a list wrapped in a <code>Just</code>, which means that if there isn’t a first item, instead of crapping out and ruining everything we return a <code>Nothing</code> which is easier to cope with.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" title="1"><span class="ot">safeHead ::</span> [a] <span class="ot">-&gt;</span> <span class="dt">Maybe</span> a</a>
+<a class="sourceLine" id="cb3-2" title="2">safeHead []    <span class="fu">=</span> <span class="dt">Nothing</span></a>
+<a class="sourceLine" id="cb3-3" title="3">safeHead (a<span class="fu">:</span>_) <span class="fu">=</span> <span class="dt">Just</span> a</a></code></pre></div>
+<p>And here is a function that does it twice with do notation. Note not an <code>IO ()</code> in sight!</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" title="1"><span class="ot">safeHeadTwice ::</span> [[a]] <span class="ot">-&gt;</span> <span class="dt">Maybe</span> a</a>
+<a class="sourceLine" id="cb4-2" title="2">safeHeadTwice aas <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb4-3" title="3">    as <span class="ot">&lt;-</span> safeHead aas</a>
+<a class="sourceLine" id="cb4-4" title="4">    a <span class="ot">&lt;-</span> safeHead as</a>
+<a class="sourceLine" id="cb4-5" title="5">    <span class="fu">return</span> a</a></code></pre></div>
+<p>What does this do? Well it takes a list of lists, and returns the first value of the first list inside. Therefore there are two potential points of failure, that being, the entire input being an empty list, or the first list inside the main input being an empty list. Let’s desugar it!</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" title="1"><span class="ot">safeHeadTwice2 ::</span> [[a]] <span class="ot">-&gt;</span> <span class="dt">Maybe</span> a</a>
+<a class="sourceLine" id="cb5-2" title="2">safeHeadTwice2 aas <span class="fu">=</span> safeHead aas</a>
+<a class="sourceLine" id="cb5-3" title="3">            <span class="fu">&gt;&gt;=</span> (\as <span class="ot">-&gt;</span> safeHead as</a>
+<a class="sourceLine" id="cb5-4" title="4">            <span class="fu">&gt;&gt;=</span> (\a <span class="ot">-&gt;</span> <span class="fu">return</span> a))</a></code></pre></div>
+<p>There is probably a shorter way to write this one to be fair.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" title="1"><span class="ot">safeHeadTwiceShort ::</span> [[a]] <span class="ot">-&gt;</span> <span class="dt">Maybe</span> a</a>
+<a class="sourceLine" id="cb6-2" title="2">safeHeadTwiceShort a <span class="fu">=</span> safeHead a <span class="fu">&gt;&gt;=</span> safeHead</a></code></pre></div>
+<p>OK, so in this case, <code>do notation</code> doesn’t look so great. Oh well. Remember: clever things are interesting but they’re not always good.</p>
+<p>Further reading:</p>
+<p><a href="https://en.wikibooks.org/wiki/Haskell/do_notation">Do Notation in Wikibooks</a></p>
+<p><a href="http://learnyouahaskell.com/a-fistful-of-monads">A Fistful of Monads</a></p>
+    </section>
+</article>
+    </main>
+
+    <footer>
+        Site proudly generated by
+        <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+    </footer>
+</body>
+
+</html>
