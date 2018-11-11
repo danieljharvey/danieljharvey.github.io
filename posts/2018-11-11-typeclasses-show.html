@@ -70,7 +70,56 @@
 <div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" title="1"><span class="ot">showCrazy ::</span> <span class="dt">String</span></a>
 <a class="sourceLine" id="cb12-2" title="2">showCrazy <span class="fu">=</span> <span class="fu">show</span> <span class="dt">Crazy</span></a>
 <a class="sourceLine" id="cb12-3" title="3"><span class="co">-- showCrazy == &quot;Crazy&quot;</span></a></code></pre></div>
-<p>Anyway. That’s enough of that.</p>
+<p>That’s better, but is there anything a bit more interesting we could do with this? Sure thing! What about a data type for creating HTML markup?</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb13-1" title="1"><span class="kw">type</span> <span class="dt">Href</span> <span class="fu">=</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb13-2" title="2"></a>
+<a class="sourceLine" id="cb13-3" title="3"><span class="kw">data</span> <span class="dt">HTMLTree</span> <span class="fu">=</span> <span class="dt">Div</span> [<span class="dt">HTMLTree</span> a]</a>
+<a class="sourceLine" id="cb13-4" title="4">              <span class="fu">|</span> <span class="dt">Title</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb13-5" title="5">              <span class="fu">|</span> <span class="dt">P</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb13-6" title="6">              <span class="fu">|</span> <span class="dt">A</span> <span class="dt">Href</span> [<span class="dt">HTMLTree</span> a]</a></code></pre></div>
+<p>That <code>type</code> alias for <code>Href</code> just means it’s a normal string, but it makes the intent a bit clearer. So this little markup type has four kinds of element.</p>
+<ol type="1">
+<li><code>Div</code> has no content of it’s own but is also a wrapper for a list of <code>HTMLTree a</code> elements.</li>
+<li><code>Title</code> also takes a <code>String</code> and has no child elements.</li>
+<li><code>P</code> takes a <code>String</code> and has no child elements.</li>
+<li><code>A</code> takes an <code>Href</code> (an alias for <code>String</code>) and a list of children of type <code>HTMLTree a</code>.</li>
+</ol>
+<p>Let’s put it to work making an internet website.</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" title="1"><span class="ot">website ::</span> <span class="dt">Tree</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb14-2" title="2">website <span class="fu">=</span> <span class="dt">Div</span></a>
+<a class="sourceLine" id="cb14-3" title="3">        [ <span class="dt">Title</span> <span class="st">&quot;My interesting website&quot;</span></a>
+<a class="sourceLine" id="cb14-4" title="4">        , <span class="dt">P</span> <span class="st">&quot;Item of interest&quot;</span></a>
+<a class="sourceLine" id="cb14-5" title="5">        , <span class="dt">A</span> <span class="st">&quot;http://danieljharvey.github.io&quot;</span> [ <span class="dt">P</span> <span class="st">&quot;Home&quot;</span> ]</a>
+<a class="sourceLine" id="cb14-6" title="6">        , <span class="dt">Div</span> [ <span class="dt">P</span> <span class="st">&quot;Sub-item&quot;</span></a>
+<a class="sourceLine" id="cb14-7" title="7">              , <span class="dt">P</span> <span class="st">&quot;Another sub-item&quot;</span></a>
+<a class="sourceLine" id="cb14-8" title="8">              ]</a>
+<a class="sourceLine" id="cb14-9" title="9">        ]</a></code></pre></div>
+<p>Looks like the beginnings of a world beating internet business to me. How can <code>Show</code> help us though?</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb15-1" title="1"><span class="kw">instance</span> (<span class="dt">Show</span> a) <span class="ot">=&gt;</span> <span class="dt">Show</span> (<span class="dt">Tree</span> a) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb15-2" title="2">    <span class="fu">show</span> (<span class="dt">Div</span> as) <span class="fu">=</span> <span class="st">&quot;&lt;div&gt;&quot;</span> <span class="fu">++</span> concatSubtags as <span class="fu">++</span> <span class="st">&quot;&lt;/div&gt;&quot;</span></a>
+<a class="sourceLine" id="cb15-3" title="3">    <span class="fu">show</span> (<span class="dt">A</span> href as) <span class="fu">=</span> <span class="st">&quot;&lt;a href='&quot;</span> <span class="fu">++</span> href <span class="fu">++</span> <span class="st">&quot;'&gt;&quot;</span></a>
+<a class="sourceLine" id="cb15-4" title="4">                     <span class="fu">++</span> concatSubtags as <span class="fu">++</span> <span class="st">&quot;&lt;/a&gt;&quot;</span></a>
+<a class="sourceLine" id="cb15-5" title="5">    <span class="fu">show</span> (<span class="dt">P</span> a) <span class="fu">=</span> <span class="st">&quot;&lt;p&gt;&quot;</span> <span class="fu">++</span> a <span class="fu">++</span> <span class="st">&quot;&lt;/p&gt;&quot;</span></a>
+<a class="sourceLine" id="cb15-6" title="6">    <span class="fu">show</span> (<span class="dt">Title</span> a) <span class="fu">=</span> <span class="st">&quot;&lt;h1&gt;&quot;</span> <span class="fu">++</span> a <span class="fu">++</span> <span class="st">&quot;&lt;/h1&gt;&quot;</span></a>
+<a class="sourceLine" id="cb15-7" title="7"></a>
+<a class="sourceLine" id="cb15-8" title="8"><span class="co">-- utility function for showing child items</span></a>
+<a class="sourceLine" id="cb15-9" title="9"><span class="ot">concatSubtags ::</span> (<span class="dt">Show</span> a) <span class="ot">=&gt;</span> [<span class="dt">Tree</span> a] <span class="ot">-&gt;</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb15-10" title="10">concatSubtags as <span class="fu">=</span> <span class="fu">concat</span> <span class="fu">$</span> <span class="fu">fmap</span> <span class="fu">show</span> as</a></code></pre></div>
+<p>By defining a <code>show</code> function for each of our tags (and recursively calling <code>show</code> for tags with child elements) we can generate HTML markup using one easy function:</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb16-1" title="1"><span class="dt">Prelude</span><span class="fu">&gt;</span> <span class="fu">show</span> website</a></code></pre></div>
+<p>Hooray! A website!</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode html"><code class="sourceCode html"><a class="sourceLine" id="cb17-1" title="1"><span class="kw">&lt;div&gt;</span></a>
+<a class="sourceLine" id="cb17-2" title="2">  <span class="kw">&lt;h1&gt;</span>My interesting website<span class="kw">&lt;/h1&gt;</span></a>
+<a class="sourceLine" id="cb17-3" title="3">  <span class="kw">&lt;p&gt;</span>Item of interest<span class="kw">&lt;/p&gt;</span></a>
+<a class="sourceLine" id="cb17-4" title="4">  <span class="kw">&lt;a</span><span class="ot"> href=</span><span class="st">&quot;http://danieljharvey.github.io&quot;</span><span class="kw">&gt;</span> <span class="kw">&lt;p&gt;</span>Website<span class="kw">&lt;/p&gt;</span> <span class="kw">&lt;/a&gt;</span></a>
+<a class="sourceLine" id="cb17-5" title="5">  <span class="kw">&lt;div&gt;</span></a>
+<a class="sourceLine" id="cb17-6" title="6">    <span class="kw">&lt;p&gt;</span>Sub-item<span class="kw">&lt;/p&gt;</span></a>
+<a class="sourceLine" id="cb17-7" title="7">    <span class="kw">&lt;p&gt;</span>Another sub-item<span class="kw">&lt;/p&gt;</span></a>
+<a class="sourceLine" id="cb17-8" title="8">  <span class="kw">&lt;/div&gt;</span></a>
+<a class="sourceLine" id="cb17-9" title="9"><span class="kw">&lt;/div&gt;</span></a></code></pre></div>
+<p>(Actually it comes out in one big line, and then I added the line breaks to fit it on the page. Oh, the lies!)</p>
+<p>It could do with a bit of sprucing up, and a few more tags, but in my by no means humble opinion we’re on our way to creating the next React-beater. Great job, <code>show</code>.</p>
+<p>(Incidentally, although this is a more fun example of <code>show</code>, I’d probably recommend just using a normal function for this kind of thing. Something classic like <code>renderTree :: (Show a) =&gt; Tree a -&gt; String</code> maybe. This isn’t strictly what the <code>Show</code> typeclass is for. There is also another type class called <code>Read</code> whose job is to turn the <code>String</code> output of <code>show</code> back into the original data type, and so making a clever <code>show</code> instance you’re somewhat implicitly promising that you can turn it back somehow. This could end up being a Bad Time, and that’s exactly the kind of time we don’t want to have.)</p>
 <p>Further reading:</p>
 <p><a href="http://hackage.haskell.org/package/base-4.12.0.0/docs/Text-Show.html">Text.Show</a></p>
     </section>
