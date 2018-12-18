@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - Typeclasses - Contravariant</title>
+    <link rel="stylesheet" href="../css/default.css" />
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="../">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="../">Home</a>
+            <a href="../about.html">About</a>
+            <a href="../contact.html">Contact</a>
+            <a href="../archive.html">Archive</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        <h1>Typeclasses - Contravariant</h1>
+        <article>
+    <section class="header">
+        Posted on November 17, 2018
+        
+    </section>
+    <section>
+        <p>Let’s think about Predicates.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="kw">newtype</span> <span class="dt">Preddy</span> a <span class="fu">=</span> <span class="dt">Preddy</span> {<span class="ot"> getPreddy ::</span> a <span class="ot">-&gt;</span> <span class="dt">Bool</span> }</a></code></pre></div>
+<p>What the hell is this?</p>
+<p>OK. So it’s a <code>newtype</code>. What is basically does is let’s us take some sort of value (here, any function from <code>a -&gt; Bool</code>) and make a new type out of it so we can give it typeclasses and do magic shit to it.</p>
+<p>So let’s say we have a basic function that takes a number and let’s us know whether that number is over 3.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" title="1"><span class="ot">threePred ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Bool</span></a>
+<a class="sourceLine" id="cb2-2" title="2">threePred i <span class="fu">=</span> i <span class="fu">&gt;</span> <span class="dv">3</span></a></code></pre></div>
+<p>Great!</p>
+<p>To put this into a <code>newtype</code> (our <code>Preddy</code> one, to be exact) - we do this:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" title="1"><span class="ot">overThree ::</span> <span class="dt">Preddy</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb3-2" title="2">overThree <span class="fu">=</span> <span class="dt">Preddy</span> threePred</a></code></pre></div>
+<p>The type has changed - the <code>a</code> in <code>a -&gt; Bool</code> is <code>Int</code> so we get <code>Preddy Int</code>. We don’t need to specify the <code>Bool</code> anywhere because that’s sort of implicit in the <code>Preddy</code>-ness.</p>
+<p>OK. I get it, you’re worried. My function is gone for ever. Can I get it out again? Sure.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" title="1"><span class="ot">isOverThree ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Bool</span></a>
+<a class="sourceLine" id="cb4-2" title="2">isOverThree <span class="fu">=</span> getPreddy overThree</a></code></pre></div>
+<p><code>threePred</code> and <code>isOverThree</code> are completely the same thing. So now we’re comfortable this <code>newtype</code> thing is basically doing nothing awful to our code, what it is good for?</p>
+<p>Oh yeah. We said earlier. Because <code>Preddy</code> is a datatype of it’s own we can make typeclass instances for it. Let’s make a <code>Contravariant</code> instance, for no other reason than this being the name of the post and we’re a long way into it without doing anything particularly useful.</p>
+<p>What will we need for doing that then?</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" title="1"><span class="dt">Prelude</span><span class="fu">&gt;</span> <span class="fu">:</span>i <span class="dt">Contravariant</span></a></code></pre></div>
+<p>If are typing along with all this and get an error, please skip to the bottom of the page for some useful links, however if you have the <code>contravariant</code> library floating around or are just happy to take my word for it then GREAT! You’ll see this:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" title="1"><span class="kw">class</span> <span class="dt">Contravariant</span> (<span class="ot">f ::</span> <span class="fu">*</span> <span class="ot">-&gt;</span> <span class="fu">*</span>) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb6-2" title="2"><span class="ot">  contramap ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> f b <span class="ot">-&gt;</span> f a</a>
+<a class="sourceLine" id="cb6-3" title="3"><span class="ot">  (&gt;$) ::</span> b <span class="ot">-&gt;</span> f b <span class="ot">-&gt;</span> f a</a>
+<a class="sourceLine" id="cb6-4" title="4">  <span class="ot">{-# MINIMAL contramap #-}</span></a></code></pre></div>
+<p>The key thing to look when starting out is this <code>MINIMAL</code> part - as it means the only functions we need to worry about for the time being.</p>
+<p>So, <code>contramap</code> is it. What does this do?</p>
+<p>It takes a function from <code>(a -&gt; b)</code> and then it takes an <code>f b</code> and returns an <code>f a</code>. Sure.</p>
+<p>What?</p>
+<p>Are you out of your fucking mind? How do I turn <code>b</code> into <code>a</code> using <code>(a -&gt; b)</code>?</p>
+<p>Is this…a backwards functor? Can I implement undo on all my functions? Is the special magic Haskell sauce I’ve been waiting for?</p>
+<p>So it turns out no.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" title="1"><span class="ot">nameLength ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb7-2" title="2">nameLength <span class="st">&quot;&quot;</span>      <span class="fu">=</span> <span class="dv">0</span></a>
+<a class="sourceLine" id="cb7-3" title="3">nameLength (x<span class="fu">:</span> xs) <span class="fu">=</span> <span class="dv">1</span> <span class="fu">+</span> nameLength xs</a></code></pre></div>
+<p>So a regular <code>functor</code> is actually a <code>covariant functor</code> which I guess means forwards functor. When we map over it, we changing what happens after it. Hence if I have a <code>Maybe String</code> and <code>fmap</code> a <code>String -&gt; Int</code> function like <code>nameLength</code> over it I get a <code>Maybe Int</code> and all is well in the world.</p>
+<p>However our pal <code>Preddy</code>, unbeknownst to him, is about to become a <code>contravariant functor</code> which sort of means backwards. What this means is if he’s waiting for an <code>Int</code> to see if it’s over 3, we can <code>contramap</code> that same <code>String -&gt; Int</code> function <code>nameLength</code> over it, and instead <code>Preddy</code> is waiting for a <code>String</code> so he can tell you whether the <code>String</code> has over 3 characters. The map happens beforehand, basically. That’s how an <code>(a -&gt; b)</code> function turns a <code>Preddy b</code> (predicate waiting for a <code>b</code>) into a <code>Preddy a</code> (predicate waiting for an <code>a</code>).</p>
+<p>Seems weird? Sure. Let’s look at an example.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" title="1"><span class="kw">instance</span> <span class="dt">Contravariant</span> <span class="dt">Preddy</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb8-2" title="2">  contramap f (<span class="dt">Preddy</span> p) <span class="fu">=</span> <span class="dt">Preddy</span> (p <span class="fu">.</span> f)</a></code></pre></div>
+<p>This looks a lot like <code>fmap</code>, except our new <code>f</code> function happens BEFORE the <code>p</code> function that is already in there.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" title="1"><span class="ot">nameLengthOverThree ::</span> <span class="dt">Preddy</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb9-2" title="2">nameLengthOverThree <span class="fu">=</span> contramap nameLength overThree</a></code></pre></div>
+<p>Here we’ve turned our <code>Preddy Int</code> function <code>overThree</code> into a <code>Preddy String</code> function using a <code>String -&gt; Int</code> function and <code>contramap</code>.</p>
+<p>Let’s use it!</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" title="1"><span class="ot">nameIsOverThree ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Bool</span></a>
+<a class="sourceLine" id="cb10-2" title="2">nameIsOverThree <span class="fu">=</span> getPreddy nameLengthOverThree</a>
+<a class="sourceLine" id="cb10-3" title="3"><span class="co">-- nameIsOverThree &quot;Lou&quot; == False</span></a>
+<a class="sourceLine" id="cb10-4" title="4"><span class="co">-- nameIsOverThree &quot;Doug&quot; == True</span></a></code></pre></div>
+<p>Great! Now we can use it to see if words are Just Too Long.</p>
+<p>All this wrapping and unwrapping seems a lot of work for that, but what if we start using <code>contramap</code> for more?</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" title="1"><span class="kw">data</span> <span class="dt">Person</span> <span class="fu">=</span> <span class="dt">Person</span> {<span class="ot"> name ::</span> <span class="dt">String</span>,<span class="ot"> age ::</span> <span class="dt">Int</span> } <span class="kw">deriving</span> (<span class="dt">Show</span>)</a>
+<a class="sourceLine" id="cb11-2" title="2"></a>
+<a class="sourceLine" id="cb11-3" title="3"><span class="ot">steve ::</span> <span class="dt">Person</span></a>
+<a class="sourceLine" id="cb11-4" title="4">steve <span class="fu">=</span> <span class="dt">Person</span> { name <span class="fu">=</span> <span class="st">&quot;Steve&quot;</span>, age <span class="fu">=</span> <span class="dv">100</span> }</a>
+<a class="sourceLine" id="cb11-5" title="5"></a>
+<a class="sourceLine" id="cb11-6" title="6"><span class="ot">lou ::</span> <span class="dt">Person</span></a>
+<a class="sourceLine" id="cb11-7" title="7">lou <span class="fu">=</span> <span class="dt">Person</span> { name <span class="fu">=</span> <span class="st">&quot;Lou&quot;</span>, age <span class="fu">=</span> <span class="dv">69</span> }</a></code></pre></div>
+<p>Here are Steve and Lou. They are, at least syntactically, people.</p>
+<p>Let’s use mathematics to judge whether their names are too long.</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" title="1"><span class="ot">personTooLong ::</span> <span class="dt">Person</span> <span class="ot">-&gt;</span> <span class="dt">Bool</span></a>
+<a class="sourceLine" id="cb12-2" title="2">personTooLong <span class="fu">=</span> getPreddy personPreddy <span class="kw">where</span></a>
+<a class="sourceLine" id="cb12-3" title="3">  personPreddy <span class="fu">=</span> contramap (nameLength <span class="fu">.</span> name) overThree</a>
+<a class="sourceLine" id="cb12-4" title="4"></a>
+<a class="sourceLine" id="cb12-5" title="5"><span class="co">-- personTooLong steve == True</span></a>
+<a class="sourceLine" id="cb12-6" title="6"><span class="co">-- personTooLong lou == False</span></a></code></pre></div>
+<p>Excellent! That will show them.</p>
+<p>You will note that here we’ve somewhat rushed and combined the <code>contramap</code>-ing and unwrapping into one function. This was mostly to show that when you come to use these things, it doesn’t need to be quite as laborious as our broken down examples above. Hopefully you can follow, the key thing is that <code>(nameLength . name)</code> means “put the value into <code>name</code> and the pass the result to <code>nameLength</code>”.</p>
+<p>Contravariant doesn’t show up a huge amount on it’s own, but it comes into it’s own as part of <code>Profunctor</code> (lightning flashes, thunder, excitement!) which no doubt we’ll flop towards at some unspecified future moment.</p>
+<p>Further reading:</p>
+<p><a href="https://www.youtube.com/watch?v=JZPXzJ5tp9w">The Extended Functor Family (video)</a></p>
+<p><a href="http://hackage.haskell.org/package/contravariant-1.5/docs/Data-Functor-Contravariant.html">Data.Functor.Contravariant</a></p>
+<p>NOTE: If you happened to get this error:</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb13-1" title="1"><span class="fu">&lt;</span>interactive<span class="fu">&gt;:</span><span class="dv">1</span><span class="fu">:</span><span class="dv">1</span><span class="fu">:</span> <span class="fu">error:</span> <span class="dt">Not</span> <span class="kw">in</span> scope<span class="fu">:</span> ‘<span class="dt">Contravariant</span>’</a></code></pre></div>
+<p>…then you will need to install the <code>contravariant</code> package from Hackage. I’m not going to go into Haskell package management at this point but here is a good starting point: <a href="http://seanhess.github.io/2015/08/04/practical-haskell-getting-started.html">Practical Haskell - Getting Started</a>. It’s all going to be fine, I promise. The documentation isn’t great but the tools are pretty nice.</p>
+    </section>
+</article>
+    </main>
+
+    <footer>
+        Site proudly generated by
+        <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+    </footer>
+</body>
+
+</html>
