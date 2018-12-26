@@ -16,7 +16,6 @@
         </div>
         <nav>
             <a href="../">Home</a>
-            <a href="../about.html">About</a>
             <a href="../contact.html">Contact</a>
             <a href="../archive.html">Archive</a>
         </nav>
@@ -47,7 +46,7 @@
 <p>So why do this?</p>
 <p>Well, the nice thing about a <code>newtype</code> is that we can use it to pass data around with a bit more contextual information about what it means.</p>
 <p>Let’s calculate a salary. That seems like a plausible thing to do with a computer.</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" title="1"><span class="ot">calculateSalaryBad ::</span> (<span class="dt">Num</span> a) <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> a</a>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" title="1"><span class="ot">calculateSalaryBad ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
 <a class="sourceLine" id="cb5-2" title="2">calculateSalaryBad months <span class="fu">=</span> months <span class="fu">*</span> <span class="dv">1000</span></a></code></pre></div>
 <p>This function takes a number of months, and calculates how much this person should get paid, based on a salary of <code>1000</code> (of some unknown unit) a month.</p>
 <p>But what happens if we give it an invalid number of months?</p>
@@ -120,6 +119,7 @@
 <a class="sourceLine" id="cb19-2" title="2">calculateSalaryClever2 i <span class="fu">=</span> getPositiveNum (<span class="fu">fmap</span> (<span class="fu">*</span><span class="dv">1000</span>) i)</a>
 <a class="sourceLine" id="cb19-3" title="3"><span class="co">-- calculateSalaryClever2 20 == 20000</span></a></code></pre></div>
 <p>That seems pretty OK to me. Anyway, that’s enough things, time for bed.</p>
+<p>Make sense? If not, why not <a href="../contact.html">get in touch</a>?</p>
 <p>Further reading:</p>
 <p><a href="https://wiki.haskell.org/Newtype">Newtype in Haskell Wiki</a></p>
 <p><a href="http://degoes.net/articles/newtypes-suck">Newtypes aren’t as cool as you think</a></p>

@@ -16,7 +16,6 @@
         </div>
         <nav>
             <a href="../">Home</a>
-            <a href="../about.html">About</a>
             <a href="../contact.html">Contact</a>
             <a href="../archive.html">Archive</a>
         </nav>
@@ -120,6 +119,7 @@
 <p>(Actually it comes out in one big line, and then I added the line breaks to fit it on the page. Oh, the lies!)</p>
 <p>It could do with a bit of sprucing up, and a few more tags, but in my by no means humble opinion we’re on our way to creating the next React-beater. Great job, <code>show</code>.</p>
 <p>(Incidentally, although this is a more fun example of <code>show</code>, I’d probably recommend just using a normal function for this kind of thing. Something classic like <code>renderTree :: (Show a) =&gt; Tree a -&gt; String</code> maybe. This isn’t strictly what the <code>Show</code> typeclass is for. There is also another type class called <code>Read</code> whose job is to turn the <code>String</code> output of <code>show</code> back into the original data type, and so making a clever <code>show</code> instance you’re somewhat implicitly promising that you can turn it back somehow. This could end up being a Bad Time, and that’s exactly the kind of time we don’t want to have.)</p>
+<p>Make sense? If not, why not <a href="../contact.html">get in touch</a>?</p>
 <p>Further reading:</p>
 <p><a href="http://hackage.haskell.org/package/base-4.12.0.0/docs/Text-Show.html">Text.Show</a></p>
     </section>
