@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - Monoid, Mate</title>
+    <link rel="stylesheet" href="../css/default.css" />
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="../">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="../">Home</a>
+            <a href="../contact.html">Contact</a>
+            <a href="../archive.html">Archive</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        <h1>Monoid, Mate</h1>
+        <article>
+    <section class="header">
+        Posted on October 22, 2018
+        
+        <div class="info">
+          
+          Tags: 
+          
+        </div>
+    </section>
+    <section>
+        <h1 id="intro">intro</h1>
+<h1 id="combining-strings">combining strings</h1>
+<h1 id="the-empty-element">the empty element</h1>
+<h1 id="combining-lists">combining lists</h1>
+<h1 id="sum-examples">sum examples</h1>
+<h1 id="end">end</h1>
+<p>The thing I have found the most difficult to get my head around in the world of Haskell and categories etc is when I spend some time finding about a subject only to realise it’s describing something I already understand in some way. I feel cheated! Why must I learn new words for this! And you’re being so vague about it!</p>
+<p>One such notion is that of the <code>Monoid</code> and it’s weaker cousin <code>Semigroup</code> (Weaker? What? We’ll come to it…)</p>
+<p>I’ll explain Monoid first, as although it’s more complicated, it’s way easier to find usable examples for it. Let’s start with a couple of those, and then work out what the generalisation is.</p>
+<p>A good one is strings.</p>
+<p>Let’s say we have two string: <code>&quot;nice&quot;</code> and <code>&quot;dog&quot;</code>. Let’s make a function that combines them:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="ot">strConcat ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb1-2" title="2">strConcat a b <span class="fu">=</span> a <span class="fu">++</span> b</a></code></pre></div>
+<p>This can be used thus: <code>strConcat &quot;nice&quot; &quot;dog&quot;</code> and will produce <code>&quot;nicedog&quot;</code>.</p>
+<p>That’s great for two strings, but what if we have a whole list of strings that we want to smash together into one giant magnificent string?</p>
+<p>Enter foldr (fold right). A version exists in Prelude, but let’s make our own. The signature is a bit of beast, so let’s break it down.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" title="1"><span class="ot">myFoldr ::</span> (a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> b</a>
+<a class="sourceLine" id="cb2-2" title="2">myFoldr f def [] <span class="fu">=</span> def</a>
+<a class="sourceLine" id="cb2-3" title="3">myFoldr f def (x <span class="fu">:</span> xs) <span class="fu">=</span> x <span class="ot">`f`</span> myFoldr f def xs</a></code></pre></div>
+<p>It actually takes three arguments:</p>
+<ol type="1">
+<li>A function with the type <code>a -&gt; b -&gt; b</code>.</li>
+<li>The starting value for the fold of type <code>b</code>.</li>
+<li>A list of values we wish to add together of type <code>[a]</code> - in our example this could be <code>[&quot;hot&quot;, &quot;dog&quot;, &quot;frog&quot;]</code>.</li>
+</ol>
+<p>If you squint, you’re pretty much looking at the <code>array.reduce</code> function in Javascript.</p>
+<p>(What is important to note when looking at signatures for functions like this is that <code>a</code> and <code>b</code> may happen to be the same type - the important thing here is that they don’t have to be. When using a list of strings like we are, the type is actually <code>(String -&gt; String -&gt; String) -&gt; String -&gt; [String] -&gt; String</code> which is simultaneously more and less confusing.)</p>
+<p>Let’s trying using it with our string <code>strConcat</code> function from earlier.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" title="1"><span class="ot">output1 ::</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb3-2" title="2">output1 <span class="fu">=</span> myFoldr strConcat <span class="st">&quot;&quot;</span> [<span class="st">&quot;hot&quot;</span>,<span class="st">&quot;dog&quot;</span>,<span class="st">&quot;frog&quot;</span>]</a>
+<a class="sourceLine" id="cb3-3" title="3"><span class="co">-- output1 = &quot;hotdogfrog&quot;</span></a></code></pre></div>
+<p>Great! Hopefully this all makes sense - we passed <code>foldr</code> a function for combining strings and a starting value of an empty string. Why the starting value? Well, what would happen if we folded over an empty list?</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" title="1"><span class="ot">output2 ::</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb4-2" title="2">output2 <span class="fu">=</span> myFoldr strConcat <span class="st">&quot;&quot;</span> []</a>
+<a class="sourceLine" id="cb4-3" title="3"><span class="co">-- output2 = &quot;&quot;</span></a></code></pre></div>
+<p>Great! We get our default value rather than some sort of awful error. Could we use just anything though? It would be kind of nice to have a sort of error value as a default, I suppose:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" title="1"><span class="ot">output3 ::</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb5-2" title="2">output3 <span class="fu">=</span> myFoldr strConcat <span class="st">&quot;sorry, no value&quot;</span> []</a>
+<a class="sourceLine" id="cb5-3" title="3"><span class="co">-- output3 = &quot;sorry, no value&quot;</span></a></code></pre></div>
+<p>Seems nice, however this wouldn’t work when we do have values:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" title="1"><span class="ot">output4 ::</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb6-2" title="2">output4 <span class="fu">=</span> myFoldr strConcat <span class="st">&quot;sorry, no value&quot;</span> [<span class="st">&quot;hot&quot;</span>,<span class="st">&quot;dog&quot;</span>,<span class="st">&quot;frog&quot;</span>]</a>
+<a class="sourceLine" id="cb6-3" title="3"><span class="co">-- output4 = &quot;hotdogfrogsorry, no value&quot;</span></a></code></pre></div>
+<p>I guess we need empty values that don’t mess up the result then. Let’s stick to <code>&quot;&quot;</code> for strings for now.</p>
+<p>What’s Monoid then?</p>
+<h4 id="a-monoid-is-a-way-of-generalising-over-the-idea-of-combining-things">A Monoid is a way of generalising over the idea of combining things</h4>
+<p>It needs two things:</p>
+<ol type="1">
+<li>An operation for combining two values (called <code>mappend</code>)</li>
+<li>An empty value to start from (called <code>mempty</code>)</li>
+</ol>
+<p>For strings the combining operation is our <code>concat</code> and our empty value is <code>&quot;&quot;</code>. The key observation here is that adding <code>&quot;&quot;</code> to the start or end of a string changes nothing about the string.</p>
+<p>Our example actually has another example within it - the list itself! Here is the Monoid instance for a list:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" title="1"><span class="kw">instance</span> <span class="dt">Monoid</span> [a] <span class="kw">where</span></a>
+<a class="sourceLine" id="cb7-2" title="2">    <span class="fu">mappend</span> a b <span class="fu">=</span> a <span class="fu">&lt;&gt;</span> b</a>
+<a class="sourceLine" id="cb7-3" title="3">    <span class="fu">mempty</span> <span class="fu">=</span> []</a></code></pre></div>
+<p>Our <code>strConcat</code> function here is called <code>mappend</code>, and running it on two lists will smash one after the other, ie <code>mappend [1,2,3,4] [5,6,7]</code> would make <code>[1,2,3,4,5,6,7]</code>. However <code>mappend</code>-ing an empty list will do nothing, just like adding an <code>&quot;&quot;</code> to the end of a string.</p>
+<p>The rule then:</p>
+<h4 id="if-you-concat-the-empty-element-onto-a-monoid-the-monoid-remains-the-same">If you concat the empty element onto a Monoid, the Monoid remains the same</h4>
+<p>Anyway, that’s quite enough for now I feel.</p>
+<p>Further reading:</p>
+<p><a href="http://hackage.haskell.org/package/base-4.12.0.0/docs/Data-Monoid.html">Data.Monoid on Hackage</a></p>
+<p><a href="https://medium.com/@sjsyrek/five-minutes-to-monoid-fe6f364d0bba">5 minutes to Monoids</a></p>
+<p><a href="https://www.schoolofhaskell.com/user/mgsloan/monoids-tour">Monoids tour on School of Haskell</a></p>
+    </section>
+</article>
+
+    </main>
+
+    <footer>
+        Site proudly generated by
+        <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+    </footer>
+</body>
+
+</html>

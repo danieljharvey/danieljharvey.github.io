@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - Typeclasses - Monoid</title>
+    <link rel="stylesheet" href="../css/default.css" />
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="../">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="../">Home</a>
+            <a href="../contact.html">Contact</a>
+            <a href="../archive.html">Archive</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        <h1>Typeclasses - Monoid</h1>
+        <article>
+    <section class="header">
+        Posted on January  3, 2019
+        
+        <div class="info">
+          
+          Tags: <a href="../tags/haskell.html">haskell</a>, <a href="../tags/typeclasses.html">typeclasses</a>
+          
+        </div>
+    </section>
+    <section>
+        <p>Today we’re going to talk about the <code>Monoid</code> typeclass, which is a way of generalising things that can be combined together. I found it one of the trickiest to get my head around because what it did was so straightforward that I was sort of annoyed that I had to learn a new word (especially one so confusingly similar to <code>Monad</code>).</p>
+<p>We’ll explain it in terms of combining <code>String</code> values, and then move onto some interesting examples.</p>
+<h3 id="combining-strings">Combining Strings</h3>
+<p>We need to combine two <code>String</code> values, and we’re all functional programmers, so let’s go ahead and make a function for doing that.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="ot">strConcat ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb1-2" title="2">strConcat a b <span class="fu">=</span> a <span class="fu">++</span> b</a></code></pre></div>
+<p>Classic stuff. Let’s see it work.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" title="1"><span class="ot">niceVal ::</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb2-2" title="2">niceVal <span class="fu">=</span>strConcat <span class="st">&quot;nice &quot;</span> <span class="st">&quot;dog&quot;</span></a>
+<a class="sourceLine" id="cb2-3" title="3"><span class="co">-- strVal == &quot;nice dog&quot;</span></a></code></pre></div>
+<p>OK. So combining things is pretty similar. A <code>Monoid</code> also needs another thing, an empty value, that if we add it onto a <code>String</code>, nothing really happens.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" title="1"><span class="ot">stringEmpty ::</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb3-2" title="2">stringEmpty <span class="fu">=</span> <span class="st">&quot;&quot;</span></a></code></pre></div>
+<p>If we add this anywhere to a <code>String</code>, it gives us the same <code>String</code>.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" title="1"><span class="ot">theSame ::</span> <span class="dt">Boolean</span></a>
+<a class="sourceLine" id="cb4-2" title="2">theSame <span class="fu">=</span> strConcat <span class="st">&quot;dog&quot;</span> stringEmpty <span class="fu">==</span> <span class="st">&quot;dog&quot;</span></a>
+<a class="sourceLine" id="cb4-3" title="3"><span class="co">-- theSame == True</span></a></code></pre></div>
+<p>OK! Great. The reason for the empty element may not be immediately clear, but it makes more sense when we use them for folding with <a href="./posts/2018-12-03-typeclasses-foldable.markdown">Foldable</a>.</p>
+<p>What do we need to make something a <code>Monoid</code> then? 1. An operation for combining two values (called <code>mappend</code>) 2. An empty value to start from (called <code>mempty</code>)</p>
+<p>For strings the combining operation is our <code>concat</code> and our empty value is <code>&quot;&quot;</code>. The key observation here is that adding <code>&quot;&quot;</code> to the start or end of a string changes nothing about the string.</p>
+<h3 id="combining-lists">Combining Lists</h3>
+<h3 id="combining-numbers">Combining Numbers</h3>
+<h3 id="so-what-does-it-all-mean">So What Does It All Mean?</h3>
+<p>Further reading:</p>
+<p><a href="http://hackage.haskell.org/package/base-4.12.0.0/docs/Data-Monoid.html">Data.Monoid on Hackage</a></p>
+<p><a href="https://medium.com/@sjsyrek/five-minutes-to-monoid-fe6f364d0bba">5 minutes to Monoids</a></p>
+<p><a href="https://www.schoolofhaskell.com/user/mgsloan/monoids-tour">Monoids tour on School of Haskell</a></p>
+<h3 id="bonus-monoids-all-the-way-down">Bonus: Monoids All The Way Down</h3>
+<p>fsglslsdfgjkl</p>
+    </section>
+</article>
+
+    </main>
+
+    <footer>
+        Site proudly generated by
+        <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+    </footer>
+</body>
+
+</html>
