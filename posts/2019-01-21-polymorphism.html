@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - Why The Hell Should I Care About Polymorphism?</title>
+    <link rel="stylesheet" href="../css/default.css" />
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="../">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="../">Home</a>
+            <a href="../contact.html">Contact</a>
+            <a href="../archive.html">Archive</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        <h1>Why The Hell Should I Care About Polymorphism?</h1>
+        <article>
+    <section class="header">
+        Posted on January 21, 2019
+        
+        <div class="info">
+          
+          Tags: <a href="../tags/haskell.html">haskell</a>
+          
+        </div>
+    </section>
+    <section>
+        <p>Let’s talk about type signatures.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="ot">hello ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">String</span></a></code></pre></div>
+<p>Pretty clear what is going on, right? Seems fine. What about this lad?</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" title="1"><span class="ot">wtflol ::</span> (<span class="dt">Show</span> a, <span class="dt">Num</span> b) <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> (a, b)</a></code></pre></div>
+<p>That’s pretty unhelpful to be honest.</p>
+<p>What are these letters doing in our types when we wanted, well, types?</p>
+<p>Let’s work up from a simple one to a stupid one and maybe learn something along the way. Good? Great.</p>
+<h3 id="probably-the-worst-function-ever">Probably the worst function ever</h3>
+<p>Here is a type signature for a mysterious function:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" title="1"><span class="ot">spooky ::</span> a <span class="ot">-&gt;</span> a</a></code></pre></div>
+<p>Given any <code>a</code>, and knowing nothing about that <code>a</code>, what is the only thing that we can do with it?</p>
+<p>If you guessed “just return it”, then yes, you were right. It’s the classic <code>identity</code> function.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" title="1"><span class="ot">identity ::</span> a <span class="ot">-&gt;</span> a</a>
+<a class="sourceLine" id="cb4-2" title="2">identity a <span class="fu">=</span> a</a>
+<a class="sourceLine" id="cb4-3" title="3"><span class="co">-- identity 10 == 10</span></a></code></pre></div>
+<p>What do you think this function does?</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" title="1"><span class="ot">mystery ::</span> a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> a</a></code></pre></div>
+<p>Since we don’t know anything about <code>b</code>, and the function returns an <code>a</code>, then all we can do is ignore the <code>b</code> altogether. This is called the <code>const</code> function, and is used when we have to want to make a <code>map</code> function do not very much at all.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" title="1"><span class="fu">const</span><span class="ot"> ::</span> a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> a</a>
+<a class="sourceLine" id="cb6-2" title="2"><span class="fu">const</span> a _ <span class="fu">=</span> a</a>
+<a class="sourceLine" id="cb6-3" title="3"><span class="co">-- const &quot;dog&quot; 100 == &quot;dog&quot;</span></a></code></pre></div>
+<p>Hopefully the pattern you are seeing here is that if we know nothing about our variables, then there is actually very little we can do with them.</p>
+<h3 id="lists-of-mysterious-things">Lists of mysterious things</h3>
+<p>A place most people come across polymorphism quite early on in their Haskell careers is in stuff like lists. Instead of one function that works on <code>List String</code>, and another one <code>List Int</code>, and another on <code>List (Maybe Tuple (Int, String))</code> we can use polymorphism to act upon the structure of the list itself but not the items inside.</p>
+<p>With this in mind, and given that <code>[a]</code> means a <code>List</code> that is full of zero or more <code>a</code> values, what possible things could this function do to our <code>[a]</code>?</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" title="1"><span class="ot">thing ::</span> [a] <span class="ot">-&gt;</span> [a]</a></code></pre></div>
+<p>According to the function search engine <a href="https://www.haskell.org/hoogle/?hoogle=%5Ba%5D+-%3E+%5Ba%5D">Hoogle</a> - not a huge amount. It lists four functions that match this signature - and two of them throw exceptions if passed an empty list so they’re not the kind of functions that we like to spend our time with. This leaves:</p>
+<ol type="1">
+<li><p><code>cycle</code> - this repeats the list of values infinitely.</p></li>
+<li><p><code>reverse</code> - reverses the order of the list.</p></li>
+</ol>
+<p>The important thing is that since we don’t know anything about what the hell <code>a</code> is, all the functions can do is mess around with the ordering a bit, as is their right, I suppose. How can we find out more about these <code>a</code> and <code>b</code> values without concretely specifying what they are?</p>
+<h3 id="constraints">Constraints</h3>
+<p>If there’s anything going on before the <code>=&gt;</code> in a type signature, there’s a good chance it’s a <code>constraint</code>. These are rules that apply to each type they refer to. Here, we are using a constraint on <code>a</code>, that says “I don’t care what <code>a</code> is, so long as it has a <code>Show</code> instance”.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" title="1"><span class="ot">showTheList ::</span> <span class="dt">Show</span> a <span class="ot">=&gt;</span> [a] <span class="ot">-&gt;</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb8-2" title="2">showTheList []       <span class="fu">=</span> <span class="st">&quot;&quot;</span></a>
+<a class="sourceLine" id="cb8-3" title="3">showTheList (a <span class="fu">:</span> as) <span class="fu">=</span> <span class="fu">show</span> a <span class="fu">++</span> <span class="st">&quot;, &quot;</span> <span class="fu">++</span> showTheList as</a>
+<a class="sourceLine" id="cb8-4" title="4"><span class="co">-- showTheList [1,2,3] == &quot;1, 2, 3, &quot;</span></a></code></pre></div>
+<p>Therefore, the only thing we can really do to these <code>a</code> values is <code>show</code> them, as we don’t know anything else about it.</p>
+<p>We can do something similar with the <code>Num</code> typeclass (which is the typeclass of numbers).</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" title="1"><span class="ot">addStuffUp ::</span> <span class="dt">Num</span> a <span class="ot">=&gt;</span> [a] <span class="ot">-&gt;</span> a</a>
+<a class="sourceLine" id="cb9-2" title="2">addStuffUp []       <span class="fu">=</span> <span class="dv">0</span></a>
+<a class="sourceLine" id="cb9-3" title="3">addStuffUp (a <span class="fu">:</span> as) <span class="fu">=</span> a <span class="fu">+</span> addStuffUp as</a>
+<a class="sourceLine" id="cb9-4" title="4"><span class="co">-- addStuffUp [1,2,3] == 6</span></a></code></pre></div>
+<p>Here, the constraint means we don’t mind which kind of number we are passed - since they all implement <code>+</code> so we can add them together.</p>
+<p>We can have as many constraints as we like on our variables (often multiple ones on the same value, such as <code>(Show a, Ord a) =&gt;</code> for things that can be sorted and eventually turned into strings) - and can use any typeclass to do the restraining.</p>
+<p>I hope this makes sense. This started melting into something about IO testing, but I have decided to spin that into a separate post before this one spirals out of control, so let’s stop for now. Thanks.</p>
+<p>Make sense? If not, why not <a href="../contact.html">get in touch</a>?</p>
+<p>Further reading:</p>
+<p><a href="http://www.haskellforall.com/2015/10/polymorphism-for-dummies.html">Polymorphism for Dummies</a></p>
+<p><a href="http://andrew.gibiansky.com/blog/haskell/haskell-typeclasses/">Polymorphism in Haskell</a></p>
+    </section>
+</article>
+
+    </main>
+
+    <footer>
+        Site proudly generated by
+        <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+    </footer>
+</body>
+
+</html>
