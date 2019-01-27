@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - IO, IO, it's off to test we go</title>
+    <link rel="stylesheet" href="../css/default.css" />
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="../">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="../">Home</a>
+            <a href="../contact.html">Contact</a>
+            <a href="../archive.html">Archive</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        <h1>IO, IO, it's off to test we go</h1>
+        <article>
+    <section class="header">
+        Posted on January 27, 2019
+        
+        <div class="info">
+          
+          Tags: <a href="../tags/haskell.html">haskell</a>, <a href="../tags/testing.html">testing</a>
+          
+        </div>
+    </section>
+    <section>
+        <p>Let’s say we have a function that uses the <code>IO</code> monad that we want to test. Now you may be aware that <code>IO</code> is the place in which all the bad things happen that aren’t supposed to happen in Haskell. Things like <em>Database Connections</em>, and <em>Mutable Global Variables</em> and (worst of all) <em>Actual User Interactions</em>. It doesn’t bear thinking about to be honest.</p>
+<p>However, mock dramatics aside, <code>IO</code> is the part of our code where <em>Side Effects</em> happen, meaning stuff is a lot more difficult to write tests for, given our functions may not always return the things we expect them to. Last time, we spoke about <a href="../posts/2019-01-21-polymorphism.markdown">polymorphism</a> - and this seems like a nice opportunity to expand on that and use our new polymorphic powers to make some code easier to test.</p>
+<h3 id="contrived-example">Contrived example</h3>
+<p>Here is some code that uses <code>getCurrentTime</code> from the <code>Data.Time.Clock</code> library to fetch the current system time and then work out whether it is time to stop working and eat some lunch.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Time.Clock</span>     <span class="kw">as</span> <span class="dt">Clock</span></a>
+<a class="sourceLine" id="cb1-2" title="2"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Time.Calendar</span>  <span class="kw">as</span> <span class="dt">Cal</span></a>
+<a class="sourceLine" id="cb1-3" title="3"><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Time.LocalTime</span> <span class="kw">as</span> <span class="dt">Time</span></a>
+<a class="sourceLine" id="cb1-4" title="4"></a>
+<a class="sourceLine" id="cb1-5" title="5"><span class="ot">getHour ::</span> <span class="dt">Clock.UTCTime</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb1-6" title="6">getHour <span class="fu">=</span> Time.todHour</a>
+<a class="sourceLine" id="cb1-7" title="7">        <span class="fu">.</span> Time.timeToTimeOfDay</a>
+<a class="sourceLine" id="cb1-8" title="8">        <span class="fu">.</span> Clock.utctDayTime</a>
+<a class="sourceLine" id="cb1-9" title="9"></a>
+<a class="sourceLine" id="cb1-10" title="10"><span class="ot">isItLunchTime ::</span> <span class="dt">IO</span> <span class="dt">Bool</span></a>
+<a class="sourceLine" id="cb1-11" title="11">isItLunchTime</a>
+<a class="sourceLine" id="cb1-12" title="12">  <span class="fu">=</span> lunchCheck <span class="fu">&lt;$&gt;</span> getHour <span class="fu">&lt;$&gt;</span> Clock.getCurrentTime</a>
+<a class="sourceLine" id="cb1-13" title="13">    <span class="kw">where</span></a>
+<a class="sourceLine" id="cb1-14" title="14">      lunchCheck hr <span class="fu">=</span> hr <span class="fu">&gt;=</span> <span class="dv">12</span> <span class="fu">&amp;&amp;</span> hr <span class="fu">&lt;=</span> <span class="dv">14</span></a></code></pre></div>
+<p>The <code>getHour</code> function is a simple pure function helper - mainly we’ll be looking at <code>isItLunchTime</code>. Let’s look at the type signature again:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" title="1"><span class="ot">isItLunchTime ::</span> <span class="dt">IO</span> <span class="dt">Bool</span></a></code></pre></div>
+<p>This function has no inputs, and the <code>IO Bool</code> return type means that it will return <code>True</code> or <code>False</code>, wrapped in the <code>IO</code> type to remind us that evil has been done and the gods of referential transparency have not been appeased.</p>
+<p>If you are thinking something like “can we not just extract the pure functions, test those, and not bother about the rest?”, then Don’t Read On because although that’s Not A Terrible Idea we’re absolutely Not Doing That.</p>
+<h3 id="injection-based-solution">Injection-based solution</h3>
+<p>In other languages, the solution to making stuff more testable is to use <code>Dependency Injection</code> to pass in any functions that use side effects, allowing mock versions to be passed in when testing.</p>
+<p>This version of the function lets us pass in a time fetching function (such as <code>getCurrentTime</code>) instead.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" title="1"><span class="ot">injectableLunch ::</span> <span class="dt">IO</span> <span class="dt">Clock.UTCTime</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Bool</span></a>
+<a class="sourceLine" id="cb3-2" title="2">injectableLunch getCurrentTime</a>
+<a class="sourceLine" id="cb3-3" title="3">  <span class="fu">=</span> lunchCheck <span class="fu">&lt;$&gt;</span> getHour <span class="fu">&lt;$&gt;</span> getCurrentTime</a>
+<a class="sourceLine" id="cb3-4" title="4">    <span class="kw">where</span></a>
+<a class="sourceLine" id="cb3-5" title="5">      lunchCheck hr <span class="fu">=</span> hr <span class="fu">&gt;=</span> <span class="dv">12</span> <span class="fu">&amp;&amp;</span> hr <span class="fu">&lt;=</span> <span class="dv">14</span></a></code></pre></div>
+<p>Now, instead of calling <code>isItLunchTime</code>, we’d call <code>injectableLunch Clock.getCurrentTime</code>. It’s still not much more testable though because of that <code>IO</code> though. Does it need to be <code>IO</code> though? What if we generalise the type signature though? Instead of <code>IO</code>, let’s just use any old <code>Monad</code> and see if that works.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" title="1"><span class="ot">testableLunch ::</span> (<span class="dt">Monad</span> m) <span class="ot">=&gt;</span> m <span class="dt">Clock.UTCTime</span> <span class="ot">-&gt;</span> m <span class="dt">Bool</span></a>
+<a class="sourceLine" id="cb4-2" title="2">testableLunch getCurrentTime</a>
+<a class="sourceLine" id="cb4-3" title="3">  <span class="fu">=</span> lunchCheck <span class="fu">&lt;$&gt;</span> getHour <span class="fu">&lt;$&gt;</span> getCurrentTime</a>
+<a class="sourceLine" id="cb4-4" title="4">    <span class="kw">where</span></a>
+<a class="sourceLine" id="cb4-5" title="5">      lunchCheck hr <span class="fu">=</span> hr <span class="fu">&gt;=</span> <span class="dv">12</span> <span class="fu">&amp;&amp;</span> hr <span class="fu">&lt;=</span> <span class="dv">14</span></a></code></pre></div>
+<p>Because we’re not actually running any functions that require the <code>IO</code> monad (ie, <code>readFile</code>, <code>putStrLn</code>) any monad is totally fine for this function. So long as the Monad <code>m</code> of our passed in time-getting function matches the Monad <code>m</code> of the return value, then this function is having a Great Time.</p>
+<p>As a slight detour, let’s make some fake <code>UTCTime</code> values for testing:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" title="1"><span class="ot">baseTestTime ::</span> <span class="dt">Clock.UTCTime</span></a>
+<a class="sourceLine" id="cb5-2" title="2">baseTestTime</a>
+<a class="sourceLine" id="cb5-3" title="3">  <span class="fu">=</span> <span class="dt">Clock.UTCTime</span></a>
+<a class="sourceLine" id="cb5-4" title="4">      { Clock.utctDay     <span class="fu">=</span> <span class="dt">Cal.ModifiedJulianDay</span> <span class="dv">12000</span></a>
+<a class="sourceLine" id="cb5-5" title="5">      , Clock.utctDayTime <span class="fu">=</span> <span class="dv">0</span></a>
+<a class="sourceLine" id="cb5-6" title="6">      }</a>
+<a class="sourceLine" id="cb5-7" title="7"></a>
+<a class="sourceLine" id="cb5-8" title="8"><span class="ot">lunchTestTime ::</span> <span class="dt">Clock.UTCTime</span></a>
+<a class="sourceLine" id="cb5-9" title="9">lunchTestTime</a>
+<a class="sourceLine" id="cb5-10" title="10">  <span class="fu">=</span> baseTestTime { Clock.utctDayTime <span class="fu">=</span> <span class="dv">44000</span> }</a></code></pre></div>
+<p>Excellent. What a nice couple of examples. For more information about what these do, check out the <a href="http://hackage.haskell.org/package/time-1.9.2">time</a> library.</p>
+<p>Now we have some test values, we can then make functions to test our <code>testableLunch</code> function with a safer Monad like <code>Identity</code>. <code>Identity</code> is the Do Nothing monad, it has no special characteristics and does nothing for any particular interest.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" title="1"><span class="ot">testNotLunch ::</span> <span class="dt">Identity</span> <span class="dt">Bool</span></a>
+<a class="sourceLine" id="cb6-2" title="2">testNotLunch <span class="fu">=</span> testableLunch (<span class="fu">pure</span> baseTestTime)</a>
+<a class="sourceLine" id="cb6-3" title="3"><span class="co">-- Identity False</span></a></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" title="1"><span class="ot">testIsLunch ::</span> <span class="dt">Identity</span> <span class="dt">Bool</span></a>
+<a class="sourceLine" id="cb7-2" title="2">testIsLunch <span class="fu">=</span> testableLunch (<span class="fu">pure</span> lunchTestTime)</a>
+<a class="sourceLine" id="cb7-3" title="3"><span class="co">-- Identity True</span></a></code></pre></div>
+<p>(What’s <code>pure</code>? It’s just a function that wraps a value inside the default Monad context, so in this case, turns <code>&quot;dog&quot;</code> into <code>Identity &quot;dog&quot;</code> etc)</p>
+<p>Then when we want to export the function for use with <code>IO</code>, we can export this:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" title="1"><span class="ot">isItLunchTime3 ::</span> <span class="dt">IO</span> <span class="dt">Bool</span></a>
+<a class="sourceLine" id="cb8-2" title="2">isItLunchTime3 <span class="fu">=</span> testableLunch Clock.getCurrentTime</a></code></pre></div>
+<p>Seems pretty OK. What about a more idiomatic Haskell approach using our pal typeclasses?</p>
+<h3 id="testing-io-with-a-typeclass">Testing IO with a typeclass</h3>
+<p>Another way to do this is capture the idea of “Monad That Knows What The Time Is” using a typeclass.</p>
+<p>Let’s call ours <code>MonadTime</code>, because we lack imagination:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" title="1"><span class="kw">class</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> <span class="dt">MonadTime</span> m <span class="kw">where</span></a>
+<a class="sourceLine" id="cb9-2" title="2"><span class="ot">  getTheTimePlease ::</span> m <span class="dt">Clock.UTCTime</span></a></code></pre></div>
+<p>Note the constraint - we can only make instances of <code>MonadTime</code> for things that are already an instance of <code>Monad</code>. By writing instances of <code>MonadTime</code> for <code>IO</code> and <code>Identity</code>, we can tell Haskell what to do when it’s asked for the time.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" title="1"><span class="kw">instance</span> <span class="dt">MonadTime</span> <span class="dt">Identity</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb10-2" title="2">  getTheTimePlease <span class="fu">=</span> <span class="fu">pure</span> lunchTestTime</a>
+<a class="sourceLine" id="cb10-3" title="3"></a>
+<a class="sourceLine" id="cb10-4" title="4"><span class="kw">instance</span> <span class="dt">MonadTime</span> <span class="dt">IO</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb10-5" title="5">  getTheTimePlease <span class="fu">=</span> Clock.getCurrentTime</a></code></pre></div>
+<p><code>Identity</code> will return a static value, and <code>IO</code> will use the actual function.</p>
+<p>Here’s our new version of the lunch function. Notice we’ve changed our constraint from <code>Monad m</code></p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" title="1"><span class="ot">classyLunch ::</span> (<span class="dt">MonadTime</span> m) <span class="ot">=&gt;</span> m <span class="dt">Bool</span></a>
+<a class="sourceLine" id="cb11-2" title="2">classyLunch</a>
+<a class="sourceLine" id="cb11-3" title="3">  <span class="fu">=</span> lunchCheck <span class="fu">&lt;$&gt;</span> getHour <span class="fu">&lt;$&gt;</span> getTheTimePlease</a>
+<a class="sourceLine" id="cb11-4" title="4">    <span class="kw">where</span></a>
+<a class="sourceLine" id="cb11-5" title="5">      lunchCheck hr <span class="fu">=</span> hr <span class="fu">&gt;=</span> <span class="dv">12</span> <span class="fu">&amp;&amp;</span> hr <span class="fu">&lt;=</span> <span class="dv">14</span></a></code></pre></div>
+<p>Now, depending on the context in which we use <code>classyLunch</code>, it’ll do different things.</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" title="1"><span class="ot">testClassyLunch ::</span> <span class="dt">Identity</span> <span class="dt">Bool</span></a>
+<a class="sourceLine" id="cb12-2" title="2">testClassyLunch <span class="fu">=</span> classyLunch</a>
+<a class="sourceLine" id="cb12-3" title="3"></a>
+<a class="sourceLine" id="cb12-4" title="4"><span class="ot">ioClassyLunch ::</span> <span class="dt">IO</span> <span class="dt">Bool</span></a>
+<a class="sourceLine" id="cb12-5" title="5">ioClassyLunch <span class="fu">=</span> classyLunch</a></code></pre></div>
+<p>Hooray! Our contrived function is now testable and also ready for production. Great stuff.</p>
+<p>This concept of different typeclasses for Monads is a key part of what is called <code>mtl</code> style of code, which we will come to once we’ve looked at Monad Transformers.</p>
+<p>Further reading:</p>
+<p><a href="http://hackage.haskell.org/package/time-1.9.2">Time library</a></p>
+<p><a href="https://commentedcode.org/blog/2017/08/21/better-io-testing-through-monads/">Better IO testing through Monads</a></p>
+    </section>
+</article>
+
+    </main>
+
+    <footer>
+        Site proudly generated by
+        <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+    </footer>
+</body>
+
+</html>
