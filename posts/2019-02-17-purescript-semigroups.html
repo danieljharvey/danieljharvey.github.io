@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - A game in Purescript (Part 1 - Semigroups)</title>
+    <link rel="stylesheet" href="../css/default.css" />
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="../">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="../">Home</a>
+            <a href="../contact.html">Contact</a>
+            <a href="../archive.html">Archive</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        <h1>A game in Purescript (Part 1 - Semigroups)</h1>
+        <article>
+    <section class="header">
+        Posted on February 17, 2019
+        
+        <div class="info">
+          
+          Tags: <a href="../tags/purescript.html">purescript</a>, <a href="../tags/semigroup.html">semigroup</a>, <a href="../tags/monoid.html">monoid</a>
+          
+        </div>
+    </section>
+    <section>
+        <p>Hello! I hope you are well. It has been a little while between posts as I keep starting things and then not finishing them.</p>
+<p>My most recent distraction has been remaking a game that I wrote a year or two back called <a href="http://itistheegg.com/">It Is The Egg</a>, which is an HTML canvas game where eggs roll around and generally have a nice time. I wanted to add more levels and features but I have no strong desire to write Typescript in my free time, so I have made the somewhat foolish and time-sucking decision to port it over to Purescript.</p>
+<figure>
+<img src="../images/it-is-the-egg.png" title="The original game in it's full glory" alt="The original game in it’s full glory." /><figcaption>The original game in it’s full glory.</figcaption>
+</figure>
+<p>So far I’ve learned a few things, listed thus:</p>
+<ol type="1">
+<li>Rewriting an entire game takes a while actually.</li>
+<li>Using Purescript means about 30% of the LOC it took in Typescript</li>
+<li>A lot of the problems have already been solved by other people</li>
+<li>Abstractions are helpful</li>
+</ol>
+<p>Anyhow, I figured concrete useful examples are the most difficult thing to find when explaining functional programming, and since I stumbled across a few in this process I figured I’d share some. Today I’m going to example how to describe positions and movement using a <code>semigroup</code>.</p>
+<p>Meaningless? Possibly! Perhaps some examples…</p>
+<p>So we have a <code>Player</code> type - it describes one of the eggs onscreen. The eggs have a <code>position</code> onscreen, and a <code>direction</code> that they are currently moving in.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="kw">type</span> <span class="dt">Player</span></a>
+<a class="sourceLine" id="cb1-2" title="2">  <span class="fu">=</span> {<span class="ot"> position  ::</span> <span class="dt">Coord</span></a>
+<a class="sourceLine" id="cb1-3" title="3">    ,<span class="ot"> direction ::</span> <span class="dt">Coord</span></a>
+<a class="sourceLine" id="cb1-4" title="4">    }</a></code></pre></div>
+<p>This is the <code>Coord</code> type. The eagle-eyed might notice it’s a <code>newtype</code> rather than a <code>type</code> - the reason for this will be explained shortly.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" title="1"><span class="kw">newtype</span> <span class="dt">Coord</span> <span class="fu">=</span> <span class="dt">Coord</span></a>
+<a class="sourceLine" id="cb2-2" title="2">    {<span class="ot"> x       ::</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb2-3" title="3">    ,<span class="ot"> y       ::</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb2-4" title="4">    ,<span class="ot"> offsetX ::</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb2-5" title="5">    ,<span class="ot"> offsetY ::</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb2-6" title="6">    }</a></code></pre></div>
+<p>The game board is a grid, so <code>position</code> is a <code>Coord</code> where <code>x</code> and <code>y</code> describe the current square the <code>Player</code> is in, and any movement away from the center is described by <code>offsetX</code> and <code>offsetY</code>. Once a players <code>position</code> offset goes over a certain boundary, we increase or decrease <code>x</code> or <code>y</code> and set <code>offsetX</code> or <code>offsetY</code> back to zero.</p>
+<p>The <code>position</code> for the pink egg in the above screenshot would look something like this:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" title="1"><span class="ot">position ::</span> <span class="dt">Coord</span></a>
+<a class="sourceLine" id="cb3-2" title="2">position</a>
+<a class="sourceLine" id="cb3-3" title="3">  <span class="fu">=</span> <span class="dt">Coord</span> { x<span class="fu">:</span>       <span class="dv">3</span></a>
+<a class="sourceLine" id="cb3-4" title="4">          , y<span class="fu">:</span>       <span class="dv">2</span></a>
+<a class="sourceLine" id="cb3-5" title="5">          , offsetX<span class="fu">:</span> <span class="dv">0</span></a>
+<a class="sourceLine" id="cb3-6" title="6">          , offsetY<span class="fu">:</span> <span class="dv">32</span></a>
+<a class="sourceLine" id="cb3-7" title="7">          }</a></code></pre></div>
+<p>The <code>direction</code> is also a <code>Coord</code>, where we use <code>x</code> and <code>y</code> to express which direction the player is headed. Our pink egg above is falling downwards, which would look like this:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" title="1"><span class="ot">falling ::</span> <span class="dt">Coord</span></a>
+<a class="sourceLine" id="cb4-2" title="2">falling</a>
+<a class="sourceLine" id="cb4-3" title="3">  <span class="fu">=</span> <span class="dt">Coord</span> { x<span class="fu">:</span> <span class="dv">0</span></a>
+<a class="sourceLine" id="cb4-4" title="4">          , y<span class="fu">:</span> <span class="dv">1</span></a>
+<a class="sourceLine" id="cb4-5" title="5">          , offsetX<span class="fu">:</span> <span class="dv">0</span></a>
+<a class="sourceLine" id="cb4-6" title="6">          , offsetY<span class="fu">:</span> <span class="dv">0</span></a>
+<a class="sourceLine" id="cb4-7" title="7">          }</a></code></pre></div>
+<p>The <code>offsetX</code> and <code>offsetY</code> don’t really have much use in this context, but that’s fine.</p>
+<p>So what’s the use in expressing two slightly different things in the same data type and also what about that <code>newtype</code> and why have we not mentioned <code>semigroup</code> yet?</p>
+<p>An abridged version of each game turn goes as follows.</p>
+<ol type="1">
+<li>Look around to see if we are still able to move in direction we want to</li>
+<li>If not, change direction</li>
+<li>Move the player in whichever direction we’re now decided on</li>
+</ol>
+<h3 id="looking-around-the-board">Looking around the board</h3>
+<p>OK. So firstly we need to check around the board to see if we are allowed to carry on moving where we are moving. Without going into the whole mechanics of the game board, let’s say we have a function that tells us whether a certain <code>Coord</code> on the board is a place we are allowed to go.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" title="1"><span class="ot">canMove ::</span> <span class="dt">Coord</span> <span class="ot">-&gt;</span> <span class="dt">Boolean</span></a></code></pre></div>
+<p>What this function does is none of our business at this point - all we need to know is whether the square we intend to move into is happy with our decision to do so.</p>
+<p>My first implementation followed the original logic and looked something like this:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" title="1"><span class="ot">canIMoveNext ::</span> <span class="dt">Player</span> <span class="ot">-&gt;</span> <span class="dt">Boolean</span></a>
+<a class="sourceLine" id="cb6-2" title="2">canIMoveNext player<span class="fu">@</span>{ position<span class="fu">:</span> <span class="dt">Coord</span> pos, direction<span class="fu">:</span> <span class="dt">Coord</span> dir }</a>
+<a class="sourceLine" id="cb6-3" title="3">  <span class="fu">|</span> dir<span class="fu">.</span>x <span class="fu">&lt;</span> <span class="dv">0</span> <span class="fu">=</span> canMove ( <span class="dt">Coord</span> <span class="fu">$</span> pos { x <span class="fu">=</span> pos<span class="fu">.</span>x <span class="fu">-</span> <span class="dv">1</span> } )</a>
+<a class="sourceLine" id="cb6-4" title="4">  <span class="fu">|</span> dir<span class="fu">.</span>x <span class="fu">&gt;</span> <span class="dv">0</span> <span class="fu">=</span> canMove ( <span class="dt">Coord</span> <span class="fu">$</span> pos { x <span class="fu">=</span> pos<span class="fu">.</span>x <span class="fu">+</span> <span class="dv">1</span> } )</a>
+<a class="sourceLine" id="cb6-5" title="5">  <span class="fu">|</span> dir<span class="fu">.</span>y <span class="fu">&lt;</span> <span class="dv">0</span> <span class="fu">=</span> canMove ( <span class="dt">Coord</span> <span class="fu">$</span> pos { y <span class="fu">=</span> pos<span class="fu">.</span>y <span class="fu">-</span> <span class="dv">1</span> } )</a>
+<a class="sourceLine" id="cb6-6" title="6">  <span class="fu">|</span> dir<span class="fu">.</span>y <span class="fu">&gt;</span> <span class="dv">0</span> <span class="fu">=</span> canMove ( <span class="dt">Coord</span> <span class="fu">$</span> pos { y <span class="fu">=</span> pos<span class="fu">.</span>y <span class="fu">+</span> <span class="dv">1</span> } )</a>
+<a class="sourceLine" id="cb6-7" title="7">  <span class="fu">|</span> <span class="fu">otherwise</span>       <span class="fu">=</span> true</a></code></pre></div>
+<p>“If we are moving left then look to the current square but with x reduced once but if we’re looking right then look to the current square but with x increased but if we’re looking up….”.</p>
+<p>Quite a laborious thing to read really, and it says nothing of it’s intentions.</p>
+<p>(If you are not familiar with <code>guard</code> syntax, think of this as very similar to <code>select case</code> statement in Javascript.)</p>
+<h3 id="stand-back-i-am-going-to-use-maths.">Stand back, I am going to use Maths.</h3>
+<p>OK, so we made that <code>Coord</code> a <code>newtype</code> for a reason right? Let’s add some typeclass instances to it and get it working for us for a change.</p>
+<p>First we must please the gods of boilerplate by deriving some standard instances of <code>Eq</code>, <code>Ord</code> and <code>Show</code>. Purescript needs this to be a little more explicit that Haskell does, sadly.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" title="1">derive <span class="kw">newtype</span> <span class="kw">instance</span><span class="ot"> eqCoord ::</span> <span class="dt">Eq</span> <span class="dt">Coord</span></a>
+<a class="sourceLine" id="cb7-2" title="2">derive <span class="kw">newtype</span> <span class="kw">instance</span><span class="ot"> ordCoord ::</span> <span class="dt">Ord</span> <span class="dt">Coord</span></a>
+<a class="sourceLine" id="cb7-3" title="3">derive <span class="kw">newtype</span> <span class="kw">instance</span><span class="ot"> showCoord ::</span> <span class="dt">Show</span> <span class="dt">Coord</span></a></code></pre></div>
+<p><code>derive newtype instance</code> means “You know how you’re a <code>newtype</code> wrapped around something, can you just copy whatever the thing inside does? Ace, thanks.”</p>
+<p>This means we can now compare and order things, which is helpful although not the main point here.</p>
+<p>Let’s define a <code>semigroup</code>!</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" title="1"><span class="kw">instance</span><span class="ot"> semigroupCoord ::</span> <span class="dt">Semigroup</span> <span class="dt">Coord</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb8-2" title="2">  append (<span class="dt">Coord</span> <span class="fu">fst</span>) (<span class="dt">Coord</span> <span class="fu">snd</span>)</a>
+<a class="sourceLine" id="cb8-3" title="3">    <span class="fu">=</span> <span class="dt">Coord</span> { x<span class="fu">:</span> <span class="fu">fst.</span>x <span class="fu">+</span> <span class="fu">snd.</span>x</a>
+<a class="sourceLine" id="cb8-4" title="4">            , y<span class="fu">:</span> <span class="fu">fst.</span>y <span class="fu">+</span> <span class="fu">snd.</span>y</a>
+<a class="sourceLine" id="cb8-5" title="5">            , offsetX<span class="fu">:</span> <span class="fu">fst.</span>offsetX <span class="fu">+</span> <span class="fu">snd.</span>offsetX</a>
+<a class="sourceLine" id="cb8-6" title="6">            , offsetY<span class="fu">:</span> <span class="fu">fst.</span>offsetY <span class="fu">+</span> <span class="fu">snd.</span>offsetY</a>
+<a class="sourceLine" id="cb8-7" title="7">            }</a></code></pre></div>
+<p>(Notice that unlike Haskell, Purescript likes us to give our instances names, hence we have chosen the olympically dull <code>semigroupCoord</code>. It could be <code>pintsOfCream</code> or <code>indepedenceDayIsPrettyUnderatedAsFarAsBlockbustersGo</code>, go absolutely wild if you like.)</p>
+<p>So what does this <code>append</code> function we have defined do then?</p>
+<p>It takes two <code>Coord</code> values (<code>fst</code> and <code>snd</code> in this case) - adds up <code>x</code>, <code>y</code>, <code>offsetX</code> and <code>offsetY</code> - then makes and returns a new <code>Coord</code>. Therefore we can do stuff like add a <code>position</code> and a <code>direction</code> together.</p>
+<p>In the above example of our pink egg, and our <code>position</code> and <code>falling</code> values defined above, we can check whether we’re OK to keep falling downwards as such.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" title="1"><span class="ot">canIMoveDown ::</span> <span class="dt">Boolean</span></a>
+<a class="sourceLine" id="cb9-2" title="2">canIMoveDown <span class="fu">=</span> canMove (position <span class="fu">&lt;&gt;</span> falling)</a>
+<a class="sourceLine" id="cb9-3" title="3"><span class="co">-- canIMoveDown == true (according to the picture)</span></a></code></pre></div>
+<p>(Note we’re using <code>&lt;&gt;</code> which is another name for the <code>append</code> function, we could just as easily have written <code>canMove (append position falling)</code> but I think the little <code>&lt;&gt;</code> looks nicer.)</p>
+<h3 id="looking-around-the-board-with-maths">Looking around the board with Maths</h3>
+<p>Back to our implementation of <code>canIMoveNext</code>, here is the new version that combines our player’s <code>direction</code> and <code>position</code> in a nice tidy way.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" title="1"><span class="ot">canIMoveTwo ::</span> <span class="dt">Player</span> <span class="ot">-&gt;</span> <span class="dt">Boolean</span></a>
+<a class="sourceLine" id="cb10-2" title="2">canIMoveTwo player</a>
+<a class="sourceLine" id="cb10-3" title="3">  <span class="fu">=</span> canMove (player<span class="fu">.</span>position <span class="fu">&lt;&gt;</span> player<span class="fu">.</span>direction)</a></code></pre></div>
+<p>Nice.</p>
+<h3 id="changing-direction">Changing direction</h3>
+<p>What if our egg hits a wall or something? What should we do then? It should be as easy as reversing the <code>direction</code>, right?</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" title="1"><span class="ot">invert ::</span> <span class="dt">Coord</span> <span class="ot">-&gt;</span> <span class="dt">Coord</span></a>
+<a class="sourceLine" id="cb11-2" title="2">invert (<span class="dt">Coord</span> coord)</a>
+<a class="sourceLine" id="cb11-3" title="3">  <span class="fu">=</span> <span class="dt">Coord</span> { x<span class="fu">:</span> (<span class="fu">-</span><span class="dv">1</span>) <span class="fu">*</span> coord<span class="fu">.</span>x</a>
+<a class="sourceLine" id="cb11-4" title="4">          , y<span class="fu">:</span> (<span class="fu">-</span><span class="dv">1</span>) <span class="fu">*</span> coord<span class="fu">.</span>y</a>
+<a class="sourceLine" id="cb11-5" title="5">          , offsetX<span class="fu">:</span> (<span class="fu">-</span><span class="dv">1</span>) <span class="fu">*</span> coord<span class="fu">.</span>offsetX</a>
+<a class="sourceLine" id="cb11-6" title="6">          , offsetY<span class="fu">:</span> (<span class="fu">-</span><span class="dv">1</span>) <span class="fu">*</span> coord<span class="fu">.</span>offsetY</a>
+<a class="sourceLine" id="cb11-7" title="7">          }</a></code></pre></div>
+<p>Therefore we can use it on our player like thus:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" title="1"><span class="ot">turnAround ::</span> <span class="dt">Player</span> <span class="ot">-&gt;</span> <span class="dt">Player</span></a>
+<a class="sourceLine" id="cb12-2" title="2">turnAround player</a>
+<a class="sourceLine" id="cb12-3" title="3">  <span class="fu">=</span> player { direction <span class="fu">=</span> invert player<span class="fu">.</span>direction }</a></code></pre></div>
+<p>And wrap up the entire logic for the turn like this:</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb13-1" title="1"><span class="ot">updateDirection ::</span> <span class="dt">Player</span> <span class="ot">-&gt;</span> <span class="dt">Player</span></a>
+<a class="sourceLine" id="cb13-2" title="2">updateDirection player</a>
+<a class="sourceLine" id="cb13-3" title="3">  <span class="fu">=</span> <span class="kw">if</span> canMove player<span class="fu">.</span>position</a>
+<a class="sourceLine" id="cb13-4" title="4">    <span class="kw">then</span> player</a>
+<a class="sourceLine" id="cb13-5" title="5">    <span class="kw">else</span> turnAround player</a></code></pre></div>
+<p>(Readers with a keen eye will notice we did not use anything particularly clever or typeclass based here, I just included it for completeness.)</p>
+<figure>
+<img src="../images/eggy2.png" title="Another screenshot of the original game to break up the large amount of text." alt="Another screenshot of the original game to break up the large amount of text." /><figcaption>Another screenshot of the original game to break up the large amount of text.</figcaption>
+</figure>
+<h3 id="actually-moving-that-egg-around">Actually moving that egg around</h3>
+<p>Let’s get back to moving the egg around. Once we’ve worked out that our egg is moving somewhere it is allowed to, we need to actually update the <code>offsetX</code> and <code>offsetY</code> in it’s <code>position</code> so that’s in the new location and ready to go through all this hell again. As web browsers are flaky at best, instead of moving by a set amount the actually amount to increment the change depends on how much time has passed since the last frame. Therefore we need a function that takes the amount to move and a <code>Player</code>, and returns a new <code>Player</code> that has moved in some way.</p>
+<p>Here, in a similar manner to our earlier function, is something like my original painful version.</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" title="1"><span class="ot">incrementPlayerPosition ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Player</span> <span class="ot">-&gt;</span> <span class="dt">Player</span></a>
+<a class="sourceLine" id="cb14-2" title="2">incrementPlayerPosition moveAmount player<span class="fu">@</span>{ position<span class="fu">:</span> <span class="dt">Coord</span> pos, direction<span class="fu">:</span> <span class="dt">Coord</span> dir }</a>
+<a class="sourceLine" id="cb14-3" title="3">  <span class="fu">=</span> player { position <span class="fu">=</span> newPosition }</a>
+<a class="sourceLine" id="cb14-4" title="4">  <span class="kw">where</span></a>
+<a class="sourceLine" id="cb14-5" title="5">    newPosition</a>
+<a class="sourceLine" id="cb14-6" title="6">      <span class="fu">|</span> dir<span class="fu">.</span>x <span class="fu">&lt;</span> <span class="dv">0</span> <span class="fu">=</span> <span class="dt">Coord</span> <span class="fu">$</span> pos { offsetX <span class="fu">=</span> pos<span class="fu">.</span>offsetX <span class="fu">-</span> moveAmount }</a>
+<a class="sourceLine" id="cb14-7" title="7">      <span class="fu">|</span> dir<span class="fu">.</span>x <span class="fu">&gt;</span> <span class="dv">0</span> <span class="fu">=</span> <span class="dt">Coord</span> <span class="fu">$</span> pos { offsetX <span class="fu">=</span> pos<span class="fu">.</span>offsetX <span class="fu">+</span> moveAmount }</a>
+<a class="sourceLine" id="cb14-8" title="8">      <span class="fu">|</span> dir<span class="fu">.</span>y <span class="fu">&lt;</span> <span class="dv">0</span> <span class="fu">=</span> <span class="dt">Coord</span> <span class="fu">$</span> pos { offsetY <span class="fu">=</span> pos<span class="fu">.</span>offsetY <span class="fu">-</span> moveAmount }</a>
+<a class="sourceLine" id="cb14-9" title="9">      <span class="fu">|</span> dir<span class="fu">.</span>y <span class="fu">&gt;</span> <span class="dv">0</span> <span class="fu">=</span> <span class="dt">Coord</span> <span class="fu">$</span> pos { offsetY <span class="fu">=</span> pos<span class="fu">.</span>offsetY <span class="fu">+</span> moveAmount }</a>
+<a class="sourceLine" id="cb14-10" title="10">      <span class="fu">|</span> <span class="fu">otherwise</span> <span class="fu">=</span> <span class="dt">Coord</span> pos</a></code></pre></div>
+<p>It should work but it’s a bit terrifying. Let’s break it up and get some of that sweet <code>semigroup</code> magic working for us.</p>
+<p>Firstly, a helper function - this takes an <code>Int</code> and a <code>Coord</code> and creates a new <code>Coord</code> that describes the movement we want the egg to do.</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb15-1" title="1"><span class="ot">createMoveCoord ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Coord</span> <span class="ot">-&gt;</span> <span class="dt">Coord</span></a>
+<a class="sourceLine" id="cb15-2" title="2">createMoveCoord amount (<span class="dt">Coord</span> coord)</a>
+<a class="sourceLine" id="cb15-3" title="3">  <span class="fu">=</span> <span class="dt">Coord</span> { x<span class="fu">:</span> <span class="dv">0</span></a>
+<a class="sourceLine" id="cb15-4" title="4">          , y<span class="fu">:</span> <span class="dv">0</span></a>
+<a class="sourceLine" id="cb15-5" title="5">          , offsetX<span class="fu">:</span> amount <span class="fu">*</span> coord<span class="fu">.</span>x</a>
+<a class="sourceLine" id="cb15-6" title="6">          , offsetY<span class="fu">:</span> amount <span class="fu">*</span> coord<span class="fu">.</span>y</a>
+<a class="sourceLine" id="cb15-7" title="7">          }</a></code></pre></div>
+<p>Therefore if we take the <code>falling</code> value from earlier, and a moving amount of <code>20</code>, it would create something like this:</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb16-1" title="1"><span class="ot">downMove ::</span> <span class="dt">Coord</span></a>
+<a class="sourceLine" id="cb16-2" title="2">downMove</a>
+<a class="sourceLine" id="cb16-3" title="3">  <span class="fu">=</span> <span class="dt">Coord</span> { x<span class="fu">:</span> <span class="dv">0</span></a>
+<a class="sourceLine" id="cb16-4" title="4">          , y<span class="fu">:</span> <span class="dv">0</span></a>
+<a class="sourceLine" id="cb16-5" title="5">          , offsetX<span class="fu">:</span> <span class="dv">0</span></a>
+<a class="sourceLine" id="cb16-6" title="6">          , offsetY<span class="fu">:</span> <span class="dv">20</span></a>
+<a class="sourceLine" id="cb16-7" title="7">          }</a></code></pre></div>
+<p>With our helpful helper function in hand, and a dash of <code>&lt;&gt;</code>, we can now rewrite our move function like thus:</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb17-1" title="1"><span class="ot">incrementPlayerDirection ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Player</span> <span class="ot">-&gt;</span> <span class="dt">Player</span></a>
+<a class="sourceLine" id="cb17-2" title="2">incrementPlayerDirection amount player</a>
+<a class="sourceLine" id="cb17-3" title="3">  <span class="fu">=</span> player { position <span class="fu">=</span> newPosition }</a>
+<a class="sourceLine" id="cb17-4" title="4">  <span class="kw">where</span></a>
+<a class="sourceLine" id="cb17-5" title="5"><span class="ot">    newPosition ::</span> <span class="dt">Coord</span></a>
+<a class="sourceLine" id="cb17-6" title="6">    newPosition</a>
+<a class="sourceLine" id="cb17-7" title="7">      <span class="fu">=</span> player<span class="fu">.</span>position <span class="fu">&lt;&gt;</span> moveCoord</a>
+<a class="sourceLine" id="cb17-8" title="8"></a>
+<a class="sourceLine" id="cb17-9" title="9"><span class="ot">    moveCoord ::</span> <span class="dt">Coord</span></a>
+<a class="sourceLine" id="cb17-10" title="10">    moveCoord</a>
+<a class="sourceLine" id="cb17-11" title="11">      <span class="fu">=</span> createMoveCoord amount player<span class="fu">.</span>direction</a></code></pre></div>
+<p>So here we’re creating a <code>Coord</code> for the movement (called <code>moveCoord</code>) - and then using the <code>&lt;&gt;</code> function to combine it with the current <code>position</code> to make a new <code>Coord</code> called <code>newPosition</code>, and then making a new <code>Player</code> with that <code>position</code>.</p>
+<h3 id="putting-it-all-together">Putting it all together</h3>
+<p>Now we’ve created all our functions, we can plop them together like this to do the whole move:</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb18-1" title="1"><span class="ot">doMove ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Player</span> <span class="ot">-&gt;</span> <span class="dt">Player</span></a>
+<a class="sourceLine" id="cb18-2" title="2">doMove amount</a>
+<a class="sourceLine" id="cb18-3" title="3">  <span class="fu">=</span> updateDirection</a>
+<a class="sourceLine" id="cb18-4" title="4">  <span class="fu">&gt;&gt;&gt;</span> incrementPlayerDirection amount</a></code></pre></div>
+<p>Easy as pie.</p>
+<p>“But I thought we’d actually draw one of those attractive looking eggs and instead we’ve just done some shitty maths”, I hear you say. OK, OK, sure, I get it, you want adventure, you want action. We’ll come to it soon, I promise.</p>
+    </section>
+</article>
+
+    </main>
+
+    <footer>
+        Site proudly generated by
+        <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+    </footer>
+</body>
+
+</html>

@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - Typeclasses - Profunctor</title>
+    <link rel="stylesheet" href="../css/default.css" />
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="../">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="../">Home</a>
+            <a href="../contact.html">Contact</a>
+            <a href="../archive.html">Archive</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        <h1>Typeclasses - Profunctor</h1>
+        <article>
+    <section class="header">
+        Posted on March 12, 2019
+        
+        <div class="info">
+          
+          Tags: <a href="../tags/haskell.html">haskell</a>, <a href="../tags/typeclasses.html">typeclasses</a>
+          
+        </div>
+    </section>
+    <section>
+        <p>Hello. Let’s make a box for putting functions in…</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="kw">newtype</span> <span class="dt">FuncBox</span> b c</a>
+<a class="sourceLine" id="cb1-2" title="2">  <span class="fu">=</span> <span class="dt">FuncBox</span> {<span class="ot"> runFuncBox ::</span> b <span class="ot">-&gt;</span> c }</a></code></pre></div>
+<p>…and a function…</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" title="1"><span class="fu">length</span><span class="ot"> ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb2-2" title="2"><span class="fu">length</span> s <span class="fu">=</span> foldl' (\c _ <span class="ot">-&gt;</span> c<span class="fu">+</span><span class="dv">1</span>) <span class="dv">0</span> s</a></code></pre></div>
+<p>…and then let’s put a function in this box:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" title="1"><span class="ot">length' ::</span> <span class="dt">FuncBox</span> <span class="dt">String</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb3-2" title="2">length' <span class="fu">=</span> <span class="dt">FuncBox</span> <span class="fu">length</span></a></code></pre></div>
+<p>Great. A function in a box. You may be concerned that something interesting is going on here, so just to assure you that it’s not, let’s run the function using <code>runFuncBox</code>, to reassure ourselves that this box is doing no funny business and we’re really just unwrapping that <code>newtype</code>.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" title="1"><span class="ot">length'' ::</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb4-2" title="2">length'' <span class="fu">=</span> runFuncBox length' <span class="st">&quot;dog&quot;</span></a>
+<a class="sourceLine" id="cb4-3" title="3"><span class="co">-- length'' == 3</span></a></code></pre></div>
+<p>OK. Good stuff. We now have a very longwinded way of running the <code>length</code> function. Good stuff. Big day.</p>
+<figure>
+<img src="../images/profunctor-optics.png" title="A relatable piece of content to break up this block of text." alt="A relatable piece of content to break up this block of text." /><figcaption>A relatable piece of content to break up this block of text.</figcaption>
+</figure>
+<h3 id="the-plot-thickens">The plot thickens</h3>
+<p>Now what if want to run this weird function, but instead of having a <code>String</code> to hand, we only have an <code>Animal</code>…</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" title="1"><span class="kw">data</span> <span class="dt">Animal</span> <span class="fu">=</span> <span class="dt">Horse</span> <span class="fu">|</span> <span class="dt">Dog</span> <span class="fu">|</span> <span class="dt">Cat</span></a>
+<a class="sourceLine" id="cb5-2" title="2">  <span class="kw">deriving</span> (<span class="dt">Show</span>)</a></code></pre></div>
+<p>I can see you there. You’re getting excited and jumping straight for our old pal <a href="../posts/2018-11-17-typeclasses-contravariant.markdown">Contravariant</a> aren’t you. But wait! That’s not an entirely terrible decision but it turns out there are other problems that we must also solve.</p>
+<h3 id="oh-no">Oh no</h3>
+<p>That’s right. Heartbreaking, it also turns out that our somewhat contrived API can output numbers, but instead only lists full of a delicous datatype called <code>Egg</code>.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" title="1"><span class="kw">data</span> <span class="dt">Egg</span> <span class="fu">=</span> <span class="dt">Egg</span></a></code></pre></div>
+<p>We can turn any <code>Int</code> into an <code>[Egg]</code> using this excellent function.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" title="1"><span class="ot">repeatEgg ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> [<span class="dt">Egg</span>]</a>
+<a class="sourceLine" id="cb7-2" title="2">repeatEgg s</a>
+<a class="sourceLine" id="cb7-3" title="3">  <span class="fu">=</span> <span class="fu">replicate</span> s <span class="dt">Egg</span></a>
+<a class="sourceLine" id="cb7-4" title="4"></a>
+<a class="sourceLine" id="cb7-5" title="5"><span class="ot">threeEggs ::</span> <span class="dt">List</span> <span class="dt">Egg</span></a>
+<a class="sourceLine" id="cb7-6" title="6">threeEggs <span class="fu">=</span> repeatEgg <span class="dv">3</span></a>
+<a class="sourceLine" id="cb7-7" title="7"><span class="co">-- threeEggs == [Egg, Egg, Egg]</span></a></code></pre></div>
+<p>OK. So somehow we need to turn an <code>Animal</code> into a <code>List</code> of <code>Egg</code>. We could <code>contramap</code> over our input to turn <code>Animal</code> into <code>String</code>, run the original <code>length</code> function, and then <code>fmap</code> over the result to turn <code>Int</code> into <code>[Egg]</code>. That could work. But what if we could solve this problem using a typeclass, that would be pretty fucking snazzy wouldn’t it?</p>
+<h3 id="hold-on-hes-only-gone-and-done-it">Hold on, he’s only gone and done it</h3>
+<p>Looks like a job for our new friend <code>Profunctor</code> I reckon. Let’s have a wee look in <code>ghci</code> and see what what the hell it’s deal is.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb8-1" title="1"><span class="ex">import</span> Data.Profunctor</a>
+<a class="sourceLine" id="cb8-2" title="2"><span class="ex">Data.Profunctor</span><span class="op">&gt;</span> :i Profunctor</a></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" title="1"><span class="kw">class</span> <span class="dt">Profunctor</span> (<span class="ot">p ::</span> _ <span class="ot">-&gt;</span> _ <span class="ot">-&gt;</span> \<span class="fu">*</span>) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb9-2" title="2"><span class="ot">    dimap ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (c <span class="ot">-&gt;</span> d) <span class="ot">-&gt;</span> p b c <span class="ot">-&gt;</span> p a d</a>
+<a class="sourceLine" id="cb9-3" title="3"><span class="ot">    lmap ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> p b c <span class="ot">-&gt;</span> p a c</a>
+<a class="sourceLine" id="cb9-4" title="4"><span class="ot">    rmap ::</span> (b <span class="ot">-&gt;</span> c) <span class="ot">-&gt;</span> p a b <span class="ot">-&gt;</span> p a c</a>
+<a class="sourceLine" id="cb9-5" title="5">    <span class="ot">{-# MINIMAL dimap | lmap, rmap #-}</span></a></code></pre></div>
+<p>Look at that! It gives a <code>Contravariant</code> with the <code>lmap</code> function, and a regular <code>Functor</code> with <code>rmap</code>, or everything smashed together in this new exciting <code>dimap</code> function. Let’s look at that a little closer.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" title="1"><span class="ot">dimap ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (c <span class="ot">-&gt;</span> d) <span class="ot">-&gt;</span> p b c <span class="ot">-&gt;</span> p a d</a></code></pre></div>
+<p>That’s pretty beastly, let’s put in some real concrete things.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" title="1">dimap</a>
+<a class="sourceLine" id="cb11-2" title="2"><span class="ot">  ::</span> (<span class="dt">Animal</span> <span class="ot">-&gt;</span> <span class="dt">String</span>)   <span class="co">-- function to go at the start</span></a>
+<a class="sourceLine" id="cb11-3" title="3">  <span class="ot">-&gt;</span> (<span class="dt">Int</span> <span class="ot">-&gt;</span> [<span class="dt">Egg</span>])       <span class="co">-- function to go at the end</span></a>
+<a class="sourceLine" id="cb11-4" title="4">  <span class="ot">-&gt;</span> <span class="dt">FuncBox</span> <span class="dt">String</span> <span class="dt">Int</span>   <span class="co">-- original container</span></a>
+<a class="sourceLine" id="cb11-5" title="5">  <span class="ot">-&gt;</span> <span class="dt">FuncBox</span> <span class="dt">Animal</span> [<span class="dt">Egg</span>] <span class="co">-- exciting new container</span></a></code></pre></div>
+<p>OK. Let’s implement it for our <code>FuncBox</code>.</p>
+<h3 id="instances-binstances-dinstances">Instances, binstances, dinstances</h3>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" title="1"><span class="kw">import</span> <span class="dt">Data.Profunctor</span></a>
+<a class="sourceLine" id="cb12-2" title="2"></a>
+<a class="sourceLine" id="cb12-3" title="3"><span class="kw">instance</span> <span class="dt">Profunctor</span> <span class="dt">FuncBox</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb12-4" title="4">  dimap before after (<span class="dt">FuncBox</span> f)</a>
+<a class="sourceLine" id="cb12-5" title="5">    <span class="fu">=</span> <span class="dt">FuncBox</span> (after <span class="fu">.</span> f <span class="fu">.</span> before)</a></code></pre></div>
+<p>That’s all really. The <code>.</code> is function composition, so therefore our function unwraps the original function and calls it <code>f</code>, then returns a new <code>FuncBox</code> which runs the <code>before</code> function (ie, the <code>a -&gt; b</code> one), then the original <code>f</code> function, and finally the <code>after</code> function (<code>c -&gt; d</code>). The resulting <code>FuncBox</code> can be used exactly as before, and nobody using it knows how secretly clever it is.</p>
+<p>Let’s use it to make our all important function for turning an <code>Animal</code> in to a <code>[Egg]</code>, using our <code>length'</code> and <code>repeatEgg</code> functions from earlier.</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb13-1" title="1"><span class="ot">dimapped ::</span> <span class="dt">FuncBox</span> <span class="dt">Animal</span> [<span class="dt">Egg</span>]</a>
+<a class="sourceLine" id="cb13-2" title="2">dimapped</a>
+<a class="sourceLine" id="cb13-3" title="3"><span class="fu">=</span> dimap <span class="fu">show</span> repeatEgg length'</a></code></pre></div>
+<p>This gives us a new <code>FuncBox</code> that turns <code>Animal</code> into <code>[Egg]</code>, but of course we all know that underneath the hood this function it’s converting <code>Animal -&gt; String -&gt; Int -&gt; [Egg]</code>. Let’s see it in action:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" title="1"><span class="ot">test ::</span> [<span class="dt">Egg</span>]</a>
+<a class="sourceLine" id="cb14-2" title="2">test <span class="fu">=</span> runFuncBox dimapped <span class="dt">Dog</span></a>
+<a class="sourceLine" id="cb14-3" title="3"><span class="co">-- test == [Egg, Egg, Egg]</span></a>
+<a class="sourceLine" id="cb14-4" title="4"></a>
+<a class="sourceLine" id="cb14-5" title="5"><span class="ot">test2 ::</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb14-6" title="6">test2 <span class="fu">=</span> runFuncBox dimapped <span class="dt">Horse</span></a>
+<a class="sourceLine" id="cb14-7" title="7"><span class="co">-- test2 == [Egg, Egg, Egg, Egg, Egg]</span></a></code></pre></div>
+<p>Brilliant. What an absolutely useful non-waste-of-time. OK. So these are stupid examples, but hopefully they give you a rough idea what a <code>Profunctor</code> is under the hood. You often hear of their use in Lenses, as using <code>dimap</code> on a function for changing two small things can make it into a function that changes a small thing inside a much bigger thing, and they compose in the same nice way.</p>
+<p>Good stuff.</p>
+<p>Feel free to shout your brains about how stupid and wrong I am via the <a href="../contact.html">usual channels</a>.</p>
+<p>Further reading:</p>
+<p><a href="https://www.schoolofhaskell.com/user/griba/easier_lenses_profunctor_based_with_mezzolens">Easier lenses</a></p>
+<p><a href="http://hackage.haskell.org/package/profunctors-5.3/docs/Data-Profunctor.html">Data.Profunctor</a></p>
+    </section>
+</article>
+
+    </main>
+
+    <footer>
+        Site proudly generated by
+        <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+    </footer>
+</body>
+
+</html>
