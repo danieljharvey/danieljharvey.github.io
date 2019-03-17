@@ -40,96 +40,104 @@
 <div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="kw">data</span> <span class="dt">Maybe</span> a <span class="fu">=</span> <span class="dt">Just</span> a <span class="fu">|</span> <span class="dt">Nothing</span></a>
 <a class="sourceLine" id="cb1-2" title="2">  <span class="kw">deriving</span> (<span class="dt">Eq</span>, <span class="dt">Ord</span>, <span class="dt">Show</span>)</a></code></pre></div>
 <p>As is hopefully apparently, <code>Maybe</code> can either be a <code>Just</code> with an <code>a</code> wrapped inside, or <code>Nothing</code> which holds no value.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" title="1"><span class="ot">noNinePlease ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb2-2" title="2">noNinePlease i</a>
+<a class="sourceLine" id="cb2-3" title="3">  <span class="fu">=</span> <span class="kw">if</span> i <span class="fu">==</span> <span class="dv">9</span></a>
+<a class="sourceLine" id="cb2-4" title="4">    <span class="kw">then</span> <span class="dt">Nothing</span></a>
+<a class="sourceLine" id="cb2-5" title="5">    <span class="kw">else</span> <span class="dt">Just</span> i</a>
+<a class="sourceLine" id="cb2-6" title="6"></a>
+<a class="sourceLine" id="cb2-7" title="7">noNinePlease <span class="dv">8</span> <span class="co">-- Just 8</span></a>
+<a class="sourceLine" id="cb2-8" title="8">noNinePlease <span class="dv">9</span> <span class="co">-- Nothing</span></a></code></pre></div>
 <h3 id="functor">Functor</h3>
 <p>Next we’ll define a <code>functor</code> instance for <code>Maybe</code>. Essentially, if there is a value inside, let’s run the provided function over it, and if not, return the same <code>Nothing</code>.</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" title="1"><span class="kw">instance</span> <span class="dt">Functor</span> <span class="dt">Maybe</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb2-2" title="2">  <span class="fu">fmap</span> f (<span class="dt">Just</span> a) <span class="fu">=</span> <span class="dt">Just</span> (f a)</a>
-<a class="sourceLine" id="cb2-3" title="3">  <span class="fu">fmap</span> _ <span class="dt">Nothing</span>  <span class="fu">=</span> <span class="dt">Nothing</span></a>
-<a class="sourceLine" id="cb2-4" title="4"></a>
-<a class="sourceLine" id="cb2-5" title="5"><span class="fu">fmap</span> (<span class="fu">+</span><span class="dv">1</span>) (<span class="dt">Just</span> <span class="dv">1</span>) <span class="co">-- Just 2</span></a>
-<a class="sourceLine" id="cb2-6" title="6"><span class="fu">fmap</span> (<span class="fu">+</span><span class="dv">1</span>) <span class="dt">Nothing</span>  <span class="co">-- Nothing</span></a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" title="1"><span class="kw">instance</span> <span class="dt">Functor</span> <span class="dt">Maybe</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb3-2" title="2">  <span class="fu">fmap</span> f (<span class="dt">Just</span> a) <span class="fu">=</span> <span class="dt">Just</span> (f a)</a>
+<a class="sourceLine" id="cb3-3" title="3">  <span class="fu">fmap</span> _ <span class="dt">Nothing</span>  <span class="fu">=</span> <span class="dt">Nothing</span></a>
+<a class="sourceLine" id="cb3-4" title="4"></a>
+<a class="sourceLine" id="cb3-5" title="5"><span class="fu">fmap</span> (<span class="fu">+</span><span class="dv">1</span>) (<span class="dt">Just</span> <span class="dv">1</span>) <span class="co">-- Just 2</span></a>
+<a class="sourceLine" id="cb3-6" title="6"><span class="fu">fmap</span> (<span class="fu">+</span><span class="dv">1</span>) <span class="dt">Nothing</span>  <span class="co">-- Nothing</span></a></code></pre></div>
 <h3 id="applicative">Applicative</h3>
 <p>The <code>applicative</code> instance for <code>Maybe</code> has two functions, <code>pure</code> and <code>&lt;*&gt;</code> (also called <code>ap</code>). We use <code>pure</code> to define a default instance of the datatype, so we just take the value and wrap it in <code>Just</code>. The <code>&lt;*&gt;</code> function is used to apply a function inside a <code>Just</code> to a value wrapped in another <code>Just</code>. Therefore, if either of those are a <code>Nothing</code>, that’s not going to work, so we return <code>Nothing</code>.</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" title="1"><span class="kw">instance</span> <span class="dt">Applicative</span> <span class="dt">Maybe</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb3-2" title="2">  <span class="fu">pure</span> a <span class="fu">=</span> <span class="dt">Just</span> a</a>
-<a class="sourceLine" id="cb3-3" title="3">  (<span class="dt">Just</span> f) <span class="fu">&lt;*&gt;</span> (<span class="dt">Just</span> a) <span class="fu">=</span> <span class="dt">Just</span> (f a)</a>
-<a class="sourceLine" id="cb3-4" title="4">  _        <span class="fu">&lt;*&gt;</span> _        <span class="fu">=</span> <span class="dt">Nothing</span></a>
-<a class="sourceLine" id="cb3-5" title="5"></a>
-<a class="sourceLine" id="cb3-6" title="6"><span class="fu">pure</span> <span class="dv">1</span>                <span class="co">-- Just 1</span></a>
-<a class="sourceLine" id="cb3-7" title="7"><span class="dt">Just</span> (<span class="fu">+</span><span class="dv">1</span>) <span class="fu">&lt;*&gt;</span> <span class="dt">Just</span> <span class="dv">1</span>  <span class="co">-- Just 2</span></a>
-<a class="sourceLine" id="cb3-8" title="8"><span class="dt">Just</span> (<span class="fu">+</span><span class="dv">1</span>) <span class="fu">&lt;*&gt;</span> <span class="dt">Nothing</span> <span class="co">-- Nothing</span></a></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" title="1"><span class="kw">instance</span> <span class="dt">Applicative</span> <span class="dt">Maybe</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb4-2" title="2">  <span class="fu">pure</span> a <span class="fu">=</span> <span class="dt">Just</span> a</a>
+<a class="sourceLine" id="cb4-3" title="3">  (<span class="dt">Just</span> f) <span class="fu">&lt;*&gt;</span> (<span class="dt">Just</span> a) <span class="fu">=</span> <span class="dt">Just</span> (f a)</a>
+<a class="sourceLine" id="cb4-4" title="4">  _        <span class="fu">&lt;*&gt;</span> _        <span class="fu">=</span> <span class="dt">Nothing</span></a>
+<a class="sourceLine" id="cb4-5" title="5"></a>
+<a class="sourceLine" id="cb4-6" title="6"><span class="fu">pure</span> <span class="dv">1</span>                <span class="co">-- Just 1</span></a>
+<a class="sourceLine" id="cb4-7" title="7"><span class="dt">Just</span> (<span class="fu">+</span><span class="dv">1</span>) <span class="fu">&lt;*&gt;</span> <span class="dt">Just</span> <span class="dv">1</span>  <span class="co">-- Just 2</span></a>
+<a class="sourceLine" id="cb4-8" title="8"><span class="dt">Just</span> (<span class="fu">+</span><span class="dv">1</span>) <span class="fu">&lt;*&gt;</span> <span class="dt">Nothing</span> <span class="co">-- Nothing</span></a></code></pre></div>
 <h3 id="monad">Monad</h3>
 <p>The <code>monad</code> instance for <code>Maybe</code> has only one additional function, <code>&gt;&gt;=</code> (or <code>bind</code>). The most important thing in the <code>Maybe</code> case is that if we start with a <code>Nothing</code>, then we don’t bother doing anything, allowing the computation to be shortcircuited, as such.</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" title="1"><span class="kw">instance</span> <span class="dt">Monad</span> <span class="dt">Maybe</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb4-2" title="2">  (<span class="dt">Just</span> a) <span class="fu">&gt;&gt;=</span> k   <span class="fu">=</span> k a</a>
-<a class="sourceLine" id="cb4-3" title="3">  <span class="dt">Nothing</span>  <span class="fu">&gt;&gt;=</span> _   <span class="fu">=</span> <span class="dt">Nothing</span></a>
-<a class="sourceLine" id="cb4-4" title="4"></a>
-<a class="sourceLine" id="cb4-5" title="5"><span class="dt">Just</span> <span class="dv">1</span> <span class="fu">&gt;&gt;=</span> (\a <span class="ot">-&gt;</span> <span class="dt">Just</span> (a <span class="fu">+</span> <span class="dv">1</span>))  <span class="co">-- Just 2</span></a>
-<a class="sourceLine" id="cb4-6" title="6"><span class="dt">Nothing</span> <span class="fu">&gt;&gt;=</span> (\a <span class="ot">-&gt;</span> <span class="dt">Just</span> (a <span class="fu">+</span> <span class="dv">1</span>)) <span class="co">-- Nothing</span></a></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" title="1"><span class="kw">instance</span> <span class="dt">Monad</span> <span class="dt">Maybe</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb5-2" title="2">  (<span class="dt">Just</span> a) <span class="fu">&gt;&gt;=</span> k   <span class="fu">=</span> k a</a>
+<a class="sourceLine" id="cb5-3" title="3">  <span class="dt">Nothing</span>  <span class="fu">&gt;&gt;=</span> _   <span class="fu">=</span> <span class="dt">Nothing</span></a>
+<a class="sourceLine" id="cb5-4" title="4"></a>
+<a class="sourceLine" id="cb5-5" title="5"><span class="dt">Just</span> <span class="dv">1</span> <span class="fu">&gt;&gt;=</span> (\a <span class="ot">-&gt;</span> <span class="dt">Just</span> (a <span class="fu">+</span> <span class="dv">1</span>))  <span class="co">-- Just 2</span></a>
+<a class="sourceLine" id="cb5-6" title="6"><span class="dt">Nothing</span> <span class="fu">&gt;&gt;=</span> (\a <span class="ot">-&gt;</span> <span class="dt">Just</span> (a <span class="fu">+</span> <span class="dv">1</span>)) <span class="co">-- Nothing</span></a></code></pre></div>
 <h3 id="semigroup">Semigroup</h3>
 <p>The <code>semigroup</code> instance for <code>Maybe</code> is used to combine multiple <code>Maybe</code> values together. An important thing to note is the constraint <code>Semigroup a</code> - this means that for two <code>Maybe</code> values to be combined, the values inside must also have a <code>semigroup</code> instance, allowing them to be combined as well.</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" title="1"><span class="kw">instance</span> (<span class="dt">Semigroup</span> a) <span class="ot">=&gt;</span> <span class="dt">Semigroup</span> (<span class="dt">Maybe</span> a) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb5-2" title="2">  (<span class="dt">Just</span> a) <span class="fu">&lt;&gt;</span> (<span class="dt">Just</span> b) <span class="fu">=</span> <span class="dt">Just</span> (a <span class="fu">&lt;&gt;</span> b)</a>
-<a class="sourceLine" id="cb5-3" title="3">  <span class="dt">Nothing</span>  <span class="fu">&lt;&gt;</span> a        <span class="fu">=</span> a</a>
-<a class="sourceLine" id="cb5-4" title="4">  a        <span class="fu">&lt;&gt;</span> <span class="dt">Nothing</span>  <span class="fu">=</span> a</a>
-<a class="sourceLine" id="cb5-5" title="5"></a>
-<a class="sourceLine" id="cb5-6" title="6"><span class="dt">Just</span> [<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>] <span class="fu">&lt;&gt;</span> <span class="dt">Just</span> [<span class="dv">4</span>,<span class="dv">5</span>,<span class="dv">6</span>] <span class="co">-- Just [1,2,3,4,5,6]</span></a>
-<a class="sourceLine" id="cb5-7" title="7"><span class="dt">Nothing</span> <span class="fu">&lt;&gt;</span> <span class="dt">Just</span> [<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>]      <span class="co">-- Just [1,2,3]</span></a>
-<a class="sourceLine" id="cb5-8" title="8"><span class="dt">Just</span> [<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>] <span class="fu">&lt;&gt;</span> <span class="dt">Nothing</span>      <span class="co">-- Just [1,2,3]</span></a>
-<a class="sourceLine" id="cb5-9" title="9"><span class="dt">Nothing</span> <span class="fu">&lt;&gt;</span> <span class="dt">Nothing</span>           <span class="co">-- Nothing</span></a></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" title="1"><span class="kw">instance</span> (<span class="dt">Semigroup</span> a) <span class="ot">=&gt;</span> <span class="dt">Semigroup</span> (<span class="dt">Maybe</span> a) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb6-2" title="2">  (<span class="dt">Just</span> a) <span class="fu">&lt;&gt;</span> (<span class="dt">Just</span> b) <span class="fu">=</span> <span class="dt">Just</span> (a <span class="fu">&lt;&gt;</span> b)</a>
+<a class="sourceLine" id="cb6-3" title="3">  <span class="dt">Nothing</span>  <span class="fu">&lt;&gt;</span> a        <span class="fu">=</span> a</a>
+<a class="sourceLine" id="cb6-4" title="4">  a        <span class="fu">&lt;&gt;</span> <span class="dt">Nothing</span>  <span class="fu">=</span> a</a>
+<a class="sourceLine" id="cb6-5" title="5"></a>
+<a class="sourceLine" id="cb6-6" title="6"><span class="dt">Just</span> [<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>] <span class="fu">&lt;&gt;</span> <span class="dt">Just</span> [<span class="dv">4</span>,<span class="dv">5</span>,<span class="dv">6</span>] <span class="co">-- Just [1,2,3,4,5,6]</span></a>
+<a class="sourceLine" id="cb6-7" title="7"><span class="dt">Nothing</span> <span class="fu">&lt;&gt;</span> <span class="dt">Just</span> [<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>]      <span class="co">-- Just [1,2,3]</span></a>
+<a class="sourceLine" id="cb6-8" title="8"><span class="dt">Just</span> [<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>] <span class="fu">&lt;&gt;</span> <span class="dt">Nothing</span>      <span class="co">-- Just [1,2,3]</span></a>
+<a class="sourceLine" id="cb6-9" title="9"><span class="dt">Nothing</span> <span class="fu">&lt;&gt;</span> <span class="dt">Nothing</span>           <span class="co">-- Nothing</span></a></code></pre></div>
 <h3 id="monoid">Monoid</h3>
 <p>Notice that when a <code>Just</code> is combined with a <code>Nothing</code>, we still get a <code>Just</code> value. This is because <code>Nothing</code> is our <code>empty</code> element, meaning that when it is combined to any value it does not change it. Defining this upgrades our <code>semigroup</code> instance into an exciting <code>Monoid</code>.</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" title="1"><span class="kw">instance</span> (<span class="dt">Semigroup</span> a) <span class="ot">=&gt;</span> <span class="dt">Monoid</span> (<span class="dt">Maybe</span> a) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb6-2" title="2">  <span class="fu">mempty</span> <span class="fu">=</span> <span class="dt">Nothing</span></a>
-<a class="sourceLine" id="cb6-3" title="3"></a>
-<a class="sourceLine" id="cb6-4" title="4"><span class="fu">mempty</span> <span class="co">-- Nothing</span></a></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" title="1"><span class="kw">instance</span> (<span class="dt">Semigroup</span> a) <span class="ot">=&gt;</span> <span class="dt">Monoid</span> (<span class="dt">Maybe</span> a) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb7-2" title="2">  <span class="fu">mempty</span> <span class="fu">=</span> <span class="dt">Nothing</span></a>
+<a class="sourceLine" id="cb7-3" title="3"></a>
+<a class="sourceLine" id="cb7-4" title="4"><span class="fu">mempty</span> <span class="co">-- Nothing</span></a></code></pre></div>
 <h3 id="foldable">Foldable</h3>
 <p>Now carrying all these wrapped values around is great, but at some point we may want to extract values from these <code>Maybe</code> values, so we use <code>foldable</code>. Note the <code>a</code> in the <code>Nothing</code> version of the function - this makes the user of the typeclass provide a default value so that we don’t end up without a value for <code>Nothing</code>.</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" title="1"><span class="kw">instance</span> <span class="dt">Foldable</span> <span class="dt">Maybe</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb7-2" title="2">  <span class="fu">foldr</span> _ a <span class="dt">Nothing</span>  <span class="fu">=</span> a</a>
-<a class="sourceLine" id="cb7-3" title="3">  <span class="fu">foldr</span> f a (<span class="dt">Just</span> b) <span class="fu">=</span> f b a</a>
-<a class="sourceLine" id="cb7-4" title="4"></a>
-<a class="sourceLine" id="cb7-5" title="5"><span class="fu">foldr</span> (<span class="fu">+</span>) <span class="dv">1</span> <span class="dt">Nothing</span>   <span class="co">-- 1</span></a>
-<a class="sourceLine" id="cb7-6" title="6"><span class="fu">foldr</span> (<span class="fu">+</span>) <span class="dv">1</span> (<span class="dt">Just</span> <span class="dv">10</span>) <span class="co">-- 11</span></a></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" title="1"><span class="kw">instance</span> <span class="dt">Foldable</span> <span class="dt">Maybe</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb8-2" title="2">  <span class="fu">foldr</span> _ a <span class="dt">Nothing</span>  <span class="fu">=</span> a</a>
+<a class="sourceLine" id="cb8-3" title="3">  <span class="fu">foldr</span> f a (<span class="dt">Just</span> b) <span class="fu">=</span> f b a</a>
+<a class="sourceLine" id="cb8-4" title="4"></a>
+<a class="sourceLine" id="cb8-5" title="5"><span class="fu">foldr</span> (<span class="fu">+</span>) <span class="dv">1</span> <span class="dt">Nothing</span>   <span class="co">-- 1</span></a>
+<a class="sourceLine" id="cb8-6" title="6"><span class="fu">foldr</span> (<span class="fu">+</span>) <span class="dv">1</span> (<span class="dt">Just</span> <span class="dv">10</span>) <span class="co">-- 11</span></a></code></pre></div>
 <h3 id="alternative">Alternative</h3>
 <p>A good intuition for the <code>Alternative</code> typeclass is that it’s a like the <code>or</code> operator <code>||</code>. Therefore it can be used to return the first out of a list of values that is wrapped in <code>Just</code>.</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" title="1"><span class="kw">instance</span> <span class="dt">Alternative</span> <span class="dt">Maybe</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb8-2" title="2">  empty                 <span class="fu">=</span> <span class="dt">Nothing</span></a>
-<a class="sourceLine" id="cb8-3" title="3">  (<span class="dt">Just</span> a) <span class="fu">&lt;|&gt;</span> _        <span class="fu">=</span> <span class="dt">Just</span> a</a>
-<a class="sourceLine" id="cb8-4" title="4">  <span class="dt">Nothing</span>  <span class="fu">&lt;|&gt;</span> (<span class="dt">Just</span> b) <span class="fu">=</span> <span class="dt">Just</span> b</a>
-<a class="sourceLine" id="cb8-5" title="5">  <span class="dt">Nothing</span>  <span class="fu">&lt;|&gt;</span> <span class="dt">Nothing</span>  <span class="fu">=</span> <span class="dt">Nothing</span></a>
-<a class="sourceLine" id="cb8-6" title="6"></a>
-<a class="sourceLine" id="cb8-7" title="7"><span class="dt">Nothing</span> <span class="fu">&lt;|&gt;</span> <span class="dt">Nothing</span> <span class="co">-- Nothing</span></a>
-<a class="sourceLine" id="cb8-8" title="8"><span class="dt">Just</span> <span class="dv">1</span> <span class="fu">&lt;|&gt;</span> <span class="dt">Just</span> <span class="dv">2</span>   <span class="co">-- Just 1</span></a>
-<a class="sourceLine" id="cb8-9" title="9"><span class="dt">Nothing</span> <span class="fu">&lt;|&gt;</span> <span class="dt">Just</span> <span class="dv">2</span>  <span class="co">-- Just 2</span></a></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" title="1"><span class="kw">instance</span> <span class="dt">Alternative</span> <span class="dt">Maybe</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb9-2" title="2">  empty                 <span class="fu">=</span> <span class="dt">Nothing</span></a>
+<a class="sourceLine" id="cb9-3" title="3">  (<span class="dt">Just</span> a) <span class="fu">&lt;|&gt;</span> _        <span class="fu">=</span> <span class="dt">Just</span> a</a>
+<a class="sourceLine" id="cb9-4" title="4">  <span class="dt">Nothing</span>  <span class="fu">&lt;|&gt;</span> (<span class="dt">Just</span> b) <span class="fu">=</span> <span class="dt">Just</span> b</a>
+<a class="sourceLine" id="cb9-5" title="5">  <span class="dt">Nothing</span>  <span class="fu">&lt;|&gt;</span> <span class="dt">Nothing</span>  <span class="fu">=</span> <span class="dt">Nothing</span></a>
+<a class="sourceLine" id="cb9-6" title="6"></a>
+<a class="sourceLine" id="cb9-7" title="7"><span class="dt">Nothing</span> <span class="fu">&lt;|&gt;</span> <span class="dt">Nothing</span> <span class="co">-- Nothing</span></a>
+<a class="sourceLine" id="cb9-8" title="8"><span class="dt">Just</span> <span class="dv">1</span> <span class="fu">&lt;|&gt;</span> <span class="dt">Just</span> <span class="dv">2</span>   <span class="co">-- Just 1</span></a>
+<a class="sourceLine" id="cb9-9" title="9"><span class="dt">Nothing</span> <span class="fu">&lt;|&gt;</span> <span class="dt">Just</span> <span class="dv">2</span>  <span class="co">-- Just 2</span></a></code></pre></div>
 <h3 id="monadplus">MonadPlus</h3>
 <p>Since we’re on a roll with defining typeclasses, let’s plop in a quick instance of <code>MonadPlus</code>, which is basically <code>Alternative</code> with a different name, with <code>mzero</code> replacing <code>empty</code> and <code>mplus</code> replacing <code>&lt;|&gt;</code>.</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" title="1"><span class="kw">instance</span> <span class="dt">MonadPlus</span> <span class="dt">Maybe</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb9-2" title="2">  mzero <span class="fu">=</span> <span class="dt">Nothing</span></a>
-<a class="sourceLine" id="cb9-3" title="3"></a>
-<a class="sourceLine" id="cb9-4" title="4">  mplus (<span class="dt">Just</span> a) _ <span class="fu">=</span> <span class="dt">Just</span> a</a>
-<a class="sourceLine" id="cb9-5" title="5">  mplus (<span class="dt">Nothing</span>) (<span class="dt">Just</span> b) <span class="fu">=</span> <span class="dt">Just</span> b</a>
-<a class="sourceLine" id="cb9-6" title="6">  mplus _ _ <span class="fu">=</span> <span class="dt">Nothing</span>  </a>
-<a class="sourceLine" id="cb9-7" title="7"></a>
-<a class="sourceLine" id="cb9-8" title="8"></a>
-<a class="sourceLine" id="cb9-9" title="9"><span class="dt">Nothing</span> <span class="ot">`mplus`</span> <span class="dt">Nothing</span> <span class="co">-- Nothing</span></a>
-<a class="sourceLine" id="cb9-10" title="10"><span class="dt">Just</span> <span class="dv">1</span> <span class="ot">`mplus`</span> <span class="dt">Nothing</span>  <span class="co">-- Just 1</span></a>
-<a class="sourceLine" id="cb9-11" title="11"><span class="dt">Nothing</span> <span class="ot">`mplus`</span> <span class="dt">Just</span> <span class="dv">2</span>  <span class="co">-- Just 2</span></a>
-<a class="sourceLine" id="cb9-12" title="12">mzero                   <span class="co">-- Nothing</span></a></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" title="1"><span class="kw">instance</span> <span class="dt">MonadPlus</span> <span class="dt">Maybe</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb10-2" title="2">  mzero <span class="fu">=</span> <span class="dt">Nothing</span></a>
+<a class="sourceLine" id="cb10-3" title="3"></a>
+<a class="sourceLine" id="cb10-4" title="4">  mplus (<span class="dt">Just</span> a) _ <span class="fu">=</span> <span class="dt">Just</span> a</a>
+<a class="sourceLine" id="cb10-5" title="5">  mplus (<span class="dt">Nothing</span>) (<span class="dt">Just</span> b) <span class="fu">=</span> <span class="dt">Just</span> b</a>
+<a class="sourceLine" id="cb10-6" title="6">  mplus _ _ <span class="fu">=</span> <span class="dt">Nothing</span></a>
+<a class="sourceLine" id="cb10-7" title="7"></a>
+<a class="sourceLine" id="cb10-8" title="8"></a>
+<a class="sourceLine" id="cb10-9" title="9"><span class="dt">Nothing</span> <span class="ot">`mplus`</span> <span class="dt">Nothing</span> <span class="co">-- Nothing</span></a>
+<a class="sourceLine" id="cb10-10" title="10"><span class="dt">Just</span> <span class="dv">1</span> <span class="ot">`mplus`</span> <span class="dt">Nothing</span>  <span class="co">-- Just 1</span></a>
+<a class="sourceLine" id="cb10-11" title="11"><span class="dt">Nothing</span> <span class="ot">`mplus`</span> <span class="dt">Just</span> <span class="dv">2</span>  <span class="co">-- Just 2</span></a>
+<a class="sourceLine" id="cb10-12" title="12">mzero                   <span class="co">-- Nothing</span></a></code></pre></div>
 <h3 id="traversable">Traversable</h3>
 <p>The <code>traversable</code> instance for <code>Maybe</code> isn’t too unusual, if <code>traverse</code> is run on a <code>Nothing</code> it wraps a <code>Nothing</code> inside whichever <code>Applicative</code> it is used with (the <code>pure</code> function coming from the other type rather than from <code>Maybe</code>). If we <code>traverse</code> a <code>Just</code> value then the provided function <code>f</code> is run on the value inside <code>Just</code> which wraps the <code>a</code> in an <code>applicative</code> functor, and we then use <code>fmap</code> to make the value inside a <code>Just</code>.</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" title="1"><span class="kw">instance</span> <span class="dt">Traversable</span> <span class="dt">Maybe</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb10-2" title="2">  <span class="fu">traverse</span> _ <span class="dt">Nothing</span>  <span class="fu">=</span> <span class="fu">pure</span> <span class="dt">Nothing</span></a>
-<a class="sourceLine" id="cb10-3" title="3">  <span class="fu">traverse</span> f (<span class="dt">Just</span> a) <span class="fu">=</span> <span class="fu">fmap</span> <span class="dt">Just</span> (f a)</a>
-<a class="sourceLine" id="cb10-4" title="4"></a>
-<a class="sourceLine" id="cb10-5" title="5"><span class="fu">traverse</span> (\a <span class="ot">-&gt;</span> [a,a]) <span class="dt">Nothing</span>   <span class="co">-- [Nothing]</span></a>
-<a class="sourceLine" id="cb10-6" title="6"><span class="fu">traverse</span> (\a <span class="ot">-&gt;</span> [a,a]) (<span class="dt">Just</span> <span class="dv">10</span>) <span class="co">-- [Just 10, Just 10]</span></a></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" title="1"><span class="kw">instance</span> <span class="dt">Traversable</span> <span class="dt">Maybe</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb11-2" title="2">  <span class="fu">traverse</span> _ <span class="dt">Nothing</span>  <span class="fu">=</span> <span class="fu">pure</span> <span class="dt">Nothing</span></a>
+<a class="sourceLine" id="cb11-3" title="3">  <span class="fu">traverse</span> f (<span class="dt">Just</span> a) <span class="fu">=</span> <span class="fu">fmap</span> <span class="dt">Just</span> (f a)</a>
+<a class="sourceLine" id="cb11-4" title="4"></a>
+<a class="sourceLine" id="cb11-5" title="5"><span class="fu">traverse</span> (\a <span class="ot">-&gt;</span> [a,a]) <span class="dt">Nothing</span>   <span class="co">-- [Nothing]</span></a>
+<a class="sourceLine" id="cb11-6" title="6"><span class="fu">traverse</span> (\a <span class="ot">-&gt;</span> [a,a]) (<span class="dt">Just</span> <span class="dv">10</span>) <span class="co">-- [Just 10, Just 10]</span></a></code></pre></div>
 <h3 id="monadfail">MonadFail</h3>
 <p>The <code>MonadFail</code> typeclass hasn’t come up before, but it’s a very generic way of allowing all computations to fail in a similar way. The <code>fail</code> function has the type signature <code>String -&gt; m a</code>. However because we cannot carry around any values inside <code>Nothing</code> we simply discard the <code>String</code> and return <code>Nothing</code>. The usefulness of this typeclass will become much more apparent with <code>Either</code> and monad transformer stacks. (what? - we’ll come to it…)</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" title="1"><span class="kw">instance</span> <span class="dt">MonadFail</span> <span class="dt">Maybe</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb11-2" title="2">  <span class="fu">fail</span> _ <span class="fu">=</span> <span class="dt">Nothing</span></a>
-<a class="sourceLine" id="cb11-3" title="3"></a>
-<a class="sourceLine" id="cb11-4" title="4"><span class="dt">Just</span> <span class="st">&quot;yes&quot;</span> <span class="fu">&gt;&gt;=</span> <span class="fu">fail</span> <span class="co">-- Nothing</span></a></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" title="1"><span class="kw">instance</span> <span class="dt">MonadFail</span> <span class="dt">Maybe</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb12-2" title="2">  <span class="fu">fail</span> _ <span class="fu">=</span> <span class="dt">Nothing</span></a>
+<a class="sourceLine" id="cb12-3" title="3"></a>
+<a class="sourceLine" id="cb12-4" title="4"><span class="dt">Just</span> <span class="st">&quot;yes&quot;</span> <span class="fu">&gt;&gt;=</span> <span class="fu">fail</span> <span class="co">-- Nothing</span></a></code></pre></div>
 <h3 id="just-a-great-job">Just “a great job”</h3>
 <p>Anyway. This is quite a laborious post but I hope it is somewhat helpful. I intend to do similar ones for <code>Either</code> and <code>List</code> next. Please note these aren’t the same definitions as you’ll find in the Haskell Prelude, as I have tried to write them with an emphasis on clarity/simplicity. If you are a purist, or just bloody hate clarity, by all means check out the originals on <a href="http://hackage.haskell.org/package/base-4.12.0.0/docs/src/GHC.Base.html#line-854">Hackage</a>.</p>
 <p>If having skim-read this post you find yourself with strong feelings about it (positive or otherwise) I’d appreciate you shouting them at my face via the <a href="../contact.html">usual channels</a>. It’s lonely out here in the bleak abyss of South East London.</p>
