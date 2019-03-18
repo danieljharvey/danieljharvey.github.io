@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - Typeclasses - Monad</title>
+    <link rel="stylesheet" href="../css/default.css" />
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="../">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="../">Home</a>
+            <a href="../contact.html">Contact</a>
+            <a href="../archive.html">Archive</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        <h1>Typeclasses - Monad</h1>
+        <article>
+    <section class="header">
+        Posted on March 18, 2019
+        
+        <div class="info">
+          
+          Tags: <a href="../tags/haskell.html">haskell</a>, <a href="../tags/typeclasses.html">typeclasses</a>
+          
+        </div>
+    </section>
+    <section>
+        <p>The <code>Monad</code> is one of the most infamous things around Haskell, and indeed functional programming, and so writing tutorials around them has become something of a cliche. Let me be clear - I really did try and avoid writing one, but it’s gotten to the point that it’s difficult to talk about the other more interesting stuff without at least mentioning it.</p>
+<p>To try and avoid falling into the regular pitfalls, we are instead going to define the simplest possible <code>Monad</code>, and then look at some examples of them in action. Hopefully you’ll see that <code>Monads</code> aren’t that complicated or interesting - it’s actually the properties of the different datatypes that provide all the different behaviours and make it interesting.</p>
+<h3 id="id">Id</h3>
+<p>So. This is <code>Id</code>.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="kw">newtype</span> <span class="dt">Id</span> a</a>
+<a class="sourceLine" id="cb1-2" title="2">  <span class="fu">=</span> <span class="dt">Id</span> {<span class="ot"> getId ::</span> a}</a></code></pre></div>
+<p>It is a container that contains any value that we give it.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" title="1"><span class="ot">val ::</span> <span class="dt">Id</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb2-2" title="2">val <span class="fu">=</span> <span class="dt">Id</span> <span class="dv">7</span></a></code></pre></div>
+<p>Which we can take out at any time with <code>getId</code>.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" title="1"><span class="ot">plainVal ::</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb3-2" title="2">plainVal <span class="fu">=</span> getId val</a>
+<a class="sourceLine" id="cb3-3" title="3"><span class="co">-- plainVal = 7</span></a></code></pre></div>
+<p>Every <code>Monad</code> must first be a <code>Functor</code>, so let’s define that for <code>Id</code>.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" title="1"><span class="kw">instance</span> <span class="dt">Functor</span> <span class="dt">Id</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb4-2" title="2">  <span class="fu">fmap</span> f (<span class="dt">Id</span> a) <span class="fu">=</span> <span class="dt">Id</span> (f a)</a>
+<a class="sourceLine" id="cb4-3" title="3"></a>
+<a class="sourceLine" id="cb4-4" title="4"><span class="ot">doubled ::</span> <span class="dt">Id</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb4-5" title="5">doubled <span class="fu">=</span> <span class="fu">fmap</span> (\<span class="fu">*</span><span class="dv">2</span>) val</a>
+<a class="sourceLine" id="cb4-6" title="6"><span class="co">-- doubled == Id 14</span></a></code></pre></div>
+<p>It must also be an <code>Applicative</code>.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" title="1"><span class="kw">instance</span> <span class="dt">Applicative</span> <span class="dt">Id</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb5-2" title="2">  <span class="fu">pure</span> <span class="fu">=</span> <span class="dt">Id</span></a>
+<a class="sourceLine" id="cb5-3" title="3">  (<span class="dt">Id</span> f) <span class="fu">&lt;*&gt;</span> (<span class="dt">Id</span> a) <span class="fu">=</span> <span class="dt">Id</span> (f a)</a>
+<a class="sourceLine" id="cb5-4" title="4"></a>
+<a class="sourceLine" id="cb5-5" title="5"><span class="ot">idValue ::</span> <span class="dt">Id</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb5-6" title="6">idValue <span class="fu">=</span> <span class="fu">pure</span> <span class="st">&quot;Hello!&quot;</span></a>
+<a class="sourceLine" id="cb5-7" title="7"><span class="co">-- idValue = Id &quot;Hello!&quot;</span></a>
+<a class="sourceLine" id="cb5-8" title="8"></a>
+<a class="sourceLine" id="cb5-9" title="9"><span class="ot">getLength ::</span> <span class="dt">Id</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb5-10" title="10">getLength <span class="fu">=</span> <span class="dt">Id</span> <span class="fu">length</span> <span class="fu">&lt;</span>\<span class="fu">*&gt;</span> <span class="dt">Id</span> <span class="st">&quot;Dogs&quot;</span></a>
+<a class="sourceLine" id="cb5-11" title="11"><span class="co">-- getLength == Id 4</span></a></code></pre></div>
+<p>Great stuff. Now we’ve got <code>Functor</code> and <code>Applicative</code>, we only need one more function to make a <code>Monad</code> instance, and thats <code>bind</code> (or <code>&gt;&gt;=</code>). <code>Bind</code> takes an <code>Id a</code> value, and a function of signature <code>(a -&gt; Id b)</code> that takes the value inside, does something to it, and adds another layer of <code>Id</code>. It then removes the extra layer, leaving us with <code>Id b</code>. In some places it’s called <code>flatMap</code>, as it maps over the value and then flattens it.</p>
+<p>For <code>Id</code>, it takes the value out, and then runs the function on it.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" title="1"><span class="kw">instance</span> <span class="dt">Monad</span> <span class="dt">Id</span> <span class="kw">where</span></a>
+<a class="sourceLine" id="cb6-2" title="2">  (<span class="dt">Id</span> m) <span class="fu">&gt;&gt;=</span> k <span class="fu">=</span> k m</a></code></pre></div>
+<p>Pretty dull. Let’s plop a few <code>bind</code> functions together. We’re using Do Notation, which is a way of making using <code>Monad</code> values easier.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" title="1"><span class="ot">doubleAndWrap ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Id</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb7-2" title="2">doubleAndWrap i</a>
+<a class="sourceLine" id="cb7-3" title="3">  <span class="fu">=</span> <span class="fu">pure</span> (i \<span class="fu">*</span> <span class="dv">2</span>)</a>
+<a class="sourceLine" id="cb7-4" title="4"></a>
+<a class="sourceLine" id="cb7-5" title="5"><span class="co">-- doubleAndWrap 1 = Id 2</span></a>
+<a class="sourceLine" id="cb7-6" title="6"></a>
+<a class="sourceLine" id="cb7-7" title="7"><span class="ot">doubleAFewTimes ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Id</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb7-8" title="8">doubleAFewTimes i <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb7-9" title="9">  j <span class="ot">&lt;-</span> doubleAndWrap i</a>
+<a class="sourceLine" id="cb7-10" title="10">  k <span class="ot">&lt;-</span> doubleAndWrap j</a>
+<a class="sourceLine" id="cb7-11" title="11">  l <span class="ot">&lt;-</span> doubleAndWrap k</a>
+<a class="sourceLine" id="cb7-12" title="12">  doubleAndWrap l</a>
+<a class="sourceLine" id="cb7-13" title="13"></a>
+<a class="sourceLine" id="cb7-14" title="14"><span class="co">-- doubleAFewTimes 10 = 160</span></a></code></pre></div>
+<p>OK! Not very interesting to be honest. <code>Id</code> doesn’t really <em>do</em> anything other than make adding numbers up more confusing. Let’s look at other <code>Monad</code> instances and try and see what they do.</p>
+<h3 id="maybe">Maybe</h3>
+<p>We’re going to use the <code>Maybe</code> monad to chain together a <code>head</code>-type function that returns the first item <em>if</em> it’s there.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" title="1"><span class="ot">firstItem ::</span> [a] <span class="ot">-&gt;</span> <span class="dt">Maybe</span> a</a>
+<a class="sourceLine" id="cb8-2" title="2">firstItem [] <span class="fu">=</span> <span class="dt">Nothing</span></a>
+<a class="sourceLine" id="cb8-3" title="3">firstItem (a<span class="fu">:</span>\_) <span class="fu">=</span> <span class="dt">Just</span> a</a>
+<a class="sourceLine" id="cb8-4" title="4"></a>
+<a class="sourceLine" id="cb8-5" title="5"><span class="ot">head3 ::</span> [[[a]]] <span class="ot">-&gt;</span> <span class="dt">Maybe</span> a</a>
+<a class="sourceLine" id="cb8-6" title="6">head3 aaas <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb8-7" title="7">aas <span class="ot">&lt;-</span> firstItem aaas</a>
+<a class="sourceLine" id="cb8-8" title="8">as <span class="ot">&lt;-</span> firstItem aas</a>
+<a class="sourceLine" id="cb8-9" title="9">a <span class="ot">&lt;-</span> firstItem as</a>
+<a class="sourceLine" id="cb8-10" title="10"><span class="fu">pure</span> a</a>
+<a class="sourceLine" id="cb8-11" title="11"></a>
+<a class="sourceLine" id="cb8-12" title="12"><span class="co">-- head3 []          -- Nothing</span></a>
+<a class="sourceLine" id="cb8-13" title="13"><span class="co">-- head3 [[[1,2,3]]] -- Just 1</span></a></code></pre></div>
+<p>Note that as soon as we get a <code>Nothing</code>, the calculation stops, as such.</p>
+<h3 id="either">Either</h3>
+<p>We’re going to use <code>Either</code> to do some string validation. Here is our error type:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" title="1"><span class="kw">data</span> <span class="dt">Error</span></a>
+<a class="sourceLine" id="cb9-2" title="2">  <span class="fu">=</span> <span class="dt">TooLong</span></a>
+<a class="sourceLine" id="cb9-3" title="3">  <span class="fu">|</span> <span class="dt">ContainsHorse</span></a>
+<a class="sourceLine" id="cb9-4" title="4">  <span class="fu">|</span> <span class="dt">IsEmpty</span></a>
+<a class="sourceLine" id="cb9-5" title="5">  <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>, <span class="dt">Ord</span>)</a></code></pre></div>
+<p>And here are a series of string validation functions that all return either <code>Right String</code> if the string is OK, or <code>Left Error</code> if not.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" title="1"><span class="ot">isEmpty ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Either</span> <span class="dt">Error</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb10-2" title="2">isEmpty s</a>
+<a class="sourceLine" id="cb10-3" title="3">  <span class="fu">=</span> <span class="kw">if</span> <span class="fu">null</span> s</a>
+<a class="sourceLine" id="cb10-4" title="4">  <span class="kw">then</span> <span class="dt">Left</span> <span class="dt">IsEmpty</span></a>
+<a class="sourceLine" id="cb10-5" title="5">  <span class="kw">else</span> <span class="dt">Right</span> s</a>
+<a class="sourceLine" id="cb10-6" title="6"></a>
+<a class="sourceLine" id="cb10-7" title="7"><span class="ot">tooLong ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Either</span> <span class="dt">Error</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb10-8" title="8">tooLong s</a>
+<a class="sourceLine" id="cb10-9" title="9">  <span class="fu">=</span> <span class="kw">if</span> <span class="fu">length</span> s <span class="fu">&gt;</span> <span class="dv">10</span></a>
+<a class="sourceLine" id="cb10-10" title="10">  <span class="kw">then</span> <span class="dt">Left</span> <span class="dt">TooLong</span></a>
+<a class="sourceLine" id="cb10-11" title="11">  <span class="kw">else</span> <span class="dt">Right</span> s</a>
+<a class="sourceLine" id="cb10-12" title="12"></a>
+<a class="sourceLine" id="cb10-13" title="13"><span class="ot">containsHorse ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Either</span> <span class="dt">Error</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb10-14" title="14">containsHorse s</a>
+<a class="sourceLine" id="cb10-15" title="15">  <span class="fu">=</span> <span class="kw">if</span> <span class="st">&quot;horse&quot;</span> <span class="ot">`isInfixOf`</span> s</a>
+<a class="sourceLine" id="cb10-16" title="16">  <span class="kw">then</span> <span class="dt">Left</span> <span class="dt">ContainsHorse</span></a>
+<a class="sourceLine" id="cb10-17" title="17">  <span class="kw">else</span> <span class="dt">Right</span> s</a></code></pre></div>
+<p>This <code>validate</code> function chains all the validations, returning either the <code>String</code> or the first <code>Error</code>.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" title="1"><span class="ot">validate ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Either</span> <span class="dt">Error</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb11-2" title="2">validate s <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb11-3" title="3">  t <span class="ot">&lt;-</span> isEmpty s</a>
+<a class="sourceLine" id="cb11-4" title="4">  u <span class="ot">&lt;-</span> tooLong t</a>
+<a class="sourceLine" id="cb11-5" title="5">  containsHorse u</a>
+<a class="sourceLine" id="cb11-6" title="6"></a>
+<a class="sourceLine" id="cb11-7" title="7"><span class="co">-- validate &quot;&quot;                   == Left IsEmpty</span></a>
+<a class="sourceLine" id="cb11-8" title="8"><span class="co">-- validate &quot;bah horse&quot;          == Left ContainsHorse</span></a>
+<a class="sourceLine" id="cb11-9" title="9"><span class="co">-- validate &quot;really long string&quot; == Left TooLong</span></a>
+<a class="sourceLine" id="cb11-10" title="10"><span class="co">-- validate &quot;Hello&quot;              == Right &quot;Hello&quot;</span></a></code></pre></div>
+<h3 id="list">List</h3>
+<p>The <code>List</code> monad is interesting because the flattening effect of <code>bind</code> means functions that turn values into more lists get flattened into one big list.</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" title="1"><span class="ot">moreList ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> [<span class="dt">Int</span>]</a>
+<a class="sourceLine" id="cb12-2" title="2">moreList a <span class="fu">=</span> [a <span class="fu">-</span> <span class="dv">1</span>, a, a <span class="fu">+</span> <span class="dv">1</span>]</a>
+<a class="sourceLine" id="cb12-3" title="3"><span class="co">-- moreList 1 == [0, 1, 2]</span></a>
+<a class="sourceLine" id="cb12-4" title="4"></a>
+<a class="sourceLine" id="cb12-5" title="5"><span class="ot">lotsMoreList ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> [<span class="dt">Int</span>]</a>
+<a class="sourceLine" id="cb12-6" title="6">lotsMoreList a <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb12-7" title="7">  b <span class="ot">&lt;-</span> moreList a</a>
+<a class="sourceLine" id="cb12-8" title="8">  moreList b</a>
+<a class="sourceLine" id="cb12-9" title="9"><span class="co">-- lotsMoreList 1 == [-1,0,1,0,1,2,1,2,3]</span></a></code></pre></div>
+<h3 id="reader">Reader</h3>
+<p>The <code>Reader</code> monad is used to pass configuration around a program. Here we will define a type for <code>Config</code> and a value for it.</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb13-1" title="1"><span class="kw">data</span> <span class="dt">Config</span></a>
+<a class="sourceLine" id="cb13-2" title="2">  <span class="fu">=</span> <span class="dt">Config</span> {<span class="ot"> ipAddress ::</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb13-3" title="3">           ,<span class="ot"> name ::</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb13-4" title="4">           }</a>
+<a class="sourceLine" id="cb13-5" title="5"></a>
+<a class="sourceLine" id="cb13-6" title="6"><span class="ot">config ::</span> <span class="dt">Config</span></a>
+<a class="sourceLine" id="cb13-7" title="7">config <span class="fu">=</span> <span class="dt">Config</span> { ipAddress <span class="fu">=</span> <span class="st">&quot;127.0.0.1&quot;</span></a>
+<a class="sourceLine" id="cb13-8" title="8">                , name <span class="fu">=</span> <span class="st">&quot;localhost&quot;</span></a>
+<a class="sourceLine" id="cb13-9" title="9">                }</a></code></pre></div>
+<p>These functions use the <code>Config</code> value in the <code>Reader</code> to make strings, using the <code>ask</code> function to access the config.</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" title="1"><span class="ot">printName ::</span> <span class="dt">Reader</span> <span class="dt">Config</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb14-2" title="2">printName <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb14-3" title="3">  config <span class="ot">&lt;-</span> ask</a>
+<a class="sourceLine" id="cb14-4" title="4">  <span class="fu">pure</span> (<span class="st">&quot;the name is &quot;</span> <span class="fu">&lt;&gt;</span> name config)</a>
+<a class="sourceLine" id="cb14-5" title="5"></a>
+<a class="sourceLine" id="cb14-6" title="6"><span class="ot">printIp ::</span> <span class="dt">Reader</span> <span class="dt">Config</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb14-7" title="7">printIp <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb14-8" title="8">  config <span class="ot">&lt;-</span> ask</a>
+<a class="sourceLine" id="cb14-9" title="9">  <span class="fu">pure</span> (<span class="st">&quot;The ip address is &quot;</span> <span class="fu">&lt;&gt;</span> ipAddress config)</a></code></pre></div>
+<p>The <code>configReader</code> function shows how we can combine different <code>Reader</code> instances with <code>bind</code></p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb15-1" title="1"><span class="ot">configReader ::</span> <span class="dt">Reader</span> <span class="dt">Config</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb15-2" title="2">configReader <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb15-3" title="3">  ip <span class="ot">&lt;-</span> printIp</a>
+<a class="sourceLine" id="cb15-4" title="4">  name <span class="ot">&lt;-</span> printName</a>
+<a class="sourceLine" id="cb15-5" title="5">  <span class="fu">pure</span> (ip <span class="fu">&lt;&gt;</span> <span class="st">&quot;, &quot;</span> <span class="fu">&lt;&gt;</span> name)</a>
+<a class="sourceLine" id="cb15-6" title="6"></a>
+<a class="sourceLine" id="cb15-7" title="7"><span class="ot">withConfig ::</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb15-8" title="8">withConfig <span class="fu">=</span> runReader configReader config</a>
+<a class="sourceLine" id="cb15-9" title="9"><span class="co">-- withConfig == &quot;The ip address is 127.0.0.1, the name is localhost&quot;</span></a></code></pre></div>
+<h3 id="writer">Writer</h3>
+<p>The <code>Writer</code> monad accumulates a log as it does computations, by using the <code>tell</code> function to add items.</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb16-1" title="1"><span class="ot">addOne ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Writer</span> <span class="dt">String</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb16-2" title="2">addOne i <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb16-3" title="3">  tell <span class="st">&quot;Add one &quot;</span></a>
+<a class="sourceLine" id="cb16-4" title="4">  <span class="fu">pure</span> (i <span class="fu">+</span> <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb16-5" title="5"></a>
+<a class="sourceLine" id="cb16-6" title="6"><span class="ot">timesTwo ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Writer</span> <span class="dt">String</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb16-7" title="7">timesTwo i <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb16-8" title="8">  tell <span class="st">&quot;times two &quot;</span></a>
+<a class="sourceLine" id="cb16-9" title="9">  <span class="fu">pure</span> (i \<span class="fu">*</span> <span class="dv">2</span>)</a>
+<a class="sourceLine" id="cb16-10" title="10"></a>
+<a class="sourceLine" id="cb16-11" title="11"><span class="ot">maths ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Writer</span> <span class="dt">String</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb16-12" title="12">maths i <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb16-13" title="13">  j <span class="ot">&lt;-</span> addOne i</a>
+<a class="sourceLine" id="cb16-14" title="14">  k <span class="ot">&lt;-</span> timesTwo j</a>
+<a class="sourceLine" id="cb16-15" title="15">  <span class="fu">pure</span> k</a>
+<a class="sourceLine" id="cb16-16" title="16"><span class="co">-- runWriter maths 10 == (22, &quot;Add one times two&quot;)</span></a></code></pre></div>
+<h3 id="io">IO</h3>
+<p>The <code>IO</code> monad is a very interesting one. Each time we run <code>bind</code>, the value that comes out can be affected by stuff like user input, system time, or other side effects. This is how we can write effectful code in a relatively safe manner. This is how we write code like this that actually interacts with users.</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb17-1" title="1"><span class="ot">things ::</span> <span class="dt">IO</span> <span class="dt">Unit</span></a>
+<a class="sourceLine" id="cb17-2" title="2">things <span class="fu">=</span> <span class="kw">do</span></a>
+<a class="sourceLine" id="cb17-3" title="3">  \_ <span class="ot">&lt;-</span> <span class="fu">putStrLn</span> <span class="st">&quot;Hello! What is your name?&quot;</span></a>
+<a class="sourceLine" id="cb17-4" title="4">  name <span class="ot">&lt;-</span> <span class="fu">readLn</span></a>
+<a class="sourceLine" id="cb17-5" title="5">  <span class="fu">putStrLn</span> (<span class="st">&quot;Hello, &quot;</span> <span class="fu">++</span> name)</a></code></pre></div>
+<p>That is all. I feel this somewhat rushes things a lot, and there is a lot to chew on, but hopefully these examples will help you build up an intuition for how these work.</p>
+<p>Further Reading:</p>
+<p><a href="https://egghead.io/lessons/javascript-you-ve-been-using-monads">You’ve Been Using Monads</a></p>
+<p><a href="https://www.google.com/search?q=monad+tutorial">Lots More Of This Kind Of Thing</a></p>
+    </section>
+</article>
+
+    </main>
+
+    <footer>
+        Site proudly generated by
+        <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+    </footer>
+</body>
+
+</html>
