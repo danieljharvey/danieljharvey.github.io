@@ -35,17 +35,17 @@
     </section>
     <section>
         <p>Let’s think about horses. There are three kinds of Horse:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="kw">data</span> <span class="dt">Horse</span> <span class="fu">=</span> <span class="dt">SmallHorse</span> <span class="fu">|</span> <span class="dt">LargeHorse</span> <span class="fu">|</span> <span class="dt">OtherHorse</span></a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="kw">data</span> <span class="dt">Horse</span> <span class="ot">=</span> <span class="dt">SmallHorse</span> <span class="op">|</span> <span class="dt">LargeHorse</span> <span class="op">|</span> <span class="dt">OtherHorse</span></a></code></pre></div>
 <p>Let’s make a function to check whether two Horses are in fact equivalently sized.</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" title="1"><span class="ot">isSameHorse ::</span> <span class="dt">Horse</span> <span class="ot">-&gt;</span> <span class="dt">Horse</span> <span class="ot">-&gt;</span> <span class="dt">Bool</span></a>
-<a class="sourceLine" id="cb2-2" title="2">isSameHorse first second <span class="fu">=</span> first <span class="fu">==</span> second</a></code></pre></div>
+<a class="sourceLine" id="cb2-2" title="2">isSameHorse first second <span class="ot">=</span> first <span class="op">==</span> second</a></code></pre></div>
 <p>Looks like a classic. Let’s run it!</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" title="1">isSameHorse <span class="dt">SmallHorse</span> <span class="dt">LargeHorse</span></a></code></pre></div>
 <p>Shit!</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" title="1">• <span class="dt">No</span> <span class="kw">instance</span> for (<span class="dt">Eq</span> <span class="dt">Horse</span>) arising from a use <span class="kw">of</span> ‘<span class="fu">==</span>’</a>
-<a class="sourceLine" id="cb4-2" title="2">• <span class="dt">In</span> the expression<span class="fu">:</span> first <span class="fu">==</span> second</a>
-<a class="sourceLine" id="cb4-3" title="3">    <span class="dt">In</span> an equation for ‘isSameHorse’<span class="fu">:</span></a>
-<a class="sourceLine" id="cb4-4" title="4">        isSameHorse first second <span class="fu">=</span> first <span class="fu">==</span> second</a></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" title="1">• <span class="dt">No</span> <span class="kw">instance</span> for (<span class="dt">Eq</span> <span class="dt">Horse</span>) arising from a use <span class="kw">of</span> ‘<span class="op">==</span>’</a>
+<a class="sourceLine" id="cb4-2" title="2">• <span class="dt">In</span> the expression<span class="op">:</span> first <span class="op">==</span> second</a>
+<a class="sourceLine" id="cb4-3" title="3">    <span class="dt">In</span> an equation for ‘isSameHorse’<span class="op">:</span></a>
+<a class="sourceLine" id="cb4-4" title="4">        isSameHorse first second <span class="ot">=</span> first <span class="op">==</span> second</a></code></pre></div>
 <p>That’s terrible news. What’s wrong here? Apparently, we need to make an instance of the <code>Eq</code> (short for ‘equality’) typeclass for <code>Horse</code> before they can be compared. What’s the <code>Eq</code> typeclass?</p>
 <p>We can find out more by firing up <code>ghci</code>, the GHC repl.</p>
 <p>You should see a prompt with the following:</p>
@@ -57,30 +57,30 @@
 <a class="sourceLine" id="cb6-4" title="4">  <span class="ot">{-# MINIMAL (==) | (/=) #-}</span></a></code></pre></div>
 <p>It shows there are two functions in the <code>Eq</code> typeclass, <code>==</code> and <code>/=</code> (equals and not-equals), and that a “minimal” definition of <code>Eq</code> only needs one of those.</p>
 <p>Let’s start again and make a better horse.</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" title="1"><span class="kw">data</span> <span class="dt">BetterHorse</span> <span class="fu">=</span> <span class="dt">Tiny</span> <span class="fu">|</span> <span class="dt">Average</span> <span class="fu">|</span> <span class="dt">Huge</span></a></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" title="1"><span class="kw">data</span> <span class="dt">BetterHorse</span> <span class="ot">=</span> <span class="dt">Tiny</span> <span class="op">|</span> <span class="dt">Average</span> <span class="op">|</span> <span class="dt">Huge</span></a></code></pre></div>
 <p>Let’s not make the same mistake this time - let’s make an instance of the <code>Eq</code> typeclass for them. We are going to implement <code>==</code> which has a type of <code>a -&gt; a -&gt; Bool</code>.</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" title="1"><span class="kw">instance</span> <span class="dt">Eq</span> <span class="dt">BetterHorse</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb8-2" title="2">    <span class="dt">Tiny</span> <span class="fu">==</span> <span class="dt">Tiny</span> <span class="fu">=</span> <span class="dt">True</span></a>
-<a class="sourceLine" id="cb8-3" title="3">    <span class="dt">Average</span> <span class="fu">==</span> <span class="dt">Average</span> <span class="fu">=</span> <span class="dt">True</span></a>
-<a class="sourceLine" id="cb8-4" title="4">    <span class="dt">Huge</span> <span class="fu">==</span> <span class="dt">Huge</span> <span class="fu">=</span> <span class="dt">True</span></a>
-<a class="sourceLine" id="cb8-5" title="5">    _ <span class="fu">==</span> _ <span class="fu">=</span> <span class="dt">False</span></a></code></pre></div>
+<a class="sourceLine" id="cb8-2" title="2">    <span class="dt">Tiny</span> <span class="op">==</span> <span class="dt">Tiny</span> <span class="ot">=</span> <span class="dt">True</span></a>
+<a class="sourceLine" id="cb8-3" title="3">    <span class="dt">Average</span> <span class="op">==</span> <span class="dt">Average</span> <span class="ot">=</span> <span class="dt">True</span></a>
+<a class="sourceLine" id="cb8-4" title="4">    <span class="dt">Huge</span> <span class="op">==</span> <span class="dt">Huge</span> <span class="ot">=</span> <span class="dt">True</span></a>
+<a class="sourceLine" id="cb8-5" title="5">    _ <span class="op">==</span> _ <span class="ot">=</span> <span class="dt">False</span></a></code></pre></div>
 <p>OK, seems fine. We’ve listed all the times two <code>BetterHorse</code> are the same and used <code>_ == _ = False</code> to mean “anything else is not equal” to save ourselves listing every alternative.</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" title="1"><span class="ot">isSameBetterHorse ::</span> <span class="dt">BetterHorse</span> <span class="ot">-&gt;</span> <span class="dt">BetterHorse</span> <span class="ot">-&gt;</span> <span class="dt">Bool</span></a>
-<a class="sourceLine" id="cb9-2" title="2">isSameBetterHorse first second <span class="fu">=</span> first <span class="fu">==</span> second</a></code></pre></div>
+<a class="sourceLine" id="cb9-2" title="2">isSameBetterHorse first second <span class="ot">=</span> first <span class="op">==</span> second</a></code></pre></div>
 <p>Now our <code>BetterHorse</code> comparing function works. Let’s give it a go.</p>
 <div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" title="1"><span class="ot">nope ::</span> <span class="dt">Bool</span></a>
-<a class="sourceLine" id="cb10-2" title="2">nope <span class="fu">=</span> isSameBetterHorse <span class="dt">Tiny</span> <span class="dt">Huge</span></a>
+<a class="sourceLine" id="cb10-2" title="2">nope <span class="ot">=</span> isSameBetterHorse <span class="dt">Tiny</span> <span class="dt">Huge</span></a>
 <a class="sourceLine" id="cb10-3" title="3"><span class="co">-- nope = False</span></a></code></pre></div>
 <div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" title="1"><span class="ot">yep ::</span> <span class="dt">Bool</span></a>
-<a class="sourceLine" id="cb11-2" title="2">yep <span class="fu">=</span> isSameBetterHorse <span class="dt">Average</span> <span class="dt">Average</span></a>
+<a class="sourceLine" id="cb11-2" title="2">yep <span class="ot">=</span> isSameBetterHorse <span class="dt">Average</span> <span class="dt">Average</span></a>
 <a class="sourceLine" id="cb11-3" title="3"><span class="co">-- yep = True</span></a></code></pre></div>
 <p>All seems to be fine here. We even get the <code>/=</code> function for free by defining <code>==</code>.</p>
 <div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" title="1"><span class="ot">nice ::</span> <span class="dt">Bool</span></a>
-<a class="sourceLine" id="cb12-2" title="2">nice <span class="fu">=</span> <span class="dt">Average</span> <span class="fu">/=</span> <span class="dt">Tiny</span></a>
+<a class="sourceLine" id="cb12-2" title="2">nice <span class="ot">=</span> <span class="dt">Average</span> <span class="op">/=</span> <span class="dt">Tiny</span></a>
 <a class="sourceLine" id="cb12-3" title="3"><span class="co">-- nice = True</span></a></code></pre></div>
 <p>If you’re thinking “this seems laborious”, you’d be right. Fortunately, for basic data types like this, we can simply auto-generate an <code>Eq</code> instance in the data definition like this:</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb13-1" title="1"><span class="kw">data</span> <span class="dt">LazyHorse</span> <span class="fu">=</span> <span class="dt">LazyTiny</span> <span class="fu">|</span> <span class="dt">LazyOther</span> <span class="kw">deriving</span> (<span class="dt">Eq</span>)</a></code></pre></div>
-<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" title="1">workingNow <span class="fu">=</span> <span class="dt">LazyTiny</span> <span class="fu">==</span> <span class="dt">LazyTiny</span></a>
+<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb13-1" title="1"><span class="kw">data</span> <span class="dt">LazyHorse</span> <span class="ot">=</span> <span class="dt">LazyTiny</span> <span class="op">|</span> <span class="dt">LazyOther</span> <span class="kw">deriving</span> (<span class="dt">Eq</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" title="1">workingNow <span class="ot">=</span> <span class="dt">LazyTiny</span> <span class="op">==</span> <span class="dt">LazyTiny</span></a>
 <a class="sourceLine" id="cb14-2" title="2"><span class="co">-- workingNow == True</span></a></code></pre></div>
 <p>Great!</p>
 <p>Make sense? If not, why not <a href="../contact.html">get in touch</a>?</p>

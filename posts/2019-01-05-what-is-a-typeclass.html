@@ -91,13 +91,13 @@
 <p><strong>arr</strong> is not a typeclass, it is an object (or more broadly, a value).</p>
 <p>A <code>Functor</code> is a typeclass though, and <strong>arr</strong> can be an instance of <code>Functor</code>.</p>
 <p>The rules of a ‘lawful’ <code>Functor</code> is that we can run a Map function over the contents of the array and afterward <em>The Length Of The Array Remains The Same</em> and <em>It’s Still An Array</em> and <em>Basically Nothing Really Weird Has Happened</em>.</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode javascript"><code class="sourceCode javascript"><a class="sourceLine" id="cb4-1" title="1"><span class="va">arr</span>.<span class="at">map</span>(x <span class="op">=&gt;</span> x)</a>
+<div class="sourceCode" id="cb4"><pre class="sourceCode javascript"><code class="sourceCode javascript"><a class="sourceLine" id="cb4-1" title="1"><span class="va">arr</span>.<span class="at">map</span>(x <span class="kw">=&gt;</span> x)</a>
 <a class="sourceLine" id="cb4-2" title="2"><span class="co">// arr == [1, 2, 2, 4, 65, 7]</span></a></code></pre></div>
 <p>As you see here, our array is the same length and the function has been applied to each item without any <em>Funny Business</em>. To tie it back to our police-based analogy - if <strong>DS Kate Fleming</strong> was given some important evidence to take back to the station, this result constitutes the evidence arriving at the station untampered for some forensic analysis that will pull the case together in the final nail-biting moments of the series.</p>
 <p>However, what if <strong>DC Nigel “Nige” Morton</strong> was given that same evidence? That’s a nice <code>65</code> value in there, surely nobody would notice if he snuck it for himself? Surely he’s <em>Done His Bit Over The Years And Deserves It</em>, after all.</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode javascript"><code class="sourceCode javascript"><a class="sourceLine" id="cb5-1" title="1"><span class="kw">var</span> nigesFilthyPocket <span class="op">=</span> []</a>
 <a class="sourceLine" id="cb5-2" title="2"></a>
-<a class="sourceLine" id="cb5-3" title="3"><span class="va">arr</span>.<span class="at">map</span>(x <span class="op">=&gt;</span> <span class="op">{</span></a>
+<a class="sourceLine" id="cb5-3" title="3"><span class="va">arr</span>.<span class="at">map</span>(x <span class="kw">=&gt;</span> <span class="op">{</span></a>
 <a class="sourceLine" id="cb5-4" title="4">  <span class="cf">if</span> (x <span class="op">&lt;</span> <span class="dv">65</span>) <span class="op">{</span></a>
 <a class="sourceLine" id="cb5-5" title="5">    <span class="cf">return</span> x</a>
 <a class="sourceLine" id="cb5-6" title="6">  <span class="op">}</span> <span class="cf">else</span> <span class="op">{</span></a>

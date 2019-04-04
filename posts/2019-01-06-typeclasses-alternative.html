@@ -35,33 +35,33 @@
     </section>
     <section>
         <p>Let’s think about things that may or may not happen (again, I know, I’m sorry).</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="kw">data</span> <span class="dt">Perhaps</span> a <span class="fu">=</span> <span class="dt">Yeah</span> a <span class="fu">|</span> <span class="dt">Nope</span> <span class="kw">deriving</span> (<span class="dt">Eq</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="kw">data</span> <span class="dt">Perhaps</span> a <span class="ot">=</span> <span class="dt">Yeah</span> a <span class="op">|</span> <span class="dt">Nope</span> <span class="kw">deriving</span> (<span class="dt">Eq</span>)</a></code></pre></div>
 <p>A classic datatype, that we can use for expressing either <em>Some Sort Of Value</em> or <em>The Entire Concept Of Failure</em>. We can use it when getting the first item of a list, which may or may not actually exist.</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" title="1"><span class="ot">first ::</span> [a] <span class="ot">-&gt;</span> <span class="dt">Perhaps</span> a</a>
-<a class="sourceLine" id="cb2-2" title="2">first (a<span class="fu">:</span>_) <span class="fu">=</span> <span class="dt">Yeah</span> a</a>
-<a class="sourceLine" id="cb2-3" title="3">first _     <span class="fu">=</span> <span class="dt">Nope</span></a></code></pre></div>
+<a class="sourceLine" id="cb2-2" title="2">first (a<span class="op">:</span>_) <span class="ot">=</span> <span class="dt">Yeah</span> a</a>
+<a class="sourceLine" id="cb2-3" title="3">first _     <span class="ot">=</span> <span class="dt">Nope</span></a></code></pre></div>
 <p>If there IS a first item in the list we get the item wrapped in a <code>Yeah</code>, if not we get <code>Nope</code>.</p>
 <p>We can make another very similar function for getting the second item as well…</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" title="1"><span class="ot">second ::</span> [a] <span class="ot">-&gt;</span> <span class="dt">Perhaps</span> a</a>
-<a class="sourceLine" id="cb3-2" title="2">second (_<span class="fu">:</span>b<span class="fu">:</span>_) <span class="fu">=</span> <span class="dt">Yeah</span> b</a>
-<a class="sourceLine" id="cb3-3" title="3">second _       <span class="fu">=</span> <span class="dt">Nope</span></a></code></pre></div>
+<a class="sourceLine" id="cb3-2" title="2">second (_<span class="op">:</span>b<span class="op">:</span>_) <span class="ot">=</span> <span class="dt">Yeah</span> b</a>
+<a class="sourceLine" id="cb3-3" title="3">second _       <span class="ot">=</span> <span class="dt">Nope</span></a></code></pre></div>
 <p>Now let’s say that for some entirely incomprehensible reason, we’d like the second item in the list, if not, the first item. What would that function look like?</p>
 <h3 id="first-solution">First solution</h3>
 <div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" title="1"><span class="ot">naiveImplementation ::</span> [a] <span class="ot">-&gt;</span> <span class="dt">Perhaps</span> a</a>
-<a class="sourceLine" id="cb4-2" title="2">naiveImplementation as <span class="fu">=</span> <span class="kw">case</span> second as <span class="kw">of</span></a>
+<a class="sourceLine" id="cb4-2" title="2">naiveImplementation as <span class="ot">=</span> <span class="kw">case</span> second as <span class="kw">of</span></a>
 <a class="sourceLine" id="cb4-3" title="3">  <span class="dt">Yeah</span> s <span class="ot">-&gt;</span> <span class="dt">Yeah</span> s</a>
 <a class="sourceLine" id="cb4-4" title="4">  <span class="dt">Nope</span>   <span class="ot">-&gt;</span> first as</a></code></pre></div>
 <p>Does it work?</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" title="1"><span class="ot">emptyList ::</span> <span class="dt">Perhaps</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb5-2" title="2">emptyList <span class="fu">=</span> naiveImplementation []</a>
+<a class="sourceLine" id="cb5-2" title="2">emptyList <span class="ot">=</span> naiveImplementation []</a>
 <a class="sourceLine" id="cb5-3" title="3"><span class="co">-- emptyList == Nope</span></a>
 <a class="sourceLine" id="cb5-4" title="4"></a>
 <a class="sourceLine" id="cb5-5" title="5"><span class="ot">oneItemList ::</span> <span class="dt">Perhaps</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb5-6" title="6">oneItemList <span class="fu">=</span> naiveImplementation [<span class="dv">1</span>]</a>
+<a class="sourceLine" id="cb5-6" title="6">oneItemList <span class="ot">=</span> naiveImplementation [<span class="dv">1</span>]</a>
 <a class="sourceLine" id="cb5-7" title="7"><span class="co">-- oneItemList == Yeah 1</span></a>
 <a class="sourceLine" id="cb5-8" title="8"></a>
 <a class="sourceLine" id="cb5-9" title="9"><span class="ot">twoItemList ::</span> <span class="dt">Perhaps</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb5-10" title="10">twoItemList <span class="fu">=</span> naiveImplementation [<span class="dv">1</span>,<span class="dv">2</span>]</a>
+<a class="sourceLine" id="cb5-10" title="10">twoItemList <span class="ot">=</span> naiveImplementation [<span class="dv">1</span>,<span class="dv">2</span>]</a>
 <a class="sourceLine" id="cb5-11" title="11"><span class="co">-- oneItemList == Yeah 2</span></a></code></pre></div>
 <p>It bloody does! Lovely stuff. Let’s all go home and put our feet up, we’ve nailed it.</p>
 <p>OK. But hang on, that <code>naiveImplementation</code> function does seem a bit much though, especially if we start adding more cases to it. Plus that name kinda suggests, well, that the function might not represent the best way to go about this.</p>
@@ -69,9 +69,9 @@
 <p>Let’s meet <code>Alternative</code>!</p>
 <h3 id="definition">Definition</h3>
 <p>What does <code>ghci</code> have to say about this so-called <code>Alternative</code>?</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" title="1"><span class="dt">Prelude</span><span class="fu">&gt;</span> <span class="kw">import</span> <span class="dt">Control.Applicative</span></a>
-<a class="sourceLine" id="cb6-2" title="2"><span class="dt">Prelude</span><span class="fu">&gt;</span> <span class="fu">:</span>i <span class="dt">Alternative</span></a></code></pre></div>
-<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" title="1"><span class="kw">class</span> <span class="dt">Applicative</span> f <span class="ot">=&gt;</span> <span class="dt">Alternative</span> (<span class="ot">f ::</span> <span class="fu">*</span> <span class="ot">-&gt;</span> <span class="fu">*</span>) <span class="kw">where</span></a>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" title="1"><span class="dt">Prelude</span><span class="op">&gt;</span> <span class="kw">import</span> <span class="dt">Control.Applicative</span></a>
+<a class="sourceLine" id="cb6-2" title="2"><span class="dt">Prelude</span><span class="op">&gt;</span> <span class="op">:</span>i <span class="dt">Alternative</span></a></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" title="1"><span class="kw">class</span> <span class="dt">Applicative</span> f <span class="ot">=&gt;</span> <span class="dt">Alternative</span> (<span class="ot">f ::</span> <span class="op">*</span> <span class="ot">-&gt;</span> <span class="op">*</span>) <span class="kw">where</span></a>
 <a class="sourceLine" id="cb7-2" title="2"><span class="ot">  empty ::</span> f a</a>
 <a class="sourceLine" id="cb7-3" title="3"><span class="ot">  (&lt;|&gt;) ::</span> f a <span class="ot">-&gt;</span> f a <span class="ot">-&gt;</span> f a</a>
 <a class="sourceLine" id="cb7-4" title="4">  <span class="ot">{-# MINIMAL empty, (&lt;|&gt;) #-}</span></a></code></pre></div>
@@ -86,57 +86,57 @@
 <h3 id="instances">Instances</h3>
 <p>Before we can have an <code>Applicative</code> we’ll need a <a href="../posts/2018-11-16-typeclasses-functor.markdown">Functor</a> instance. This one runs the function over the value if it’s there, if not, it does nothing at all.</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" title="1"><span class="kw">instance</span> <span class="dt">Functor</span> <span class="dt">Perhaps</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb8-2" title="2">  <span class="fu">fmap</span> f (<span class="dt">Yeah</span> a) <span class="fu">=</span> <span class="dt">Yeah</span> (f a)</a>
-<a class="sourceLine" id="cb8-3" title="3">  <span class="fu">fmap</span> _ _        <span class="fu">=</span> <span class="dt">Nope</span></a></code></pre></div>
+<a class="sourceLine" id="cb8-2" title="2">  <span class="fu">fmap</span> f (<span class="dt">Yeah</span> a) <span class="ot">=</span> <span class="dt">Yeah</span> (f a)</a>
+<a class="sourceLine" id="cb8-3" title="3">  <span class="fu">fmap</span> _ _        <span class="ot">=</span> <span class="dt">Nope</span></a></code></pre></div>
 <p>OK. Great stuff. Let’s make an <code>Applicative</code> instance next. The <code>pure</code> instance just wraps whatever it’s passed in a <code>Yeah</code>. The <code>&lt;*&gt;</code> (or <code>apply</code>) function is written so that if we have a function inside <code>f</code> and a value in <code>a</code> then we’ll get the function <code>f</code> applied to <code>a</code> and wrapped in <code>Yeah</code>, if not we’ll get a <code>Nope</code>.</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" title="1"><span class="kw">instance</span> <span class="dt">Applicative</span> <span class="dt">Perhaps</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb9-2" title="2">  <span class="fu">pure</span> a <span class="fu">=</span> <span class="dt">Yeah</span> a</a>
-<a class="sourceLine" id="cb9-3" title="3">  (<span class="dt">Yeah</span> f) <span class="fu">&lt;*&gt;</span> (<span class="dt">Yeah</span> a) <span class="fu">=</span> <span class="dt">Yeah</span> (f a)</a>
-<a class="sourceLine" id="cb9-4" title="4">  _        <span class="fu">&lt;*&gt;</span> _        <span class="fu">=</span> <span class="dt">Nope</span></a></code></pre></div>
+<a class="sourceLine" id="cb9-2" title="2">  <span class="fu">pure</span> a <span class="ot">=</span> <span class="dt">Yeah</span> a</a>
+<a class="sourceLine" id="cb9-3" title="3">  (<span class="dt">Yeah</span> f) <span class="op">&lt;*&gt;</span> (<span class="dt">Yeah</span> a) <span class="ot">=</span> <span class="dt">Yeah</span> (f a)</a>
+<a class="sourceLine" id="cb9-4" title="4">  _        <span class="op">&lt;*&gt;</span> _        <span class="ot">=</span> <span class="dt">Nope</span></a></code></pre></div>
 <p>Yeah? Yeah.</p>
 <p>OK. Here is the exciting part:</p>
 <div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" title="1"><span class="kw">instance</span> <span class="dt">Alternative</span> <span class="dt">Perhaps</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb10-2" title="2">    empty             <span class="fu">=</span> <span class="dt">Nope</span></a>
-<a class="sourceLine" id="cb10-3" title="3">    <span class="dt">Yeah</span> x  <span class="fu">&lt;|&gt;</span> _     <span class="fu">=</span> <span class="dt">Yeah</span> x</a>
-<a class="sourceLine" id="cb10-4" title="4">    _       <span class="fu">&lt;|&gt;</span> y     <span class="fu">=</span> y</a></code></pre></div>
+<a class="sourceLine" id="cb10-2" title="2">    empty             <span class="ot">=</span> <span class="dt">Nope</span></a>
+<a class="sourceLine" id="cb10-3" title="3">    <span class="dt">Yeah</span> x  <span class="op">&lt;|&gt;</span> _     <span class="ot">=</span> <span class="dt">Yeah</span> x</a>
+<a class="sourceLine" id="cb10-4" title="4">    _       <span class="op">&lt;|&gt;</span> y     <span class="ot">=</span> y</a></code></pre></div>
 <p>Look at that! An exciting <code>Alternative</code> instance. <code>Nope</code> is our <code>empty</code> (or <em>identity</em>) value, and our <code>&lt;|&gt;</code> function returns the first value if it’s a <code>Yeah</code> (which represents <em>valid</em> data in the context of our <code>Perhaps</code> datatype), if not it returns whatever the second value is.</p>
 <p>Let’s use it to make some contrived code ever so slightly smaller and more difficult to understand.</p>
 <h3 id="better-solution">Better Solution</h3>
 <p>Here is our <em>Get The Second Item, Or If That Doesn’t Work Out Then Let’s Settle For The First Item</em> function.</p>
 <div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" title="1"><span class="ot">getPreferred ::</span> [a] <span class="ot">-&gt;</span> <span class="dt">Perhaps</span> a</a>
-<a class="sourceLine" id="cb11-2" title="2">getPreferred as <span class="fu">=</span> second as <span class="fu">&lt;|&gt;</span> first as</a></code></pre></div>
+<a class="sourceLine" id="cb11-2" title="2">getPreferred as <span class="ot">=</span> second as <span class="op">&lt;|&gt;</span> first as</a></code></pre></div>
 <p>Much easier to understand! It almost looks like <code>second || first</code>, which I like a lot.</p>
 <p>Don’t trust me?</p>
 <div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" title="1"><span class="ot">notFound ::</span> <span class="dt">Perhaps</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb12-2" title="2">notFound <span class="fu">=</span> getPreferred []</a>
+<a class="sourceLine" id="cb12-2" title="2">notFound <span class="ot">=</span> getPreferred []</a>
 <a class="sourceLine" id="cb12-3" title="3"><span class="co">-- notFound == Nope</span></a>
 <a class="sourceLine" id="cb12-4" title="4"></a>
 <a class="sourceLine" id="cb12-5" title="5"><span class="ot">found1 ::</span> <span class="dt">Perhaps</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb12-6" title="6">found1 <span class="fu">=</span> getPreferred [<span class="dv">1</span>]</a>
+<a class="sourceLine" id="cb12-6" title="6">found1 <span class="ot">=</span> getPreferred [<span class="dv">1</span>]</a>
 <a class="sourceLine" id="cb12-7" title="7"><span class="co">-- found1 == Yeah 1</span></a>
 <a class="sourceLine" id="cb12-8" title="8"></a>
 <a class="sourceLine" id="cb12-9" title="9"><span class="ot">found2 ::</span> <span class="dt">Perhaps</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb12-10" title="10">found2 <span class="fu">=</span> getPreferred [<span class="dv">1</span>,<span class="dv">2</span>]</a>
+<a class="sourceLine" id="cb12-10" title="10">found2 <span class="ot">=</span> getPreferred [<span class="dv">1</span>,<span class="dv">2</span>]</a>
 <a class="sourceLine" id="cb12-11" title="11"><span class="co">-- found2 = Yeah 2</span></a></code></pre></div>
 <p>See! And you doubted me!</p>
 <p>Now, that seems like a lot of instance writing for not much, but often the place you’ll find <code>Alternative</code> is in stuff like routing for front end applications. Let’s have a look at something like that:</p>
 <h3 id="routing-example">Routing Example</h3>
 <p>Here’s a datatype to describe all the pages in a completely fictional and somewhat limited website…</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb13-1" title="1"><span class="kw">data</span> <span class="dt">Route</span> <span class="fu">=</span> <span class="dt">Index</span></a>
-<a class="sourceLine" id="cb13-2" title="2">           <span class="fu">|</span> <span class="dt">Gallery</span></a>
-<a class="sourceLine" id="cb13-3" title="3">           <span class="fu">|</span> <span class="dt">Contact</span></a>
-<a class="sourceLine" id="cb13-4" title="4">           <span class="fu">|</span> <span class="dt">Complaints</span></a>
-<a class="sourceLine" id="cb13-5" title="5">           <span class="fu">|</span> <span class="dt">Help</span> <span class="kw">deriving</span> (<span class="dt">Eq</span>, <span class="dt">Show</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb13-1" title="1"><span class="kw">data</span> <span class="dt">Route</span> <span class="ot">=</span> <span class="dt">Index</span></a>
+<a class="sourceLine" id="cb13-2" title="2">           <span class="op">|</span> <span class="dt">Gallery</span></a>
+<a class="sourceLine" id="cb13-3" title="3">           <span class="op">|</span> <span class="dt">Contact</span></a>
+<a class="sourceLine" id="cb13-4" title="4">           <span class="op">|</span> <span class="dt">Complaints</span></a>
+<a class="sourceLine" id="cb13-5" title="5">           <span class="op">|</span> <span class="dt">Help</span> <span class="kw">deriving</span> (<span class="dt">Eq</span>, <span class="dt">Show</span>)</a></code></pre></div>
 <p>…some type aliases to make the type signatures we’re about to write easier to understand…</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" title="1"><span class="kw">type</span> <span class="dt">Url</span> <span class="fu">=</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb14-2" title="2"><span class="kw">type</span> <span class="dt">Match</span> <span class="fu">=</span> <span class="dt">String</span></a></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" title="1"><span class="kw">type</span> <span class="dt">Url</span> <span class="ot">=</span> <span class="dt">String</span></a>
+<a class="sourceLine" id="cb14-2" title="2"><span class="kw">type</span> <span class="dt">Match</span> <span class="ot">=</span> <span class="dt">String</span></a></code></pre></div>
 <p>…and a (rather basic) function for taking the passed <code>url</code> and matching it to the page we want to be looking at:</p>
 <div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb15-1" title="1"><span class="ot">matches ::</span> <span class="dt">Match</span> <span class="ot">-&gt;</span> <span class="dt">Route</span> <span class="ot">-&gt;</span> <span class="dt">Url</span> <span class="ot">-&gt;</span> <span class="dt">Perhaps</span> <span class="dt">Route</span></a>
-<a class="sourceLine" id="cb15-2" title="2">matches match route url <span class="fu">=</span> <span class="kw">if</span> isInfixOf match' url'</a>
+<a class="sourceLine" id="cb15-2" title="2">matches match route url <span class="ot">=</span> <span class="kw">if</span> isInfixOf match' url'</a>
 <a class="sourceLine" id="cb15-3" title="3">                        <span class="kw">then</span> <span class="dt">Yeah</span> route</a>
 <a class="sourceLine" id="cb15-4" title="4">                        <span class="kw">else</span> <span class="dt">Nope</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb15-5" title="5">                          match' <span class="fu">=</span> <span class="fu">toLower</span> <span class="fu">&lt;$&gt;</span> match</a>
-<a class="sourceLine" id="cb15-6" title="6">                          url'   <span class="fu">=</span> <span class="fu">toLower</span> <span class="fu">&lt;$&gt;</span> url</a></code></pre></div>
+<a class="sourceLine" id="cb15-5" title="5">                          match' <span class="ot">=</span> <span class="fu">toLower</span> <span class="op">&lt;$&gt;</span> match</a>
+<a class="sourceLine" id="cb15-6" title="6">                          url'   <span class="ot">=</span> <span class="fu">toLower</span> <span class="op">&lt;$&gt;</span> url</a></code></pre></div>
 <p>What’s going on here?</p>
 <ol type="1">
 <li><p>First, it converts our <code>match</code> and <code>url</code> strings to lowercase by mapping <code>toLower</code> from <code>Data.Char</code> over.</p></li>
@@ -146,23 +146,23 @@
 <p>Good stuff!</p>
 <p>And now here is our actual logic, that uses the <code>matches</code> function to find out where we should navigate to in our excellent website.</p>
 <div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb16-1" title="1"><span class="ot">matchRoute ::</span> <span class="dt">Url</span> <span class="ot">-&gt;</span> <span class="dt">Perhaps</span> <span class="dt">Route</span></a>
-<a class="sourceLine" id="cb16-2" title="2">matchRoute url <span class="fu">=</span> matches <span class="st">&quot;gallery&quot;</span> <span class="dt">Gallery</span> url</a>
-<a class="sourceLine" id="cb16-3" title="3">             <span class="fu">&lt;|&gt;</span> matches <span class="st">&quot;contact&quot;</span> <span class="dt">Contact</span> url</a>
-<a class="sourceLine" id="cb16-4" title="4">             <span class="fu">&lt;|&gt;</span> matches <span class="st">&quot;complaints&quot;</span> <span class="dt">Complaints</span> url</a>
-<a class="sourceLine" id="cb16-5" title="5">             <span class="fu">&lt;|&gt;</span> matches <span class="st">&quot;help&quot;</span> <span class="dt">Help</span> url</a></code></pre></div>
+<a class="sourceLine" id="cb16-2" title="2">matchRoute url <span class="ot">=</span> matches <span class="st">&quot;gallery&quot;</span> <span class="dt">Gallery</span> url</a>
+<a class="sourceLine" id="cb16-3" title="3">             <span class="op">&lt;|&gt;</span> matches <span class="st">&quot;contact&quot;</span> <span class="dt">Contact</span> url</a>
+<a class="sourceLine" id="cb16-4" title="4">             <span class="op">&lt;|&gt;</span> matches <span class="st">&quot;complaints&quot;</span> <span class="dt">Complaints</span> url</a>
+<a class="sourceLine" id="cb16-5" title="5">             <span class="op">&lt;|&gt;</span> matches <span class="st">&quot;help&quot;</span> <span class="dt">Help</span> url</a></code></pre></div>
 <p>Assuming we always want to navigate somewhere, we can also make a wrapper function that returns a default <code>Route</code> if we do not find a valid one.</p>
 <div class="sourceCode" id="cb17"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb17-1" title="1"><span class="ot">matchRouteDefault ::</span> <span class="dt">Url</span> <span class="ot">-&gt;</span> <span class="dt">Route</span></a>
-<a class="sourceLine" id="cb17-2" title="2">matchRouteDefault url <span class="fu">=</span></a>
+<a class="sourceLine" id="cb17-2" title="2">matchRouteDefault url <span class="ot">=</span></a>
 <a class="sourceLine" id="cb17-3" title="3">  <span class="kw">case</span> matchRoute url <span class="kw">of</span></a>
 <a class="sourceLine" id="cb17-4" title="4">    <span class="dt">Yeah</span> route <span class="ot">-&gt;</span> route</a>
 <a class="sourceLine" id="cb17-5" title="5">    _          <span class="ot">-&gt;</span> <span class="dt">Index</span></a></code></pre></div>
 <p>Let’s use it to navigate to the <code>Gallery</code>, which I have no doubt is a very good example of the genre.</p>
 <div class="sourceCode" id="cb18"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb18-1" title="1"><span class="ot">findGallery ::</span> <span class="dt">Route</span></a>
-<a class="sourceLine" id="cb18-2" title="2">findGallery <span class="fu">=</span> matchRouteDefault <span class="st">&quot;http://internet.com/gallery&quot;</span></a>
+<a class="sourceLine" id="cb18-2" title="2">findGallery <span class="ot">=</span> matchRouteDefault <span class="st">&quot;http://internet.com/gallery&quot;</span></a>
 <a class="sourceLine" id="cb18-3" title="3"><span class="co">-- findGallery == Gallery</span></a></code></pre></div>
 <p>Or default to the <code>Index</code> when we’re passed a load of old rubbish.</p>
 <div class="sourceCode" id="cb19"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb19-1" title="1"><span class="ot">findDefault ::</span> <span class="dt">Route</span></a>
-<a class="sourceLine" id="cb19-2" title="2">findDefault <span class="fu">=</span> matchRouteDefault <span class="st">&quot;http://internet.com/rubbish&quot;</span></a>
+<a class="sourceLine" id="cb19-2" title="2">findDefault <span class="ot">=</span> matchRouteDefault <span class="st">&quot;http://internet.com/rubbish&quot;</span></a>
 <a class="sourceLine" id="cb19-3" title="3"><span class="co">-- findDefault == Index</span></a></code></pre></div>
 <p>We’re basically front end development experts now. Great stuff.</p>
 <h3 id="wrapping-up">Wrapping Up</h3>

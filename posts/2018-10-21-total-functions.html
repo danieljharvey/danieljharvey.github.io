@@ -44,7 +44,7 @@
 </ol>
 <p>Let’s start with a non-total function. The canonical example is Head from the Haskell Prelude, which returns you the first item in a list, and looks something like this:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="fu">head</span><span class="ot"> ::</span> [a] <span class="ot">-&gt;</span> a</a>
-<a class="sourceLine" id="cb1-2" title="2"><span class="fu">head</span> (x<span class="fu">:</span> xs) <span class="fu">=</span> x</a></code></pre></div>
+<a class="sourceLine" id="cb1-2" title="2"><span class="fu">head</span> (x<span class="op">:</span> xs) <span class="ot">=</span> x</a></code></pre></div>
 <p>If we pass along a list like <code>[1,2,3]</code>, we get <code>1</code> back, all great.</p>
 <p>But what if we pass it an empty list - <code>[]</code> ?</p>
 <p>If you guessed “giant heartbreaking error”- then correct! Exactly the type of thing we were told would never ever happen again once we submitted to a life of functional purity. So what’s the deal here?</p>
@@ -52,8 +52,8 @@
 <p>So what is the Proper Way To Do Things then?</p>
 <p>It’s to use a total version of the function, of course! Perhaps something like this:</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" title="1"><span class="ot">safeHead ::</span> [a] <span class="ot">-&gt;</span> <span class="dt">Maybe</span> a</a>
-<a class="sourceLine" id="cb2-2" title="2">safeHead [] <span class="fu">=</span> <span class="dt">Nothing</span></a>
-<a class="sourceLine" id="cb2-3" title="3">safeHead (x<span class="fu">:</span> xs) <span class="fu">=</span> <span class="dt">Just</span> x</a></code></pre></div>
+<a class="sourceLine" id="cb2-2" title="2">safeHead [] <span class="ot">=</span> <span class="dt">Nothing</span></a>
+<a class="sourceLine" id="cb2-3" title="3">safeHead (x<span class="op">:</span> xs) <span class="ot">=</span> <span class="dt">Just</span> x</a></code></pre></div>
 <p>Now what happens? If we pass it <code>[1,2,3]</code> we get ’Just 1` back (the first item wrapped in a Maybe type). Great!</p>
 <p>And what about if we use the empty list <code>[]</code> ? We get <code>Nothing</code>, which is certainly not an error.</p>
 <p>So far, so total, great stuff.</p>
@@ -64,15 +64,15 @@
 </ol>
 <p>Ideally, we should be able to use types to make sure this doesn’t happen, and make validating that data Somebody Else’s Problem.</p>
 <p>Therefore, let’s start by creating a new datatype…</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" title="1"><span class="kw">data</span> <span class="dt">NonEmpty</span> a <span class="fu">=</span> <span class="dt">NonEmpty</span> a [a]</a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" title="1"><span class="kw">data</span> <span class="dt">NonEmpty</span> a <span class="ot">=</span> <span class="dt">NonEmpty</span> a [a]</a></code></pre></div>
 <p>It contains a first value and a list, therefore ensuring there is always a first value. What does this to do to our head function then?</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" title="1"><span class="ot">nonEmptyHead ::</span> <span class="dt">NonEmpty</span> a <span class="ot">-&gt;</span> a</a>
-<a class="sourceLine" id="cb4-2" title="2">nonEmptyHead (<span class="dt">NonEmpty</span> x _) <span class="fu">=</span> x</a></code></pre></div>
+<a class="sourceLine" id="cb4-2" title="2">nonEmptyHead (<span class="dt">NonEmpty</span> x _) <span class="ot">=</span> x</a></code></pre></div>
 <p>Because the data type cannot be empty, our head function is guaranteed to return a value and is thus total.</p>
 <p>But we’ve got a list! How do we get one of these new fangled data types? Let’s make a helper function…</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" title="1"><span class="ot">createNonEmpty ::</span> [a] <span class="ot">-&gt;</span> <span class="dt">Maybe</span> (<span class="dt">NonEmpty</span> a)</a>
-<a class="sourceLine" id="cb5-2" title="2">createNonEmpty [] <span class="fu">=</span> <span class="dt">Nothing</span></a>
-<a class="sourceLine" id="cb5-3" title="3">createNonEmpty (x <span class="fu">:</span> xs) <span class="fu">=</span> <span class="dt">Just</span> (<span class="dt">NonEmpty</span> x xs)</a></code></pre></div>
+<a class="sourceLine" id="cb5-2" title="2">createNonEmpty [] <span class="ot">=</span> <span class="dt">Nothing</span></a>
+<a class="sourceLine" id="cb5-3" title="3">createNonEmpty (x <span class="op">:</span> xs) <span class="ot">=</span> <span class="dt">Just</span> (<span class="dt">NonEmpty</span> x xs)</a></code></pre></div>
 <p>A function like this allows us to turn a regular list into a NonEmpty list, by returning a <code>Just NonEmpty</code> for a list with one or more items, or a <code>Nothing</code> if the original List is empty. This still means we have a possibility of failure (expressed by the Maybe), however our <code>head</code> function expects that to be dealt with elsewhere before it gets involved with the data, and is thus total whilst always returning a value.</p>
 <p>Like all somewhat trivial examples, perhaps this seems like a lot of work for nothing (plus the overhead of dealing with a new datatype) - however this concept of doing a piece of validation once, capturing it in the type, and then having a much simpler time dealing with it onwards is very powerful indeed.</p>
 <p>(btw, Haskell actually has a NonEmpty list type, in <code>Data.List.NonEmpty</code>, but it’s more fun to make our own)</p>
