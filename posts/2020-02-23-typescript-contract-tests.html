@@ -67,7 +67,7 @@
 <a class="sourceLine" id="cb2-5" title="5"></a>
 <a class="sourceLine" id="cb2-6" title="6"><span class="kw">const</span> badUserJson <span class="op">=</span> <span class="op">{</span> blah<span class="op">:</span> <span class="st">&quot;dfgdfgdgf&quot;</span> <span class="op">}</span></a>
 <a class="sourceLine" id="cb2-7" title="7"></a>
-<a class="sourceLine" id="cb2-8" title="8"><span class="kw">const</span> no <span class="op">=</span> UserShape<span class="op">,</span><span class="fu">decode</span>(badUserJson)</a>
+<a class="sourceLine" id="cb2-8" title="8"><span class="kw">const</span> no <span class="op">=</span> <span class="va">UserShape</span><span class="op">.</span><span class="fu">decode</span>(badUserJson)</a>
 <a class="sourceLine" id="cb2-9" title="9"><span class="co">// no == Left with an error message</span></a></code></pre></div>
 <p>This means that we can validate JSON we receive into our application and ensure that when Typescript says we are talking about a <code>User</code>, we really are.</p>
 <figure>
