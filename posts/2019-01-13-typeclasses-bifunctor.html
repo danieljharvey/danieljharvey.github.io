@@ -29,50 +29,50 @@
         
         <div class="info">
           
-          Tags: <a href="../tags/haskell.html">haskell</a>, <a href="../tags/typeclasses.html">typeclasses</a>
+          Tags: <a title="All pages tagged 'haskell'." href="../tags/haskell.html">haskell</a>, <a title="All pages tagged 'typeclasses'." href="../tags/typeclasses.html">typeclasses</a>
           
         </div>
     </section>
     <section>
         <p>Let’s talk about things that could be one thing, or indeed could be another thing altogether.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="kw">data</span> <span class="dt">Things</span> a b <span class="ot">=</span> <span class="dt">This</span> a <span class="op">|</span> <span class="dt">That</span> b</a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Things</span> a b <span class="ot">=</span> <span class="dt">This</span> a <span class="op">|</span> <span class="dt">That</span> b</span></code></pre></div>
 <p>This could be a <code>This</code> with an <code>a</code> inside, like a <code>String</code>.</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" title="1"><span class="ot">thisEgg ::</span> <span class="dt">Things</span> <span class="dt">String</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb2-2" title="2">thisEgg <span class="ot">=</span> <span class="dt">This</span> <span class="st">&quot;Egg&quot;</span></a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ot">thisEgg ::</span> <span class="dt">Things</span> <span class="dt">String</span> <span class="dt">Int</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>thisEgg <span class="ot">=</span> <span class="dt">This</span> <span class="st">&quot;Egg&quot;</span></span></code></pre></div>
 <p>Or indeed a <code>That</code> with a <code>b</code> inside, like an <code>Int</code>.</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" title="1"><span class="ot">thatNumber ::</span> <span class="dt">Things</span> <span class="dt">String</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb3-2" title="2">thatNumber <span class="ot">=</span> <span class="dt">That</span> <span class="dv">68</span></a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ot">thatNumber ::</span> <span class="dt">Things</span> <span class="dt">String</span> <span class="dt">Int</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>thatNumber <span class="ot">=</span> <span class="dt">That</span> <span class="dv">68</span></span></code></pre></div>
 <p>Now hopefully you are now thinking - “Oh please, I do hope we map a function over one of these values soon” - and worry not, we absolutely bloody can.</p>
 <h3 id="mappity-mappity-map">Mappity Mappity Map</h3>
 <p>Let’s really push the boat out, and add one to the value inside.</p>
 <p>First we’ll need a <a href="../posts/2018-11-16-typeclasses-functor.markdown">Functor</a> instance. Hopefully nothing too surprising here.</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" title="1"><span class="kw">instance</span> <span class="dt">Functor</span> (<span class="dt">Things</span> a) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb4-2" title="2">  <span class="fu">fmap</span> f (<span class="dt">That</span> b) <span class="ot">=</span> <span class="dt">That</span> (f b)</a>
-<a class="sourceLine" id="cb4-3" title="3">  <span class="fu">fmap</span> _ (<span class="dt">This</span> a) <span class="ot">=</span> <span class="dt">This</span> a</a></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Functor</span> (<span class="dt">Things</span> a) <span class="kw">where</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fmap</span> f (<span class="dt">That</span> b) <span class="ot">=</span> <span class="dt">That</span> (f b)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fmap</span> _ (<span class="dt">This</span> a) <span class="ot">=</span> <span class="dt">This</span> a</span></code></pre></div>
 <p>Now we can map away to our heart’s content:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" title="1"><span class="ot">biggerNumber ::</span> <span class="dt">Things</span> <span class="dt">String</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb5-2" title="2">biggerNumber <span class="ot">=</span> <span class="fu">fmap</span> addOne (<span class="dt">That</span> <span class="dv">68</span>)</a>
-<a class="sourceLine" id="cb5-3" title="3"><span class="co">-- biggerNumber == That 69</span></a></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ot">biggerNumber ::</span> <span class="dt">Things</span> <span class="dt">String</span> <span class="dt">Int</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>biggerNumber <span class="ot">=</span> <span class="fu">fmap</span> addOne (<span class="dt">That</span> <span class="dv">68</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- biggerNumber == That 69</span></span></code></pre></div>
 <p>Nice.</p>
 <p>But what about `This “Egg”``? I’d like to get at that egg. Perhaps eat it.</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" title="1"><span class="ot">eat ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb6-2" title="2">eat s <span class="ot">=</span> <span class="st">&quot;The &quot;</span> <span class="op">++</span> s <span class="op">++</span> <span class="st">&quot; was delicious!&quot;</span></a></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ot">eat ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">String</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>eat s <span class="ot">=</span> <span class="st">&quot;The &quot;</span> <span class="op">++</span> s <span class="op">++</span> <span class="st">&quot; was delicious!&quot;</span></span></code></pre></div>
 <p>Can we do that with <code>Functor</code>?</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" title="1"><span class="ot">doesntWork ::</span> <span class="dt">Things</span> <span class="dt">String</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb7-2" title="2">doesntWork <span class="ot">=</span> <span class="fu">fmap</span> eat thisEgg</a>
-<a class="sourceLine" id="cb7-3" title="3"><span class="co">-- ERROR: Couldn't match type ‘[Char]’ with ‘Int’</span></a></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ot">doesntWork ::</span> <span class="dt">Things</span> <span class="dt">String</span> <span class="dt">Int</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>doesntWork <span class="ot">=</span> <span class="fu">fmap</span> eat thisEgg</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- ERROR: Couldn't match type ‘[Char]’ with ‘Int’</span></span></code></pre></div>
 <p>I’m afraid not. Looking back at our <code>Functor</code> instance we can see that the <code>fmap</code> function only lets us map over the values inside <code>That</code>, leaving poor <code>This</code> and our lonely egg very much map-less. But fear not! We have another weapon at hand that will let us get at it.</p>
 <p>Enter….<code>Bifunctor!</code></p>
 <p>(cue lightning, thunder, explosions and sounds of a large crowd who are clearly quite impressed).</p>
 <h3 id="definition">Definition</h3>
 <p>Let’s ask <code>ghci</code> what’s up.</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" title="1"><span class="op">&gt;</span> <span class="kw">import</span> Data.bifunctor</a>
-<a class="sourceLine" id="cb8-2" title="2"><span class="op">&gt;</span> <span class="op">:</span>i <span class="dt">Bifunctor</span></a></code></pre></div>
-<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" title="1"><span class="kw">class</span> <span class="dt">Bifunctor</span> (<span class="ot">p ::</span> <span class="op">*</span> <span class="ot">-&gt;</span> <span class="op">*</span> <span class="ot">-&gt;</span> <span class="op">*</span>) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb9-2" title="2"><span class="ot">  first ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> p a c <span class="ot">-&gt;</span> p b c</a>
-<a class="sourceLine" id="cb9-3" title="3"><span class="ot">  second ::</span> (b <span class="ot">-&gt;</span> c) <span class="ot">-&gt;</span> p a b <span class="ot">-&gt;</span> p a c</a>
-<a class="sourceLine" id="cb9-4" title="4"><span class="ot">  bimap ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (c <span class="ot">-&gt;</span> d) <span class="ot">-&gt;</span> p a c <span class="ot">-&gt;</span> p b d</a>
-<a class="sourceLine" id="cb9-5" title="5">  <span class="ot">{-# MINIMAL bimap | first, second #-}</span></a></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span> <span class="kw">import</span> Data.bifunctor</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span> <span class="op">:</span>i <span class="dt">Bifunctor</span></span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> <span class="dt">Bifunctor</span> (<span class="ot">p ::</span> <span class="op">*</span> <span class="ot">-&gt;</span> <span class="op">*</span> <span class="ot">-&gt;</span> <span class="op">*</span>) <span class="kw">where</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="ot">  first ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> p a c <span class="ot">-&gt;</span> p b c</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="ot">  second ::</span> (b <span class="ot">-&gt;</span> c) <span class="ot">-&gt;</span> p a b <span class="ot">-&gt;</span> p a c</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="ot">  bimap ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (c <span class="ot">-&gt;</span> d) <span class="ot">-&gt;</span> p a c <span class="ot">-&gt;</span> p b d</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  <span class="ot">{-# MINIMAL bimap | first, second #-}</span></span></code></pre></div>
 <p>Ok. Three functions in here, and it looks like we can make something a <code>Bifunctor</code> by implementing instances of both <code>first</code> and <code>second</code> or just <code>bimap</code>.</p>
 <p>Let’s take a look at them.</p>
 <ol type="1">
@@ -83,31 +83,31 @@
 <p>OK. If you understand <code>Functor</code> there’s hopefully nothing out of the ordinary going on here. Let’s slop an instance together and get to work on that delicious egg.</p>
 <h3 id="instances">Instances</h3>
 <p>Laziness dictates that we should define <code>bimap</code> because it is one function instead of two.</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" title="1"><span class="kw">instance</span> <span class="dt">Bifunctor</span> <span class="dt">Things</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb10-2" title="2">  bimap f _ (<span class="dt">This</span> a) <span class="ot">=</span> <span class="dt">This</span> (f a)</a>
-<a class="sourceLine" id="cb10-3" title="3">  bimap _ g (<span class="dt">That</span> b) <span class="ot">=</span> <span class="dt">That</span> (g b)</a></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Bifunctor</span> <span class="dt">Things</span> <span class="kw">where</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  bimap f _ (<span class="dt">This</span> a) <span class="ot">=</span> <span class="dt">This</span> (f a)</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  bimap _ g (<span class="dt">That</span> b) <span class="ot">=</span> <span class="dt">That</span> (g b)</span></code></pre></div>
 <p>Seems fairly sensible hopefully. Let’s give it a spin.</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" title="1"><span class="ot">delicious ::</span> <span class="dt">Things</span> <span class="dt">String</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb11-2" title="2">delicious <span class="ot">=</span> first eat (<span class="dt">This</span> <span class="st">&quot;Egg&quot;</span>)</a>
-<a class="sourceLine" id="cb11-3" title="3"><span class="co">-- delicious = This &quot;The Egg was delicious!&quot;</span></a></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ot">delicious ::</span> <span class="dt">Things</span> <span class="dt">String</span> <span class="dt">Int</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>delicious <span class="ot">=</span> first eat (<span class="dt">This</span> <span class="st">&quot;Egg&quot;</span>)</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- delicious = This &quot;The Egg was delicious!&quot;</span></span></code></pre></div>
 <p>Hooray! Although we defined <code>bimap</code> we got <code>first</code> for free, and that egg was pretty nice.</p>
 <p>We can still map over the right hand value too!</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" title="1"><span class="ot">doesWork ::</span> <span class="dt">Things</span> <span class="dt">String</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb12-2" title="2">doesWork <span class="ot">=</span> second addOne (<span class="dt">That</span> <span class="dv">68</span>)</a>
-<a class="sourceLine" id="cb12-3" title="3"><span class="co">-- doesWork == That 69</span></a></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ot">doesWork ::</span> <span class="dt">Things</span> <span class="dt">String</span> <span class="dt">Int</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>doesWork <span class="ot">=</span> second addOne (<span class="dt">That</span> <span class="dv">68</span>)</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- doesWork == That 69</span></span></code></pre></div>
 <p>Again, nice.</p>
 <h3 id="tuples-pooples">Tuples, Pooples</h3>
 <p>Although our <code>Things</code> example is about <code>sum</code> types, we can also use it on <code>product</code> types like a <code>Tuple</code>, and use <code>Bifunctor</code> to mess with either value as we please.</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb13-1" title="1"><span class="ot">twoThings ::</span> (<span class="dt">Int</span>, <span class="dt">String</span>)</a>
-<a class="sourceLine" id="cb13-2" title="2">twoThings <span class="ot">=</span> (<span class="dv">100</span>, <span class="st">&quot;Dogs&quot;</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ot">twoThings ::</span> (<span class="dt">Int</span>, <span class="dt">String</span>)</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>twoThings <span class="ot">=</span> (<span class="dv">100</span>, <span class="st">&quot;Dogs&quot;</span>)</span></code></pre></div>
 <p>Now, we could go ahead and show you <code>first</code> and <code>second</code> but I think you can work out what’s going to happen, so let’s go absolutely bonkers and race straight to <code>bimap</code>.</p>
 <p>(but first, a helper function. Nothing untoward - it merely returns the first thing you give it and ignores the second.)</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" title="1"><span class="ot">myConst ::</span> a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> a</a>
-<a class="sourceLine" id="cb14-2" title="2">myConst a _ <span class="ot">=</span> a</a></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="ot">myConst ::</span> a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> a</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>myConst a _ <span class="ot">=</span> a</span></code></pre></div>
 <p>Now we can turn our <code>Tuple</code> into a bestselling novel.</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb15-1" title="1"><span class="ot">oneBestSeller ::</span> (<span class="dt">Int</span>, <span class="dt">String</span>)</a>
-<a class="sourceLine" id="cb15-2" title="2">oneBestSeller <span class="ot">=</span> bimap (<span class="op">+</span><span class="dv">1</span>) (myConst <span class="st">&quot;Dalmations&quot;</span>) twoThings</a>
-<a class="sourceLine" id="cb15-3" title="3"><span class="co">-- oneBestSeller = (101, &quot;Dalmations&quot;)</span></a></code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ot">oneBestSeller ::</span> (<span class="dt">Int</span>, <span class="dt">String</span>)</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>oneBestSeller <span class="ot">=</span> bimap (<span class="op">+</span><span class="dv">1</span>) (myConst <span class="st">&quot;Dalmations&quot;</span>) twoThings</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- oneBestSeller = (101, &quot;Dalmations&quot;)</span></span></code></pre></div>
 <p>I Bet You Did Not See That Coming.</p>
 <p>For a bonus point, why not try and define <code>first</code> and <code>second</code> for <code>Tuple</code> types using <code>bimap</code> and <code>myConst</code>? Go on. You’ll have a great time, I absolutely promise.</p>
 <h3 id="thats-all-folks">That’s all, folks</h3>

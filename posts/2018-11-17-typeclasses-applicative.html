@@ -29,98 +29,98 @@
         
         <div class="info">
           
-          Tags: <a href="../tags/haskell.html">haskell</a>, <a href="../tags/typeclasses.html">typeclasses</a>
+          Tags: <a title="All pages tagged 'haskell'." href="../tags/haskell.html">haskell</a>, <a title="All pages tagged 'typeclasses'." href="../tags/typeclasses.html">typeclasses</a>
           
         </div>
     </section>
     <section>
         <p>In my learning of Haskell and all the associated mathematical stuff attached to it, one of the tougher conceptual cookies to crack has been the Applicative Functor.</p>
 <p>Coming from a background of fairly functional Javascript, functor is a very easy sell - it’s <code>array.map</code>. Easy. If there’s a thing in the box, do something to the thing, if there’s nothing in the box, don’t freak out about the lack of things or explode. Great!</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="ot">increase ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb1-2" title="2">increase i <span class="ot">=</span> i <span class="op">+</span> <span class="dv">1</span></a>
-<a class="sourceLine" id="cb1-3" title="3"></a>
-<a class="sourceLine" id="cb1-4" title="4"><span class="co">-- fmap increase [1,2,3] == [2,3,4]</span></a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ot">increase ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>increase i <span class="ot">=</span> i <span class="op">+</span> <span class="dv">1</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co">-- fmap increase [1,2,3] == [2,3,4]</span></span></code></pre></div>
 <p>These functions can even return lists of their own…</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" title="1"><span class="ot">moreList ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> [<span class="dt">Int</span>]</a>
-<a class="sourceLine" id="cb2-2" title="2">moreList a <span class="ot">=</span> [a <span class="op">-</span><span class="dv">1</span>, a, a <span class="op">+</span> <span class="dv">1</span>]</a></code></pre></div>
-<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" title="1"><span class="ot">listOfLists ::</span> [[<span class="dt">Int</span>]]</a>
-<a class="sourceLine" id="cb3-2" title="2">listOfLists <span class="ot">=</span> <span class="fu">fmap</span> moreList [<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>]</a>
-<a class="sourceLine" id="cb3-3" title="3"><span class="co">-- listOfLists = [[0,1,2], [1,2,3], [2,3,4]]</span></a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ot">moreList ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> [<span class="dt">Int</span>]</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>moreList a <span class="ot">=</span> [a <span class="op">-</span><span class="dv">1</span>, a, a <span class="op">+</span> <span class="dv">1</span>]</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ot">listOfLists ::</span> [[<span class="dt">Int</span>]]</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>listOfLists <span class="ot">=</span> <span class="fu">fmap</span> moreList [<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>]</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- listOfLists = [[0,1,2], [1,2,3], [2,3,4]]</span></span></code></pre></div>
 <p>Trying to understand the actual point of an Applicative Functor, especially to my Javascript-addled mind, was much trickier. The first explanations I heard were something like:</p>
 <h4 id="oh-applicative-its-for-taking-a-function-that-in-a-box-and-a-value-in-a-box-and-then-combining-them-to-make-a-new-value-which-is-also-in-a-box">“Oh, applicative? It’s for taking a function that in a box, and a value in a box, and then combining them to make a new value which is also in a box”</h4>
 <p>Now I am all up for putting values in boxes. Bloody love it. But functions? What are you playing at? Ridiculous talk.</p>
 <p>Could it help us with our list changing exercise? Sort of…</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" title="1"><span class="ot">minusOne ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb4-2" title="2">minusOne i <span class="ot">=</span> i <span class="op">-</span> <span class="dv">1</span></a>
-<a class="sourceLine" id="cb4-3" title="3"></a>
-<a class="sourceLine" id="cb4-4" title="4"><span class="ot">doNothing ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb4-5" title="5">doNothing <span class="ot">=</span> <span class="fu">id</span></a>
-<a class="sourceLine" id="cb4-6" title="6"></a>
-<a class="sourceLine" id="cb4-7" title="7"><span class="ot">plusOne ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb4-8" title="8">plusOne i <span class="ot">=</span> i <span class="op">+</span> <span class="dv">1</span></a>
-<a class="sourceLine" id="cb4-9" title="9"></a>
-<a class="sourceLine" id="cb4-10" title="10"><span class="ot">applicativeList ::</span> [<span class="dt">Int</span>]</a>
-<a class="sourceLine" id="cb4-11" title="11">applicativeList <span class="ot">=</span> [minusOne, doNothing, plusOne] <span class="op">&lt;*&gt;</span> [<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>]</a>
-<a class="sourceLine" id="cb4-12" title="12"><span class="co">-- applicativeList == [0,1,2,1,2,3,2,3,4]</span></a></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ot">minusOne ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>minusOne i <span class="ot">=</span> i <span class="op">-</span> <span class="dv">1</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="ot">doNothing ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>doNothing <span class="ot">=</span> <span class="fu">id</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="ot">plusOne ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>plusOne i <span class="ot">=</span> i <span class="op">+</span> <span class="dv">1</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="ot">applicativeList ::</span> [<span class="dt">Int</span>]</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>applicativeList <span class="ot">=</span> [minusOne, doNothing, plusOne] <span class="op">&lt;*&gt;</span> [<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>]</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="co">-- applicativeList == [0,1,2,1,2,3,2,3,4]</span></span></code></pre></div>
 <p>OK, so instead of a list of lists, we have one list (and one new terrifyingly meaningless infix operator, <code>&lt;*&gt;</code>, wonderful). Seems like a lot more work too, and we could probably just have used <code>concat</code> on the result and saved ourselves a whole load of intellectual soup. Sure. I get it. Terrible example. I’ve let us both down. I’m sorry.</p>
 <p>Let’s see if we can find a slightly more helpful example.</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" title="1"><span class="kw">data</span> <span class="dt">CalcFace</span> a <span class="ot">=</span> <span class="dt">CalcFace</span> [<span class="dt">String</span>] a <span class="kw">deriving</span> (<span class="dt">Eq</span>, <span class="dt">Show</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">CalcFace</span> a <span class="ot">=</span> <span class="dt">CalcFace</span> [<span class="dt">String</span>] a <span class="kw">deriving</span> (<span class="dt">Eq</span>, <span class="dt">Show</span>)</span></code></pre></div>
 <p>This data type is for describing calculations. The <code>a</code> contains the current total, and the <code>[String]</code> is used to describe what is happening. We’ve deriving standard <code>Eq</code> and <code>Show</code> instances for it, plus making our own fairly basic <code>Functor</code> instance that, as you might expected, maps the function <code>f</code> over any <code>a</code> inside the datatype and leaves everything else alone like a good functor should.</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" title="1"><span class="kw">instance</span> <span class="dt">Functor</span> <span class="dt">CalcFace</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb6-2" title="2">   <span class="fu">fmap</span> f (<span class="dt">CalcFace</span> names a) <span class="ot">=</span> <span class="dt">CalcFace</span> names <span class="op">$</span> f a</a></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Functor</span> <span class="dt">CalcFace</span> <span class="kw">where</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>   <span class="fu">fmap</span> f (<span class="dt">CalcFace</span> names a) <span class="ot">=</span> <span class="dt">CalcFace</span> names <span class="op">$</span> f a</span></code></pre></div>
 <p>We also have this function, which we can use to print out the answer with our working.</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" title="1"><span class="ot">showCalculation ::</span> (<span class="dt">Show</span> a) <span class="ot">=&gt;</span> <span class="dt">CalcFace</span> a <span class="ot">-&gt;</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb7-2" title="2">showCalculation (<span class="dt">CalcFace</span> names a) <span class="ot">=</span></a>
-<a class="sourceLine" id="cb7-3" title="3">        <span class="fu">concat</span> parts <span class="op">++</span> <span class="st">&quot; equals &quot;</span> <span class="op">++</span> <span class="fu">show</span> a <span class="kw">where</span></a>
-<a class="sourceLine" id="cb7-4" title="4">        parts <span class="ot">=</span> intersperse <span class="st">&quot; &quot;</span> names</a></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ot">showCalculation ::</span> (<span class="dt">Show</span> a) <span class="ot">=&gt;</span> <span class="dt">CalcFace</span> a <span class="ot">-&gt;</span> <span class="dt">String</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>showCalculation (<span class="dt">CalcFace</span> names a) <span class="ot">=</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>        <span class="fu">concat</span> parts <span class="op">++</span> <span class="st">&quot; equals &quot;</span> <span class="op">++</span> <span class="fu">show</span> a <span class="kw">where</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>        parts <span class="ot">=</span> intersperse <span class="st">&quot; &quot;</span> names</span></code></pre></div>
 <p>Let’s try it out.</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" title="1"><span class="ot">one ::</span> <span class="dt">CalcFace</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb8-2" title="2">one <span class="ot">=</span> <span class="dt">CalcFace</span> [<span class="st">&quot;1&quot;</span>] <span class="dv">1</span></a>
-<a class="sourceLine" id="cb8-3" title="3"></a>
-<a class="sourceLine" id="cb8-4" title="4">showCalculation one</a>
-<a class="sourceLine" id="cb8-5" title="5"><span class="co">-- == &quot;1 equals 1&quot;</span></a></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ot">one ::</span> <span class="dt">CalcFace</span> <span class="dt">Int</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>one <span class="ot">=</span> <span class="dt">CalcFace</span> [<span class="st">&quot;1&quot;</span>] <span class="dv">1</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>showCalculation one</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="co">-- == &quot;1 equals 1&quot;</span></span></code></pre></div>
 <p>Seems very reasonable.</p>
 <p>Let’s try some mapping.</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" title="1"><span class="ot">two ::</span> <span class="dt">CalcFace</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb9-2" title="2">two <span class="ot">=</span> <span class="fu">fmap</span> (<span class="op">+</span><span class="dv">1</span>) one</a>
-<a class="sourceLine" id="cb9-3" title="3"></a>
-<a class="sourceLine" id="cb9-4" title="4">showCalculation two</a>
-<a class="sourceLine" id="cb9-5" title="5"><span class="co">-- == &quot;1 equals 2&quot;</span></a></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ot">two ::</span> <span class="dt">CalcFace</span> <span class="dt">Int</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>two <span class="ot">=</span> <span class="fu">fmap</span> (<span class="op">+</span><span class="dv">1</span>) one</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>showCalculation two</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="co">-- == &quot;1 equals 2&quot;</span></span></code></pre></div>
 <p>Not so good. The answer is correct as we ran a <code>+1</code> function over the <code>1</code> to get <code>2</code>, however we were unable to add anything to our log and thus the string output makes no sense. Perhaps <code>Functor</code> is not powerful enough for our task.</p>
 <p>Let’s give Applicative a go. Here’s one of those functions in a box we were talking about. This time we can also include a description of what the function does.</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" title="1"><span class="ot">addOne ::</span> <span class="dt">CalcFace</span> (<span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span>)</a>
-<a class="sourceLine" id="cb10-2" title="2">addOne <span class="ot">=</span> <span class="dt">CalcFace</span> [<span class="st">&quot;add 1&quot;</span>] (<span class="op">+</span><span class="dv">1</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ot">addOne ::</span> <span class="dt">CalcFace</span> (<span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span>)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>addOne <span class="ot">=</span> <span class="dt">CalcFace</span> [<span class="st">&quot;add 1&quot;</span>] (<span class="op">+</span><span class="dv">1</span>)</span></code></pre></div>
 <p>We’ll need an <code>Applicative</code> instance for our datatype too. What does that look like?</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" title="1"><span class="dt">Prelude</span><span class="op">&gt;</span> <span class="op">:</span>i <span class="dt">Applicative</span></a></code></pre></div>
-<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" title="1"><span class="kw">class</span> <span class="dt">Functor</span> f <span class="ot">=&gt;</span> <span class="dt">Applicative</span> (<span class="ot">f ::</span> <span class="op">*</span> <span class="ot">-&gt;</span> <span class="op">*</span>) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb12-2" title="2"><span class="ot">  pure ::</span> a <span class="ot">-&gt;</span> f a</a>
-<a class="sourceLine" id="cb12-3" title="3"><span class="ot">  (&lt;*&gt;) ::</span> f (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> f a <span class="ot">-&gt;</span> f b</a>
-<a class="sourceLine" id="cb12-4" title="4">  GHC.Base.liftA2<span class="ot"> ::</span> (a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> c) <span class="ot">-&gt;</span> f a <span class="ot">-&gt;</span> f b <span class="ot">-&gt;</span> f c</a>
-<a class="sourceLine" id="cb12-5" title="5"><span class="ot">  (*&gt;) ::</span> f a <span class="ot">-&gt;</span> f b <span class="ot">-&gt;</span> f b</a>
-<a class="sourceLine" id="cb12-6" title="6"><span class="ot">  (&lt;*) ::</span> f a <span class="ot">-&gt;</span> f b <span class="ot">-&gt;</span> f a</a>
-<a class="sourceLine" id="cb12-7" title="7">  <span class="ot">{-# MINIMAL pure, ((&lt;*&gt;) | liftA2) #-}</span></a></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="dt">Prelude</span><span class="op">&gt;</span> <span class="op">:</span>i <span class="dt">Applicative</span></span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> <span class="dt">Functor</span> f <span class="ot">=&gt;</span> <span class="dt">Applicative</span> (<span class="ot">f ::</span> <span class="op">*</span> <span class="ot">-&gt;</span> <span class="op">*</span>) <span class="kw">where</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="ot">  pure ::</span> a <span class="ot">-&gt;</span> f a</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="ot">  (&lt;*&gt;) ::</span> f (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> f a <span class="ot">-&gt;</span> f b</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>  GHC.Base.liftA2<span class="ot"> ::</span> (a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> c) <span class="ot">-&gt;</span> f a <span class="ot">-&gt;</span> f b <span class="ot">-&gt;</span> f c</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="ot">  (*&gt;) ::</span> f a <span class="ot">-&gt;</span> f b <span class="ot">-&gt;</span> f b</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="ot">  (&lt;*) ::</span> f a <span class="ot">-&gt;</span> f b <span class="ot">-&gt;</span> f a</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>  <span class="ot">{-# MINIMAL pure, ((&lt;*&gt;) | liftA2) #-}</span></span></code></pre></div>
 <p>There’s some pretty interesting jumping off points in there (such as the whole concept of <code>lifting</code>, but we’ll come back to that), but fortunately we only need to implement two functions for this typeclass.</p>
 <ol type="1">
 <li><code>pure</code> - which takes an <code>a</code> value and returns a sort of default value for that datatype. This is used internally in constructing new values.</li>
 <li><code>&lt;*&gt;</code> (called <code>apply</code> IRL) - this takes one wrapped function and one wrapped value and combines them.</li>
 </ol>
 <p>Confused? Me too! Let’s give it a pop.</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb13-1" title="1"><span class="kw">instance</span> <span class="dt">Applicative</span> <span class="dt">CalcFace</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb13-2" title="2">    <span class="fu">pure</span> a <span class="ot">=</span> <span class="dt">CalcFace</span> [] a</a>
-<a class="sourceLine" id="cb13-3" title="3">    (<span class="dt">CalcFace</span> operation f) <span class="op">&lt;*&gt;</span> (<span class="dt">CalcFace</span> value a) <span class="ot">=</span></a>
-<a class="sourceLine" id="cb13-4" title="4">        <span class="dt">CalcFace</span> newNames (f a) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb13-5" title="5">            newNames <span class="ot">=</span> value <span class="op">&lt;&gt;</span> operation</a></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Applicative</span> <span class="dt">CalcFace</span> <span class="kw">where</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pure</span> a <span class="ot">=</span> <span class="dt">CalcFace</span> [] a</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    (<span class="dt">CalcFace</span> operation f) <span class="op">&lt;*&gt;</span> (<span class="dt">CalcFace</span> value a) <span class="ot">=</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>        <span class="dt">CalcFace</span> newNames (f a) <span class="kw">where</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>            newNames <span class="ot">=</span> value <span class="op">&lt;&gt;</span> operation</span></code></pre></div>
 <p>OK. So <code>pure</code> is reasonably straightforward - it just makes the most basic <code>CalcFace</code> imaginable and puts whatever <code>a</code> we pass inside it. The other function is a bit trickier though. Basically we are taking the function <code>f</code> and applying to <code>a</code>, but also taking the <code>[String]</code> called <code>operation</code> and plopping it on the end of the <code>[String]</code> named <code>value</code>.</p>
 <p>Seems weird? Sure. Let’s see it in action though.</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" title="1"><span class="ot">oneAddOne ::</span> <span class="dt">CalcFace</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb14-2" title="2">oneAddOne <span class="ot">=</span> addOne <span class="op">&lt;*&gt;</span> one</a>
-<a class="sourceLine" id="cb14-3" title="3"></a>
-<a class="sourceLine" id="cb14-4" title="4"><span class="co">-- showCalculation oneAddOne == &quot;1 add 1 equals 2&quot;</span></a></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="ot">oneAddOne ::</span> <span class="dt">CalcFace</span> <span class="dt">Int</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>oneAddOne <span class="ot">=</span> addOne <span class="op">&lt;*&gt;</span> one</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="co">-- showCalculation oneAddOne == &quot;1 add 1 equals 2&quot;</span></span></code></pre></div>
 <p>Nice!</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb15-1" title="1"><span class="ot">oneAddOneAddOne ::</span> <span class="dt">CalcFace</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb15-2" title="2">oneAddOneAddOne <span class="ot">=</span> addOne <span class="op">&lt;*&gt;</span> oneAddOne</a>
-<a class="sourceLine" id="cb15-3" title="3"></a>
-<a class="sourceLine" id="cb15-4" title="4"><span class="co">-- showCalculation oneAddOneAddOne == &quot;1 add 1 add 1 equals 3&quot;</span></a></code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ot">oneAddOneAddOne ::</span> <span class="dt">CalcFace</span> <span class="dt">Int</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>oneAddOneAddOne <span class="ot">=</span> addOne <span class="op">&lt;*&gt;</span> oneAddOne</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="co">-- showCalculation oneAddOneAddOne == &quot;1 add 1 add 1 equals 3&quot;</span></span></code></pre></div>
 <p>Great stuff. The key here is that not only have we acted upon the values, the way that <code>functor</code> did, but we have also done something to the structure of the datatype too (in this case, adding to the list of operations). This seems trivial when the operators are just basic mathematics, but if the functions we are running are multiple database operations and calls to other servers, then you’ve got yourself the start of tidy little pure functional logging solution there, son.</p>
 <p>Anyway. This barely scratches the surface, but hopefully gives you the start of an intuition for these things. Applicative does lots of things. Go find them!</p>
 <p>Make sense? If not, why not <a href="../contact.html">get in touch</a>?</p>

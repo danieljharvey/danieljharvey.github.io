@@ -29,100 +29,100 @@
         
         <div class="info">
           
-          Tags: <a href="../tags/haskell.html">haskell</a>
+          Tags: <a title="All pages tagged 'haskell'." href="../tags/haskell.html">haskell</a>
           
         </div>
     </section>
     <section>
         <p>Good question. What are <code>newtypes</code>?</p>
 <p>You see them in Haskell a lot. Here’s one.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="kw">newtype</span> <span class="dt">Dog</span> a <span class="ot">=</span> <span class="dt">Dog</span> {<span class="ot"> getDog ::</span> a }</a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">newtype</span> <span class="dt">Dog</span> a <span class="ot">=</span> <span class="dt">Dog</span> {<span class="ot"> getDog ::</span> a }</span></code></pre></div>
 <p>We can make a <code>Dog</code> as a container for a thing (in this case, a <code>String</code>)</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" title="1"><span class="ot">frank ::</span> <span class="dt">Dog</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb2-2" title="2">frank <span class="ot">=</span> <span class="dt">Dog</span> <span class="st">&quot;Frank&quot;</span></a>
-<a class="sourceLine" id="cb2-3" title="3"><span class="co">-- frank == Dog &quot;Frank&quot;</span></a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ot">frank ::</span> <span class="dt">Dog</span> <span class="dt">String</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>frank <span class="ot">=</span> <span class="dt">Dog</span> <span class="st">&quot;Frank&quot;</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- frank == Dog &quot;Frank&quot;</span></span></code></pre></div>
 <p>Or we can unwrap it again and lose nothing along the way (this means the types <code>String</code> and <code>Dog String</code> are <code>isomorphic</code> in maths terms)</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" title="1"><span class="ot">name ::</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb3-2" title="2">name <span class="ot">=</span> getDog frank</a>
-<a class="sourceLine" id="cb3-3" title="3"><span class="co">-- name == &quot;Frank&quot;</span></a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ot">name ::</span> <span class="dt">String</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>name <span class="ot">=</span> getDog frank</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- name == &quot;Frank&quot;</span></span></code></pre></div>
 <p>In short, they are basically the same thing. Once compiled in fact, they’re exactly the same, so there’s no cost to all this, computationally.</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" title="1"><span class="ot">itsTheSame ::</span> <span class="dt">Bool</span></a>
-<a class="sourceLine" id="cb4-2" title="2">itsTheSame <span class="ot">=</span> <span class="st">&quot;Frank&quot;</span> <span class="op">==</span> getDog (<span class="dt">Dog</span> <span class="st">&quot;Frank&quot;</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ot">itsTheSame ::</span> <span class="dt">Bool</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>itsTheSame <span class="ot">=</span> <span class="st">&quot;Frank&quot;</span> <span class="op">==</span> getDog (<span class="dt">Dog</span> <span class="st">&quot;Frank&quot;</span>)</span></code></pre></div>
 <p>So why do this?</p>
 <p>Well, the nice thing about a <code>newtype</code> is that we can use it to pass data around with a bit more contextual information about what it means.</p>
 <p>Let’s calculate a salary. That seems like a plausible thing to do with a computer.</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" title="1"><span class="ot">calculateSalaryBad ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb5-2" title="2">calculateSalaryBad months <span class="ot">=</span> months <span class="op">*</span> <span class="dv">1000</span></a></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ot">calculateSalaryBad ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>calculateSalaryBad months <span class="ot">=</span> months <span class="op">*</span> <span class="dv">1000</span></span></code></pre></div>
 <p>This function takes a number of months, and calculates how much this person should get paid, based on a salary of <code>1000</code> (of some unknown unit) a month.</p>
 <p>But what happens if we give it an invalid number of months?</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" title="1">badAmount <span class="ot">=</span> calculateSalaryBad (<span class="op">-</span><span class="dv">100</span>)</a>
-<a class="sourceLine" id="cb6-2" title="2"><span class="co">-- badAmount == -100000</span></a></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>badAmount <span class="ot">=</span> calculateSalaryBad (<span class="op">-</span><span class="dv">100</span>)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="co">-- badAmount == -100000</span></span></code></pre></div>
 <p>That’s crazy talk! Surely this weird minus payment will send even the most well-meaning of accountants into a spin.</p>
 <p>Let’s improve it a bit by checking if the number is negative.</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" title="1"><span class="ot">calculateSalaryBetter ::</span> (<span class="dt">Num</span> a, <span class="dt">Ord</span> a) <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">Maybe</span> a</a>
-<a class="sourceLine" id="cb7-2" title="2">calculateSalaryBetter i <span class="ot">=</span> <span class="kw">if</span> i <span class="op">&lt;</span> <span class="dv">0</span></a>
-<a class="sourceLine" id="cb7-3" title="3">                        <span class="kw">then</span> <span class="dt">Nothing</span></a>
-<a class="sourceLine" id="cb7-4" title="4">                        <span class="kw">else</span> <span class="dt">Just</span> (i <span class="op">*</span> <span class="dv">1000</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ot">calculateSalaryBetter ::</span> (<span class="dt">Num</span> a, <span class="dt">Ord</span> a) <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">Maybe</span> a</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>calculateSalaryBetter i <span class="ot">=</span> <span class="kw">if</span> i <span class="op">&lt;</span> <span class="dv">0</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>                        <span class="kw">then</span> <span class="dt">Nothing</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>                        <span class="kw">else</span> <span class="dt">Just</span> (i <span class="op">*</span> <span class="dv">1000</span>)</span></code></pre></div>
 <p>Note that we’re introducing the <code>Ord</code> typeclass here, as we need to compare amounts. We don’t mind what <code>a</code> is as long as it is both a valid number (ie, in the <code>Num</code> typeclass) and is orderable (ie, the <code>Ord</code> typeclass).</p>
 <p>So now if we try this on a stupid amount, we get <code>Nothing</code></p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" title="1">safeAmount <span class="ot">=</span> calculateSalaryBetter (<span class="op">-</span><span class="dv">100</span>)</a>
-<a class="sourceLine" id="cb8-2" title="2"><span class="co">-- safeAmount = Nothing</span></a></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>safeAmount <span class="ot">=</span> calculateSalaryBetter (<span class="op">-</span><span class="dv">100</span>)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="co">-- safeAmount = Nothing</span></span></code></pre></div>
 <p>OK. Good stuff. That should stop the accounts department crying into their sensibly priced but ultimately unsatisfying packed lunches.</p>
 <p>The thing is, when we run this, we get this <code>Just</code> wrapped around things.</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" title="1">anAmount <span class="ot">=</span> calculateSalaryBetter <span class="dv">12</span></a>
-<a class="sourceLine" id="cb9-2" title="2"><span class="co">-- anAmount == Just 12000</span></a></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>anAmount <span class="ot">=</span> calculateSalaryBetter <span class="dv">12</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="co">-- anAmount == Just 12000</span></span></code></pre></div>
 <p>This is fine in isolation, but if we wanted to do a lot of calculations here we don’t want to be wrapping and unwrapping <code>Maybe</code> values all over the place. It means mixing up our validation logic with our actual business logic or whatever, and that’s Bad.</p>
 <p>What about a nice <code>newtype</code> solution?</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" title="1"><span class="kw">newtype</span> <span class="dt">PositiveNum</span> a <span class="ot">=</span> <span class="dt">PositiveNum</span> {<span class="ot"> getPositiveNum ::</span> a } <span class="kw">deriving</span> (<span class="dt">Eq</span>, <span class="dt">Show</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">newtype</span> <span class="dt">PositiveNum</span> a <span class="ot">=</span> <span class="dt">PositiveNum</span> {<span class="ot"> getPositiveNum ::</span> a } <span class="kw">deriving</span> (<span class="dt">Eq</span>, <span class="dt">Show</span>)</span></code></pre></div>
 <p>Nothing to write home about so far, but the trick here is that Haskell allows us to export the type <code>PositiveNum</code> but not the constructor <code>PositiveNum</code>. That means that instead we can provide a function for making a <code>PositiveNum</code> that does some validation. This means that, outside our module itself, there is no way to create a <code>PositiveNum</code> that doesn’t make sense.</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" title="1"><span class="ot">makePositiveNum ::</span> (<span class="dt">Num</span> a, <span class="dt">Ord</span> a) <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">Maybe</span> (<span class="dt">PositiveNum</span> a)</a>
-<a class="sourceLine" id="cb11-2" title="2">makePositiveNum i</a>
-<a class="sourceLine" id="cb11-3" title="3">    <span class="op">|</span> i <span class="op">&lt;</span> <span class="dv">0</span> <span class="ot">=</span> <span class="dt">Nothing</span></a>
-<a class="sourceLine" id="cb11-4" title="4">    <span class="op">|</span> <span class="fu">otherwise</span> <span class="ot">=</span> <span class="dt">Just</span> (<span class="dt">PositiveNum</span> i)</a></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ot">makePositiveNum ::</span> (<span class="dt">Num</span> a, <span class="dt">Ord</span> a) <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">Maybe</span> (<span class="dt">PositiveNum</span> a)</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>makePositiveNum i</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">|</span> i <span class="op">&lt;</span> <span class="dv">0</span> <span class="ot">=</span> <span class="dt">Nothing</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">|</span> <span class="fu">otherwise</span> <span class="ot">=</span> <span class="dt">Just</span> (<span class="dt">PositiveNum</span> i)</span></code></pre></div>
 <p>It comes wrapped in a <code>Maybe</code>, sure, but only one. It can be used over and over without needing validation, and once it is available it can be unwrapped with a quick <code>getPositiveNum</code>.</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" title="1"><span class="ot">num ::</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb12-2" title="2">num <span class="ot">=</span> getPositiveNum (<span class="dt">PositiveNum</span> <span class="dv">10</span>)</a>
-<a class="sourceLine" id="cb12-3" title="3"><span class="co">-- num == 10</span></a></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ot">num ::</span> <span class="dt">Int</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>num <span class="ot">=</span> getPositiveNum (<span class="dt">PositiveNum</span> <span class="dv">10</span>)</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- num == 10</span></span></code></pre></div>
 <p>Great stuff.</p>
 <p>Let’s make a nicer salary calculator.</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb13-1" title="1"><span class="ot">calculateSalary ::</span> (<span class="dt">Num</span> a) <span class="ot">=&gt;</span> <span class="dt">PositiveNum</span> a <span class="ot">-&gt;</span> a</a>
-<a class="sourceLine" id="cb13-2" title="2">calculateSalary months <span class="ot">=</span> <span class="dv">1000</span> <span class="op">*</span> (getPositiveNum months)</a></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ot">calculateSalary ::</span> (<span class="dt">Num</span> a) <span class="ot">=&gt;</span> <span class="dt">PositiveNum</span> a <span class="ot">-&gt;</span> a</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>calculateSalary months <span class="ot">=</span> <span class="dv">1000</span> <span class="op">*</span> (getPositiveNum months)</span></code></pre></div>
 <p>Pretty OK. Let’s bring it all together. First our library functions:</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" title="1"><span class="ot">makePositiveNum ::</span> (<span class="dt">Num</span> a, <span class="dt">Ord</span> a) <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">Maybe</span> (<span class="dt">PositiveNum</span> a)</a>
-<a class="sourceLine" id="cb14-2" title="2">makePositiveNum i</a>
-<a class="sourceLine" id="cb14-3" title="3">    <span class="op">|</span> i <span class="op">&lt;</span> <span class="dv">0</span> <span class="ot">=</span> <span class="dt">Nothing</span></a>
-<a class="sourceLine" id="cb14-4" title="4">    <span class="op">|</span> <span class="fu">otherwise</span> <span class="ot">=</span> <span class="dt">Just</span> (<span class="dt">PositiveNum</span> i)</a>
-<a class="sourceLine" id="cb14-5" title="5"></a>
-<a class="sourceLine" id="cb14-6" title="6"><span class="ot">zero ::</span> (<span class="dt">Num</span> a) <span class="ot">=&gt;</span> <span class="dt">PositiveNum</span> a</a>
-<a class="sourceLine" id="cb14-7" title="7">zero <span class="ot">=</span> <span class="dt">PositiveNum</span> <span class="dv">0</span></a></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="ot">makePositiveNum ::</span> (<span class="dt">Num</span> a, <span class="dt">Ord</span> a) <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">Maybe</span> (<span class="dt">PositiveNum</span> a)</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>makePositiveNum i</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">|</span> i <span class="op">&lt;</span> <span class="dv">0</span> <span class="ot">=</span> <span class="dt">Nothing</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">|</span> <span class="fu">otherwise</span> <span class="ot">=</span> <span class="dt">Just</span> (<span class="dt">PositiveNum</span> i)</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="ot">zero ::</span> (<span class="dt">Num</span> a) <span class="ot">=&gt;</span> <span class="dt">PositiveNum</span> a</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>zero <span class="ot">=</span> <span class="dt">PositiveNum</span> <span class="dv">0</span></span></code></pre></div>
 <p>We’ve added <code>zero</code> that just makes a default <code>PositiveNum</code> with a value of <code>0</code> here, to use as a fallback if the value is ridiculous.</p>
 <p>Now we have a function for getting a <code>PositiveNum</code> for our number of months:</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb15-1" title="1"><span class="ot">months ::</span> (<span class="dt">Num</span> a, <span class="dt">Ord</span> a) <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">PositiveNum</span> a</a>
-<a class="sourceLine" id="cb15-2" title="2">months i <span class="ot">=</span> fromMaybe zero (makePositiveNum i)</a>
-<a class="sourceLine" id="cb15-3" title="3"></a>
-<a class="sourceLine" id="cb15-4" title="4"><span class="ot">yes ::</span> <span class="dt">PositiveNum</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb15-5" title="5">yes <span class="ot">=</span> months <span class="dv">12</span></a>
-<a class="sourceLine" id="cb15-6" title="6"><span class="co">-- yes = PositiveNum 12</span></a>
-<a class="sourceLine" id="cb15-7" title="7"></a>
-<a class="sourceLine" id="cb15-8" title="8"><span class="ot">nope ::</span> <span class="dt">PositiveNum</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb15-9" title="9">nope <span class="ot">=</span> months (<span class="op">-</span><span class="dv">12</span>)</a>
-<a class="sourceLine" id="cb15-10" title="10"><span class="co">-- nope = PositiveNum 0</span></a></code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ot">months ::</span> (<span class="dt">Num</span> a, <span class="dt">Ord</span> a) <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">PositiveNum</span> a</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>months i <span class="ot">=</span> fromMaybe zero (makePositiveNum i)</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="ot">yes ::</span> <span class="dt">PositiveNum</span> <span class="dt">Int</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>yes <span class="ot">=</span> months <span class="dv">12</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="co">-- yes = PositiveNum 12</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="ot">nope ::</span> <span class="dt">PositiveNum</span> <span class="dt">Int</span></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>nope <span class="ot">=</span> months (<span class="op">-</span><span class="dv">12</span>)</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a><span class="co">-- nope = PositiveNum 0</span></span></code></pre></div>
 <p>Which we can use as follows:</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb16-1" title="1">total <span class="ot">=</span> calculateSalary (months <span class="dv">12</span>)</a>
-<a class="sourceLine" id="cb16-2" title="2"><span class="co">-- total == 12000</span></a></code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>total <span class="ot">=</span> calculateSalary (months <span class="dv">12</span>)</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="co">-- total == 12000</span></span></code></pre></div>
 <p>Nice. By pushing all of the validation concerns into the <code>months</code> function, our actual function is nice and simple and easy to understand. Also we have a nice re-usable tool, <code>PositiveNum</code> that can be used across our project everytime we need some guarantees about a value.</p>
 <h3 id="bonus-credit-functor-instance-for-a-newtype.">Bonus credit: Functor instance for a <code>newtype</code>.</h3>
 <p>We can treat <code>newtypes</code> like any other type, and create typeclass instances for them. For instance, we could create a <code>functor</code> instance for <code>PositiveNum</code> and do calculations inside it by mapping instead.</p>
-<div class="sourceCode" id="cb17"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb17-1" title="1"><span class="kw">instance</span> <span class="dt">Functor</span> <span class="dt">PositiveNum</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb17-2" title="2">    <span class="fu">fmap</span> f (<span class="dt">PositiveNum</span> i) <span class="ot">=</span> <span class="dt">PositiveNum</span> (f i)</a></code></pre></div>
+<div class="sourceCode" id="cb17"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Functor</span> <span class="dt">PositiveNum</span> <span class="kw">where</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">fmap</span> f (<span class="dt">PositiveNum</span> i) <span class="ot">=</span> <span class="dt">PositiveNum</span> (f i)</span></code></pre></div>
 <p>This lets us change the value inside <code>PositiveNum</code> with an <code>fmap</code> function.</p>
-<div class="sourceCode" id="cb18"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb18-1" title="1"><span class="ot">calculateSalaryClever ::</span> (<span class="dt">Num</span> a) <span class="ot">=&gt;</span> <span class="dt">PositiveNum</span> a <span class="ot">-&gt;</span> <span class="dt">PositiveNum</span> a</a>
-<a class="sourceLine" id="cb18-2" title="2">calculateSalaryClever <span class="ot">=</span> <span class="fu">fmap</span> (<span class="op">*</span><span class="dv">1000</span>)</a>
-<a class="sourceLine" id="cb18-3" title="3"><span class="co">-- calculateSalaryClever 2 == PositiveNum 2000</span></a></code></pre></div>
+<div class="sourceCode" id="cb18"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="ot">calculateSalaryClever ::</span> (<span class="dt">Num</span> a) <span class="ot">=&gt;</span> <span class="dt">PositiveNum</span> a <span class="ot">-&gt;</span> <span class="dt">PositiveNum</span> a</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>calculateSalaryClever <span class="ot">=</span> <span class="fu">fmap</span> (<span class="op">*</span><span class="dv">1000</span>)</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- calculateSalaryClever 2 == PositiveNum 2000</span></span></code></pre></div>
 <p>Or the same, but unwrap it afterwards:</p>
-<div class="sourceCode" id="cb19"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb19-1" title="1"><span class="ot">calculateSalaryClever2 ::</span> (<span class="dt">Num</span> a) <span class="ot">=&gt;</span> <span class="dt">PositiveNum</span> a <span class="ot">-&gt;</span> a</a>
-<a class="sourceLine" id="cb19-2" title="2">calculateSalaryClever2 i <span class="ot">=</span> getPositiveNum (<span class="fu">fmap</span> (<span class="op">*</span><span class="dv">1000</span>) i)</a>
-<a class="sourceLine" id="cb19-3" title="3"><span class="co">-- calculateSalaryClever2 20 == 20000</span></a></code></pre></div>
+<div class="sourceCode" id="cb19"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="ot">calculateSalaryClever2 ::</span> (<span class="dt">Num</span> a) <span class="ot">=&gt;</span> <span class="dt">PositiveNum</span> a <span class="ot">-&gt;</span> a</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>calculateSalaryClever2 i <span class="ot">=</span> getPositiveNum (<span class="fu">fmap</span> (<span class="op">*</span><span class="dv">1000</span>) i)</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- calculateSalaryClever2 20 == 20000</span></span></code></pre></div>
 <p>That seems pretty OK to me. Anyway, that’s enough things, time for bed.</p>
 <p>Make sense? If not, why not <a href="../contact.html">get in touch</a>?</p>
 <p>Further reading:</p>

@@ -29,7 +29,7 @@
         
         <div class="info">
           
-          Tags: <a href="../tags/haskell.html">haskell</a>, <a href="../tags/typeclasses.html">typeclasses</a>
+          Tags: <a title="All pages tagged 'haskell'." href="../tags/haskell.html">haskell</a>, <a title="All pages tagged 'typeclasses'." href="../tags/typeclasses.html">typeclasses</a>
           
         </div>
     </section>
@@ -39,33 +39,33 @@
 <p>Therefore as well as the <code>append</code> function <code>&lt;&gt;</code> we will need a way of expressing what no items looks like. Seems weird? Yeah, it kind of is. Some examples may help.</p>
 <h3 id="combining-lists">Combining Lists</h3>
 <p>We need to combine a <code>List</code> of other <code>List</code> values, and we’re all functional programmers, so let’s go ahead and make a function for doing that.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="ot">combineList ::</span> [[a]] <span class="ot">-&gt;</span> [a]</a>
-<a class="sourceLine" id="cb1-2" title="2">combineList (a<span class="op">:</span>as) <span class="ot">=</span> a <span class="op">++</span> (combineList as)</a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ot">combineList ::</span> [[a]] <span class="ot">-&gt;</span> [a]</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>combineList (a<span class="op">:</span>as) <span class="ot">=</span> a <span class="op">++</span> (combineList as)</span></code></pre></div>
 <p>If we use it on an actual value, then great job.</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" title="1"><span class="ot">great ::</span> [<span class="dt">Int</span>]</a>
-<a class="sourceLine" id="cb2-2" title="2">great <span class="ot">=</span> combineList [[<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>],[<span class="dv">4</span>,<span class="dv">5</span>,<span class="dv">6</span>]]</a>
-<a class="sourceLine" id="cb2-3" title="3"><span class="co">-- great == [1,2,3,4,5,6]</span></a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ot">great ::</span> [<span class="dt">Int</span>]</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>great <span class="ot">=</span> combineList [[<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>],[<span class="dv">4</span>,<span class="dv">5</span>,<span class="dv">6</span>]]</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- great == [1,2,3,4,5,6]</span></span></code></pre></div>
 <p>But what about if we use it on an empty list?</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" title="1"><span class="fu">error</span><span class="ot"> ::</span> [<span class="dt">Int</span>]</a>
-<a class="sourceLine" id="cb3-2" title="2"><span class="fu">error</span> <span class="ot">=</span> combineList []</a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">error</span><span class="ot"> ::</span> [<span class="dt">Int</span>]</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">error</span> <span class="ot">=</span> combineList []</span></code></pre></div>
 <p>Ahh shit! We get this:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" title="1">uncaught exception<span class="op">:</span> <span class="dt">PatternMatchFail</span></a></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>uncaught exception<span class="op">:</span> <span class="dt">PatternMatchFail</span></span></code></pre></div>
 <p>That’s not great. Looks like we’re going to need an empty value to use for empty lists.</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" title="1"><span class="ot">combineList1 ::</span> [[a]] <span class="ot">-&gt;</span> [a]</a>
-<a class="sourceLine" id="cb5-2" title="2">combineList1 [] <span class="ot">=</span> []</a>
-<a class="sourceLine" id="cb5-3" title="3">combineList1 (a<span class="op">:</span>as) <span class="ot">=</span> a <span class="op">++</span> (combineList1 as)</a></code></pre></div>
-<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" title="1"><span class="ot">ok ::</span> [<span class="dt">Int</span>]</a>
-<a class="sourceLine" id="cb6-2" title="2">ok <span class="ot">=</span> combineList1 []</a>
-<a class="sourceLine" id="cb6-3" title="3"><span class="co">-- ok == []</span></a></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ot">combineList1 ::</span> [[a]] <span class="ot">-&gt;</span> [a]</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>combineList1 [] <span class="ot">=</span> []</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>combineList1 (a<span class="op">:</span>as) <span class="ot">=</span> a <span class="op">++</span> (combineList1 as)</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ot">ok ::</span> [<span class="dt">Int</span>]</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>ok <span class="ot">=</span> combineList1 []</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- ok == []</span></span></code></pre></div>
 <p>So here the empty value is <code>[]</code> - and having this value is what means we have a <code>Monoid</code> as well as a <code>Semigroup</code>.</p>
 <h3 id="definition">Definition</h3>
 <p>What does <code>ghci</code> say about <code>Monoid</code>?</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb7-1" title="1"><span class="ex">Prelude</span><span class="op">&gt;</span> :i Monoid</a></code></pre></div>
-<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" title="1"><span class="kw">class</span> <span class="dt">Semigroup</span> a <span class="ot">=&gt;</span> <span class="dt">Monoid</span> a <span class="kw">where</span></a>
-<a class="sourceLine" id="cb8-2" title="2"><span class="ot">  mempty ::</span> a</a>
-<a class="sourceLine" id="cb8-3" title="3"><span class="ot">  mappend ::</span> a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a</a>
-<a class="sourceLine" id="cb8-4" title="4"><span class="ot">  mconcat ::</span> [a] <span class="ot">-&gt;</span> a</a>
-<a class="sourceLine" id="cb8-5" title="5">  <span class="ot">{-# MINIMAL mempty #-}</span></a></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">Prelude</span><span class="op">&gt;</span> :i Monoid</span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> <span class="dt">Semigroup</span> a <span class="ot">=&gt;</span> <span class="dt">Monoid</span> a <span class="kw">where</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="ot">  mempty ::</span> a</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="ot">  mappend ::</span> a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="ot">  mconcat ::</span> [a] <span class="ot">-&gt;</span> a</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  <span class="ot">{-# MINIMAL mempty #-}</span></span></code></pre></div>
 <p>OK. So firstly, whatever we want to make a <code>Monoid</code> must also be a <code>Semigroup</code>.</p>
 <p>(Incidentally, the terminology of the relationship between these two is that <code>Semigroup</code> is a <code>superclass</code> of <code>Monoid</code>, meaning anything that is a <code>Monoid</code> is also a <code>Semigroup</code>. Conversely <code>Monoid</code> is a <code>subclass</code> of <code>Semigroup</code>. You’ll notice many of these relationships amongst Haskell classes, like between <code>Eq</code> and <code>Ord</code>, and between <code>Functor</code> and <code>Applicative</code>. More words! More confusion! Great!)</p>
 <p>Secondly, the only function we need to define (because of <code>MINIMAL</code>) is <code>mempty</code> - which defines our empty element (we also need <code>mappend</code>, but this is the same as <code>&lt;&gt;</code> and is supplied by our <code>Semigroup</code> unless we have a burning desire to write another one).</p>
@@ -73,54 +73,54 @@
 <h3 id="more-about-mempty">More about mempty</h3>
 <p>The important test for this <code>mempty</code> value is that when we <code>mappend</code> it onto our <code>Monoid</code> it does nothing whatsoever.</p>
 <p>Here’s an empty element for <code>List</code>…</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" title="1"><span class="ot">emptyList ::</span> [<span class="dt">Int</span>]</a>
-<a class="sourceLine" id="cb9-2" title="2">emptyList <span class="ot">=</span> []</a></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ot">emptyList ::</span> [<span class="dt">Int</span>]</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>emptyList <span class="ot">=</span> []</span></code></pre></div>
 <p>…and here it combined with another <code>List</code> and achieving absolutely nothing.</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" title="1"><span class="ot">addNothing ::</span> [<span class="dt">Int</span>]</a>
-<a class="sourceLine" id="cb10-2" title="2">addNothing <span class="ot">=</span> [<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>] <span class="op">++</span> emptyList</a>
-<a class="sourceLine" id="cb10-3" title="3"><span class="co">-- addNothing == [1,2,3]</span></a></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ot">addNothing ::</span> [<span class="dt">Int</span>]</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>addNothing <span class="ot">=</span> [<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>] <span class="op">++</span> emptyList</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- addNothing == [1,2,3]</span></span></code></pre></div>
 <h3 id="defining-a-list-monoid">Defining a List Monoid</h3>
 <p>So we need to make a <code>List Monoid</code> then? 1. An operation called <code>mappend</code> for combining two values - here <code>++</code> will do the trick. 2. An empty value called <code>mempty</code> - here we would use <code>[]</code>.</p>
 <p>Here goes:</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" title="1"><span class="kw">instance</span> <span class="dt">Semigroup</span> [a] <span class="kw">where</span></a>
-<a class="sourceLine" id="cb11-2" title="2">  a <span class="op">&lt;&gt;</span> b <span class="ot">=</span> a <span class="op">++</span> b</a>
-<a class="sourceLine" id="cb11-3" title="3"></a>
-<a class="sourceLine" id="cb11-4" title="4"><span class="kw">instance</span> <span class="dt">Monoid</span> [a] <span class="kw">where</span></a>
-<a class="sourceLine" id="cb11-5" title="5">  <span class="fu">mempty</span> <span class="ot">=</span> []</a></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Semigroup</span> [a] <span class="kw">where</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  a <span class="op">&lt;&gt;</span> b <span class="ot">=</span> a <span class="op">++</span> b</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Monoid</span> [a] <span class="kw">where</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mempty</span> <span class="ot">=</span> []</span></code></pre></div>
 <p>Great stuff!</p>
 <h3 id="we-get-mconcat-for-free">We get mconcat for free</h3>
 <p>Once we’ve defined that, we get <code>mconcat</code> (or rather our nice <code>combineList1</code>) for free! All it does is a fold, starting with <code>mempty</code> and then applying <code>mappend</code> to each element in the list. Great!</p>
 <h3 id="combining-numbers">Combining Numbers</h3>
 <p>The empty element is interesting on our number <code>Semigroup</code> instances from before too.</p>
 <p>Addition works like this, with an empty element of <code>0</code>.</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" title="1"><span class="kw">newtype</span> <span class="dt">MySum</span> a <span class="ot">=</span> <span class="dt">MySum</span> {</a>
-<a class="sourceLine" id="cb12-2" title="2"><span class="ot">    getMySum ::</span> a</a>
-<a class="sourceLine" id="cb12-3" title="3">}</a>
-<a class="sourceLine" id="cb12-4" title="4"></a>
-<a class="sourceLine" id="cb12-5" title="5"><span class="kw">instance</span> (<span class="dt">Num</span> a) <span class="ot">=&gt;</span> <span class="dt">Semigroup</span> (<span class="dt">MySum</span> a) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb12-6" title="6">    <span class="dt">MySum</span> a <span class="op">&lt;&gt;</span> <span class="dt">MySum</span> b <span class="ot">=</span> <span class="dt">MySum</span> (a <span class="op">+</span> b)</a>
-<a class="sourceLine" id="cb12-7" title="7"></a>
-<a class="sourceLine" id="cb12-8" title="8"><span class="kw">instance</span> (<span class="dt">Num</span> a) <span class="ot">=&gt;</span> <span class="dt">Monoid</span> (<span class="dt">MySum</span> a) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb12-9" title="9">    <span class="fu">mempty</span> <span class="ot">=</span> <span class="dt">MySum</span> <span class="dv">0</span></a>
-<a class="sourceLine" id="cb12-10" title="10"></a>
-<a class="sourceLine" id="cb12-11" title="11"><span class="ot">ten ::</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb12-12" title="12">ten <span class="ot">=</span> getMySum <span class="op">$</span> <span class="dt">MySum</span> <span class="dv">1</span> <span class="op">&lt;&gt;</span> <span class="dt">MySum</span> <span class="dv">7</span> <span class="op">&lt;&gt;</span> <span class="dt">MySum</span> <span class="dv">2</span></a>
-<a class="sourceLine" id="cb12-13" title="13"><span class="co">-- ten == 10</span></a></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">newtype</span> <span class="dt">MySum</span> a <span class="ot">=</span> <span class="dt">MySum</span> {</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="ot">    getMySum ::</span> a</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> (<span class="dt">Num</span> a) <span class="ot">=&gt;</span> <span class="dt">Semigroup</span> (<span class="dt">MySum</span> a) <span class="kw">where</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">MySum</span> a <span class="op">&lt;&gt;</span> <span class="dt">MySum</span> b <span class="ot">=</span> <span class="dt">MySum</span> (a <span class="op">+</span> b)</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> (<span class="dt">Num</span> a) <span class="ot">=&gt;</span> <span class="dt">Monoid</span> (<span class="dt">MySum</span> a) <span class="kw">where</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mempty</span> <span class="ot">=</span> <span class="dt">MySum</span> <span class="dv">0</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="ot">ten ::</span> <span class="dt">Int</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>ten <span class="ot">=</span> getMySum <span class="op">$</span> <span class="dt">MySum</span> <span class="dv">1</span> <span class="op">&lt;&gt;</span> <span class="dt">MySum</span> <span class="dv">7</span> <span class="op">&lt;&gt;</span> <span class="dt">MySum</span> <span class="dv">2</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a><span class="co">-- ten == 10</span></span></code></pre></div>
 <p>Why zero? Because adding 0 to a number does nothing!</p>
 <p>Multiplication is not the same though.</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb13-1" title="1"><span class="kw">newtype</span> <span class="dt">MyProduct</span> a <span class="ot">=</span> <span class="dt">MyProduct</span> {</a>
-<a class="sourceLine" id="cb13-2" title="2"><span class="ot">    getMyProduct ::</span> a</a>
-<a class="sourceLine" id="cb13-3" title="3">}</a>
-<a class="sourceLine" id="cb13-4" title="4"></a>
-<a class="sourceLine" id="cb13-5" title="5"><span class="kw">instance</span> (<span class="dt">Num</span> a) <span class="ot">=&gt;</span> <span class="dt">Semigroup</span> (<span class="dt">MyProduct</span> a) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb13-6" title="6">    <span class="dt">MyProduct</span> a <span class="op">&lt;&gt;</span> <span class="dt">MyProduct</span> b <span class="ot">=</span> <span class="dt">MyProduct</span> (a <span class="op">*</span> b)</a>
-<a class="sourceLine" id="cb13-7" title="7"></a>
-<a class="sourceLine" id="cb13-8" title="8"><span class="kw">instance</span> (<span class="dt">Num</span> a) <span class="ot">=&gt;</span> <span class="dt">Monoid</span> (<span class="dt">MyProduct</span> a) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb13-9" title="9">    <span class="fu">mempty</span> <span class="ot">=</span> <span class="dt">MyProduct</span> <span class="dv">1</span></a>
-<a class="sourceLine" id="cb13-10" title="10"></a>
-<a class="sourceLine" id="cb13-11" title="11"><span class="ot">sixtySix ::</span> <span class="dt">Int</span></a>
-<a class="sourceLine" id="cb13-12" title="12">sixtySix <span class="ot">=</span> getMyProduct <span class="op">$</span> <span class="dt">MyProduct</span> <span class="dv">11</span> <span class="op">&lt;&gt;</span> <span class="dt">MyProduct</span> <span class="dv">2</span> <span class="op">&lt;&gt;</span> <span class="dt">MyProduct</span> <span class="dv">3</span></a>
-<a class="sourceLine" id="cb13-13" title="13"><span class="co">-- sixtySix == 66</span></a></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">newtype</span> <span class="dt">MyProduct</span> a <span class="ot">=</span> <span class="dt">MyProduct</span> {</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="ot">    getMyProduct ::</span> a</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> (<span class="dt">Num</span> a) <span class="ot">=&gt;</span> <span class="dt">Semigroup</span> (<span class="dt">MyProduct</span> a) <span class="kw">where</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">MyProduct</span> a <span class="op">&lt;&gt;</span> <span class="dt">MyProduct</span> b <span class="ot">=</span> <span class="dt">MyProduct</span> (a <span class="op">*</span> b)</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> (<span class="dt">Num</span> a) <span class="ot">=&gt;</span> <span class="dt">Monoid</span> (<span class="dt">MyProduct</span> a) <span class="kw">where</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mempty</span> <span class="ot">=</span> <span class="dt">MyProduct</span> <span class="dv">1</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a><span class="ot">sixtySix ::</span> <span class="dt">Int</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>sixtySix <span class="ot">=</span> getMyProduct <span class="op">$</span> <span class="dt">MyProduct</span> <span class="dv">11</span> <span class="op">&lt;&gt;</span> <span class="dt">MyProduct</span> <span class="dv">2</span> <span class="op">&lt;&gt;</span> <span class="dt">MyProduct</span> <span class="dv">3</span></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a><span class="co">-- sixtySix == 66</span></span></code></pre></div>
 <p>Here the <code>mempty</code> value must be 1, because multiplying anything by <code>1</code> changes nothing.</p>
 <h3 id="so-what-does-it-all-mean">So What Does It All Mean?</h3>
 <p>This all seems a lot of work to get a free <code>mconcat</code> function, but the <code>Monoid</code> typeclass really comes into it’s own when used with stuff like <a href="./posts/2018-12-03-typeclasses-foldable.markdown">Foldable</a>. Just by adding this empty value we get a hell of a lot more “for free”, as such.</p>

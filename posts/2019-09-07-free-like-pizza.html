@@ -29,7 +29,7 @@
         
         <div class="info">
           
-          Tags: <a href="../tags/haskell.html">haskell</a>, <a href="../tags/free.html">free</a>, <a href="../tags/monad.html">monad</a>
+          Tags: <a title="All pages tagged 'haskell'." href="../tags/haskell.html">haskell</a>, <a title="All pages tagged 'free'." href="../tags/free.html">free</a>, <a title="All pages tagged 'monad'." href="../tags/monad.html">monad</a>
           
         </div>
     </section>
@@ -42,48 +42,48 @@
 <p>With this crushing piece of disappointment aside, let’s look at what they actually are.</p>
 <h3 id="dogs-disguised-as-people-by-way-of-wearing-a-coat-and-hat">Dogs Disguised As People By Way Of Wearing A Coat And Hat</h3>
 <figure>
-<img src="../images/dogs-in-coat.png" title="Bear with me here." alt="Bear with me here." /><figcaption>Bear with me here.</figcaption>
+<img src="../images/dogs-in-coat.png" title="Bear with me here." alt="Bear with me here." /><figcaption aria-hidden="true">Bear with me here.</figcaption>
 </figure>
 <p>Let’s start with the idea of a <code>Functor</code>. If this is confusing to you I have written a <a href="http://localhost:8000/posts/2018-11-16-typeclasses-functor.html">vague explanation</a> and so have much more <a href="http://www.tomharding.me/2017/03/27/fantas-eel-and-specification-6/">competent</a> <a href="http://adit.io/posts/2013-04-17-functors,_applicatives,_and_monads_in_pictures.html">people</a> which are probably worth digesting before we go on.</p>
 <p>A functor is a data structure which contains some other data, and we can “map over” the data inside it to change that without fucking up the functor itself. For example, we can use the <code>map</code> function on a <code>Maybe</code> value, and it will change the <code>a</code> on a <code>Just</code>, and do nothing on <code>Nothing</code>.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="kw">data</span> <span class="dt">Maybe</span></a>
-<a class="sourceLine" id="cb1-2" title="2">  <span class="ot">=</span> <span class="dt">Just</span> a</a>
-<a class="sourceLine" id="cb1-3" title="3">  <span class="op">|</span> <span class="dt">Nothing</span></a>
-<a class="sourceLine" id="cb1-4" title="4"></a>
-<a class="sourceLine" id="cb1-5" title="5"><span class="fu">fmap</span> (<span class="op">+</span><span class="dv">1</span>) (<span class="dt">Just</span> <span class="dv">1</span>) <span class="co">-- Just 2</span></a>
-<a class="sourceLine" id="cb1-6" title="6"><span class="fu">fmap</span> (<span class="op">+</span><span class="dv">1</span>) <span class="dt">Nothing</span>  <span class="co">-- Nothing</span></a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Maybe</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="ot">=</span> <span class="dt">Just</span> a</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">Nothing</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">fmap</span> (<span class="op">+</span><span class="dv">1</span>) (<span class="dt">Just</span> <span class="dv">1</span>) <span class="co">-- Just 2</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">fmap</span> (<span class="op">+</span><span class="dv">1</span>) <span class="dt">Nothing</span>  <span class="co">-- Nothing</span></span></code></pre></div>
 <p>Now, there is already a <code>Monad</code> instance for <code>Maybe</code>, and this means we can use <code>do notation</code> and all sorts of great stuff with it, like this:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" title="1"><span class="co">-- get the first item of the first list</span></a>
-<a class="sourceLine" id="cb2-2" title="2"><span class="co">-- and the first item of the second list</span></a>
-<a class="sourceLine" id="cb2-3" title="3"><span class="co">-- and then smash them together using append</span></a>
-<a class="sourceLine" id="cb2-4" title="4"><span class="co">-- from their semigroup instance</span></a>
-<a class="sourceLine" id="cb2-5" title="5">firstAndSecondCombine </a>
-<a class="sourceLine" id="cb2-6" title="6"><span class="ot">  ::</span> (<span class="dt">Semigroup</span> a) </a>
-<a class="sourceLine" id="cb2-7" title="7">  <span class="ot">=&gt;</span> [a] </a>
-<a class="sourceLine" id="cb2-8" title="8">  <span class="ot">-&gt;</span> [a] </a>
-<a class="sourceLine" id="cb2-9" title="9">  <span class="ot">-&gt;</span> <span class="dt">Maybe</span> a</a>
-<a class="sourceLine" id="cb2-10" title="10">firstAndSecondCombine firstList secondList <span class="ot">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb2-11" title="11">  a <span class="ot">&lt;-</span> first' firstList</a>
-<a class="sourceLine" id="cb2-12" title="12">  b <span class="ot">&lt;-</span> first' secondList</a>
-<a class="sourceLine" id="cb2-13" title="13">  <span class="fu">pure</span> (a <span class="op">&lt;&gt;</span> b)</a>
-<a class="sourceLine" id="cb2-14" title="14"></a>
-<a class="sourceLine" id="cb2-15" title="15"><span class="co">-- helper that returns the first item of a list if it exists</span></a>
-<a class="sourceLine" id="cb2-16" title="16"><span class="ot">first' ::</span> [a] <span class="ot">-&gt;</span> <span class="dt">Maybe</span> a</a>
-<a class="sourceLine" id="cb2-17" title="17">first' stuff </a>
-<a class="sourceLine" id="cb2-18" title="18">    <span class="ot">=</span> <span class="kw">case</span> stuff <span class="kw">of</span></a>
-<a class="sourceLine" id="cb2-19" title="19">        (x<span class="op">:</span>_) <span class="ot">-&gt;</span> <span class="dt">Just</span> x</a>
-<a class="sourceLine" id="cb2-20" title="20">        _     <span class="ot">-&gt;</span> <span class="dt">Nothing</span></a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- get the first item of the first list</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co">-- and the first item of the second list</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- and then smash them together using append</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co">-- from their semigroup instance</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>firstAndSecondCombine </span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="ot">  ::</span> (<span class="dt">Semigroup</span> a) </span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  <span class="ot">=&gt;</span> [a] </span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  <span class="ot">-&gt;</span> [a] </span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  <span class="ot">-&gt;</span> <span class="dt">Maybe</span> a</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>firstAndSecondCombine firstList secondList <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  a <span class="ot">&lt;-</span> first' firstList</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>  b <span class="ot">&lt;-</span> first' secondList</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pure</span> (a <span class="op">&lt;&gt;</span> b)</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="co">-- helper that returns the first item of a list if it exists</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="ot">first' ::</span> [a] <span class="ot">-&gt;</span> <span class="dt">Maybe</span> a</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>first' stuff </span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>    <span class="ot">=</span> <span class="kw">case</span> stuff <span class="kw">of</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>        (x<span class="op">:</span>_) <span class="ot">-&gt;</span> <span class="dt">Just</span> x</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>        _     <span class="ot">-&gt;</span> <span class="dt">Nothing</span></span></code></pre></div>
 <p>Let’s try them with the <code>Product</code> monoid <em>(which multiplies its contents together when combined)</em>, to satisfy ourselves that this function does a thing that we vaguely like and approve of.</p>
 <p>This fails as it should….</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" title="1"><span class="ot">nah ::</span> <span class="dt">Maybe</span> (<span class="dt">Product</span> <span class="dt">Int</span>)</a>
-<a class="sourceLine" id="cb3-2" title="2">nah <span class="ot">=</span> firstAndSecondCombine [] []</a>
-<a class="sourceLine" id="cb3-3" title="3"><span class="co">-- nah == Nothing</span></a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ot">nah ::</span> <span class="dt">Maybe</span> (<span class="dt">Product</span> <span class="dt">Int</span>)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>nah <span class="ot">=</span> firstAndSecondCombine [] []</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- nah == Nothing</span></span></code></pre></div>
 <p>…and this gives us an answer.</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" title="1"><span class="ot">yeah ::</span> <span class="dt">Maybe</span> (<span class="dt">Product</span> <span class="dt">Int</span>)</a>
-<a class="sourceLine" id="cb4-2" title="2">yeah <span class="ot">=</span> firstAndSecondCombine </a>
-<a class="sourceLine" id="cb4-3" title="3">          [<span class="dt">Product</span> <span class="dv">10</span>, <span class="dt">Product</span> <span class="dv">11</span>]</a>
-<a class="sourceLine" id="cb4-4" title="4">          [<span class="dt">Product</span> <span class="dv">20</span>, <span class="dt">Product</span> <span class="dv">5</span>]</a>
-<a class="sourceLine" id="cb4-5" title="5"><span class="co">-- yeah == Just (Product 200)</span></a></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ot">yeah ::</span> <span class="dt">Maybe</span> (<span class="dt">Product</span> <span class="dt">Int</span>)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>yeah <span class="ot">=</span> firstAndSecondCombine </span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>          [<span class="dt">Product</span> <span class="dv">10</span>, <span class="dt">Product</span> <span class="dv">11</span>]</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>          [<span class="dt">Product</span> <span class="dv">20</span>, <span class="dt">Product</span> <span class="dv">5</span>]</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co">-- yeah == Just (Product 200)</span></span></code></pre></div>
 <p><em>(Isn’t <code>Monoid</code> such a nice thing?)</em></p>
 <h3 id="that-didnt-mention-dogs-or-hats-what-gives">That Didn’t Mention Dogs Or Hats, What Gives?</h3>
 <p>Ahh shit, yes.</p>
@@ -91,92 +91,92 @@
 <p>What if there isn’t a <code>Monad</code> instance? Or we want to write programs like this, but don’t want to commit to using <code>Maybe</code>? (or perhaps <code>Maybe</code> is <strong>TOO</strong> safe, and we want the option of throwing loads of exceptions instead). Could this be a job for…a <code>Free Monad</code>?</p>
 <p><em>(note for readers with subtext disabled in their browser: yes)</em></p>
 <p>OK. Let’s make a datatype that’s like <code>Maybe</code>, but isn’t.</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" title="1"><span class="kw">data</span> <span class="dt">MoybeF</span> a</a>
-<a class="sourceLine" id="cb5-2" title="2">  <span class="ot">=</span> <span class="dt">Jost</span> a</a>
-<a class="sourceLine" id="cb5-3" title="3">  <span class="op">|</span> <span class="dt">Nothong</span></a></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">MoybeF</span> a</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="ot">=</span> <span class="dt">Jost</span> a</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">Nothong</span></span></code></pre></div>
 <p>Let’s make an instance of <code>Functor</code> for it to prove there is no funny business at hand.</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" title="1"><span class="kw">instance</span> <span class="dt">Functor</span> <span class="dt">MoybeF</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb6-2" title="2">  <span class="fu">fmap</span> _ <span class="dt">Nothong</span>  <span class="ot">=</span> <span class="dt">Nothong</span></a>
-<a class="sourceLine" id="cb6-3" title="3">  <span class="fu">fmap</span> f (<span class="dt">Jost</span> a) <span class="ot">=</span> <span class="dt">Jost</span> (f a)</a></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Functor</span> <span class="dt">MoybeF</span> <span class="kw">where</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fmap</span> _ <span class="dt">Nothong</span>  <span class="ot">=</span> <span class="dt">Nothong</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fmap</span> f (<span class="dt">Jost</span> a) <span class="ot">=</span> <span class="dt">Jost</span> (f a)</span></code></pre></div>
 <p>Map the <code>f</code> function over an <code>a</code> if there is one, if not, do nothing. Good?</p>
 <h3 id="still-no-dogs-what-gives">Still No Dogs, What Gives?</h3>
 <p>Right. In this example, <code>MoybeF</code> is our dog. It’s a plain old functor that doesn’t really do anything except contain an <code>a</code> inside <code>Jost</code>, or contain nothing at all inside <code>Nothong</code>. What <code>Free</code> does for us (and by that, I mean <code>Free</code> from <a href="http://hackage.haskell.org/package/free-3.3.1/docs/Control-Monad-Free.html">Control.Monad.Free</a>) is gives us a coat to wrap about this <code>Functor</code> to let us use it like a <code>Monad</code>.</p>
 <p><em>(In this tenuous analogy, the <code>Monad</code> represents a human adult, or at least some impression of one)</em></p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" title="1"><span class="co">-- Free turns MoybeF (a mere functor)</span></a>
-<a class="sourceLine" id="cb7-2" title="2"><span class="co">-- into Moybe (a mighty monad)</span></a>
-<a class="sourceLine" id="cb7-3" title="3"><span class="kw">type</span> <span class="dt">Moybe</span> a <span class="ot">=</span> <span class="dt">Free</span> <span class="dt">MoybeF</span> a</a></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Free turns MoybeF (a mere functor)</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="co">-- into Moybe (a mighty monad)</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">Moybe</span> a <span class="ot">=</span> <span class="dt">Free</span> <span class="dt">MoybeF</span> a</span></code></pre></div>
 <p><em>(An aside: this metaphor felt a lot more powerful in my mind, but a cursory image search came up with a lot less than I had expected, and quite frankly this picture creeps me the fuck out).</em></p>
 <figure>
-<img src="../images/free-structure.png" title="You deserve better than this." alt="You deserve better than this." /><figcaption>You deserve better than this.</figcaption>
+<img src="../images/free-structure.png" title="You deserve better than this." alt="You deserve better than this." /><figcaption aria-hidden="true">You deserve better than this.</figcaption>
 </figure>
 <p>OK. So now, by use of the <code>liftF</code> functor from <code>Control.Monad.Free</code>, we can change any <code>MoybeF</code> value into a <code>Moybe</code> monad value instead. Let’s define some helper functions that do this:</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" title="1"><span class="co">-- lift a into the Moybe monad</span></a>
-<a class="sourceLine" id="cb8-2" title="2"><span class="ot">jost ::</span> a <span class="ot">-&gt;</span> <span class="dt">Moybe</span> a </a>
-<a class="sourceLine" id="cb8-3" title="3">jost <span class="ot">=</span> liftF <span class="op">.</span> <span class="dt">Jost</span></a>
-<a class="sourceLine" id="cb8-4" title="4"></a>
-<a class="sourceLine" id="cb8-5" title="5"><span class="co">-- create an empty Moybe value</span></a>
-<a class="sourceLine" id="cb8-6" title="6"><span class="ot">nothong ::</span> <span class="dt">Moybe</span> a</a>
-<a class="sourceLine" id="cb8-7" title="7">nothong <span class="ot">=</span> liftF <span class="dt">Nothong</span></a></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- lift a into the Moybe monad</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="ot">jost ::</span> a <span class="ot">-&gt;</span> <span class="dt">Moybe</span> a </span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>jost <span class="ot">=</span> liftF <span class="op">.</span> <span class="dt">Jost</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="co">-- create an empty Moybe value</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="ot">nothong ::</span> <span class="dt">Moybe</span> a</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>nothong <span class="ot">=</span> liftF <span class="dt">Nothong</span></span></code></pre></div>
 <p>Now, we can redefine our function from above to our our new exciting <code>Moybe</code> type too!</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" title="1"><span class="co">-- get first item (if there is one)</span></a>
-<a class="sourceLine" id="cb9-2" title="2"><span class="ot">fFirst' ::</span> [a] <span class="ot">-&gt;</span> <span class="dt">Moybe</span> a</a>
-<a class="sourceLine" id="cb9-3" title="3">fFirst' stuff </a>
-<a class="sourceLine" id="cb9-4" title="4">    <span class="ot">=</span> <span class="kw">case</span> stuff <span class="kw">of</span></a>
-<a class="sourceLine" id="cb9-5" title="5">        (x<span class="op">:</span>_) <span class="ot">-&gt;</span> jost x</a>
-<a class="sourceLine" id="cb9-6" title="6">        _     <span class="ot">-&gt;</span> nothong</a></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- get first item (if there is one)</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="ot">fFirst' ::</span> [a] <span class="ot">-&gt;</span> <span class="dt">Moybe</span> a</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>fFirst' stuff </span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    <span class="ot">=</span> <span class="kw">case</span> stuff <span class="kw">of</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>        (x<span class="op">:</span>_) <span class="ot">-&gt;</span> jost x</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>        _     <span class="ot">-&gt;</span> nothong</span></code></pre></div>
 <p>(We could just have used <code>liftF</code> directly, and avoided the helpers, but this way hopefully we can see better how equivalent the two <code>first'</code> functions are)</p>
 <p>Now, let’s remake our list smashing function from earlier using <code>Moybe</code>….</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" title="1">fFirstAndSecondCombine </a>
-<a class="sourceLine" id="cb10-2" title="2"><span class="ot">  ::</span> (<span class="dt">Semigroup</span> a) </a>
-<a class="sourceLine" id="cb10-3" title="3">  <span class="ot">=&gt;</span> [a] </a>
-<a class="sourceLine" id="cb10-4" title="4">  <span class="ot">-&gt;</span> [a] </a>
-<a class="sourceLine" id="cb10-5" title="5">  <span class="ot">-&gt;</span> <span class="dt">Moybe</span> a</a>
-<a class="sourceLine" id="cb10-6" title="6">fFirstAndSecondCombine as bs <span class="ot">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb10-7" title="7">  a <span class="ot">&lt;-</span> fFirst' as</a>
-<a class="sourceLine" id="cb10-8" title="8">  b <span class="ot">&lt;-</span> fFirst' bs</a>
-<a class="sourceLine" id="cb10-9" title="9">  <span class="fu">pure</span> (a <span class="op">&lt;&gt;</span> b)</a></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>fFirstAndSecondCombine </span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="ot">  ::</span> (<span class="dt">Semigroup</span> a) </span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="ot">=&gt;</span> [a] </span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  <span class="ot">-&gt;</span> [a] </span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>  <span class="ot">-&gt;</span> <span class="dt">Moybe</span> a</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>fFirstAndSecondCombine as bs <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>  a <span class="ot">&lt;-</span> fFirst' as</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>  b <span class="ot">&lt;-</span> fFirst' bs</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pure</span> (a <span class="op">&lt;&gt;</span> b)</span></code></pre></div>
 <p>Hopefully, you can see it’s pretty much the same. But how do we use it? If we run <code>fFirstAndSecondCombine [] []</code>, for instance, what we get back is a <code>MoybeF</code> again. So what the hell use is that? I went to all of this trouble to create a <code>Monad</code> (admittedly as cheaply as possible) - but it doesn’t do anything!</p>
 <h3 id="interpreting-the-computation">Interpreting The Computation</h3>
 <p>So what is <code>MoybeF</code>? Essentially, it’s a data structure describing a monadic computation. Therefore, if we want to turn into something that does things, we need to <em>interpret</em> it.</p>
 <p>Let’s turn it back into our original <code>Maybe</code> computation:</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" title="1"><span class="ot">interpretMaybe ::</span> <span class="dt">Moybe</span> a <span class="ot">-&gt;</span> <span class="dt">Maybe</span> a</a>
-<a class="sourceLine" id="cb11-2" title="2">interpretMaybe</a>
-<a class="sourceLine" id="cb11-3" title="3">  <span class="ot">=</span> foldFree interpret</a>
-<a class="sourceLine" id="cb11-4" title="4">  <span class="kw">where</span></a>
-<a class="sourceLine" id="cb11-5" title="5"><span class="ot">    interpret ::</span> <span class="dt">MoybeF</span> a <span class="ot">-&gt;</span> <span class="dt">Maybe</span> a</a>
-<a class="sourceLine" id="cb11-6" title="6">    interpret prog'</a>
-<a class="sourceLine" id="cb11-7" title="7">      <span class="ot">=</span> <span class="kw">case</span> prog' <span class="kw">of</span></a>
-<a class="sourceLine" id="cb11-8" title="8">          <span class="dt">Jost</span> a  <span class="ot">-&gt;</span> <span class="dt">Just</span> a</a>
-<a class="sourceLine" id="cb11-9" title="9">          <span class="dt">Nothong</span> <span class="ot">-&gt;</span> <span class="dt">Nothing</span></a></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ot">interpretMaybe ::</span> <span class="dt">Moybe</span> a <span class="ot">-&gt;</span> <span class="dt">Maybe</span> a</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>interpretMaybe</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="ot">=</span> foldFree interpret</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">where</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="ot">    interpret ::</span> <span class="dt">MoybeF</span> a <span class="ot">-&gt;</span> <span class="dt">Maybe</span> a</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    interpret prog'</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>      <span class="ot">=</span> <span class="kw">case</span> prog' <span class="kw">of</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>          <span class="dt">Jost</span> a  <span class="ot">-&gt;</span> <span class="dt">Just</span> a</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>          <span class="dt">Nothong</span> <span class="ot">-&gt;</span> <span class="dt">Nothing</span></span></code></pre></div>
 <p>As you can see, we’re just substituting <code>Jost</code> for <code>Just</code> and <code>Nothong</code> for the inferior <code>Nothing</code>.</p>
 <p>Now we can use our function to actually do things like before:</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" title="1"><span class="ot">ans2 ::</span> <span class="dt">Maybe</span> (<span class="dt">Product</span> <span class="dt">Int</span>)</a>
-<a class="sourceLine" id="cb12-2" title="2">ans2 <span class="ot">=</span> interpretMaybe (fFirstAndSecondCombine [<span class="dt">Product</span> <span class="dv">10</span>] [<span class="dt">Product</span> <span class="dv">5</span>, <span class="dt">Product</span> <span class="dv">20</span>])</a>
-<a class="sourceLine" id="cb12-3" title="3"><span class="co">-- ans2 == Just (Product 200)</span></a>
-<a class="sourceLine" id="cb12-4" title="4"></a>
-<a class="sourceLine" id="cb12-5" title="5"><span class="ot">ans3 ::</span> <span class="dt">Maybe</span> (<span class="dt">Product</span> <span class="dt">Int</span>)</a>
-<a class="sourceLine" id="cb12-6" title="6">ans3 <span class="ot">=</span> interpretMaybe (fFirstAndSecondCombine [] [<span class="dt">Product</span> <span class="dv">5</span>, <span class="dt">Product</span> <span class="dv">20</span>])</a>
-<a class="sourceLine" id="cb12-7" title="7"><span class="co">-- ans3 == Nothing</span></a></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ot">ans2 ::</span> <span class="dt">Maybe</span> (<span class="dt">Product</span> <span class="dt">Int</span>)</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>ans2 <span class="ot">=</span> interpretMaybe (fFirstAndSecondCombine [<span class="dt">Product</span> <span class="dv">10</span>] [<span class="dt">Product</span> <span class="dv">5</span>, <span class="dt">Product</span> <span class="dv">20</span>])</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- ans2 == Just (Product 200)</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="ot">ans3 ::</span> <span class="dt">Maybe</span> (<span class="dt">Product</span> <span class="dt">Int</span>)</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>ans3 <span class="ot">=</span> interpretMaybe (fFirstAndSecondCombine [] [<span class="dt">Product</span> <span class="dv">5</span>, <span class="dt">Product</span> <span class="dv">20</span>])</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="co">-- ans3 == Nothing</span></span></code></pre></div>
 <h3 id="i-see-that-once-again-were-doing-something-easy-the-difficult-way">I See That Once Again We’re Doing Something Easy The Difficult Way</h3>
 <p>OK, fair point. Where is the value in all this indirection?</p>
 <p>How about if we want to interpret this computation differently? Perhaps we need to return an <code>Either</code> instead? Changing the interpreter is pretty straightforward:</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb13-1" title="1"><span class="ot">interpretEither ::</span> <span class="dt">Moybe</span> a <span class="ot">-&gt;</span> <span class="dt">Either</span> <span class="dt">String</span> a</a>
-<a class="sourceLine" id="cb13-2" title="2">interpretEither</a>
-<a class="sourceLine" id="cb13-3" title="3">  <span class="ot">=</span> foldFree interpret</a>
-<a class="sourceLine" id="cb13-4" title="4">  <span class="kw">where</span></a>
-<a class="sourceLine" id="cb13-5" title="5"><span class="ot">    interpret ::</span> <span class="dt">MoybeF</span> a <span class="ot">-&gt;</span> <span class="dt">Either</span> <span class="dt">String</span> a</a>
-<a class="sourceLine" id="cb13-6" title="6">    interpret prog'</a>
-<a class="sourceLine" id="cb13-7" title="7">      <span class="ot">=</span> <span class="kw">case</span> prog' <span class="kw">of</span></a>
-<a class="sourceLine" id="cb13-8" title="8">          <span class="dt">Jost</span> a  <span class="ot">-&gt;</span> <span class="dt">Right</span> a</a>
-<a class="sourceLine" id="cb13-9" title="9">          <span class="dt">Nothong</span> <span class="ot">-&gt;</span> <span class="dt">Left</span> <span class="st">&quot;Nah, that didn't work&quot;</span></a>
-<a class="sourceLine" id="cb13-10" title="10"></a>
-<a class="sourceLine" id="cb13-11" title="11"><span class="ot">ans4 ::</span> <span class="dt">Either</span> <span class="dt">String</span> (<span class="dt">Product</span> <span class="dt">Int</span>)</a>
-<a class="sourceLine" id="cb13-12" title="12">ans4 <span class="ot">=</span> interpretEither (fFirstAndSecondCombine [<span class="dt">Product</span> <span class="dv">10</span>] [<span class="dt">Product</span> <span class="dv">5</span>, <span class="dt">Product</span> <span class="dv">20</span>])</a>
-<a class="sourceLine" id="cb13-13" title="13"><span class="co">-- ans4 == Right (Product 200)</span></a>
-<a class="sourceLine" id="cb13-14" title="14"></a>
-<a class="sourceLine" id="cb13-15" title="15"><span class="ot">ans5 ::</span> <span class="dt">Either</span> <span class="dt">String</span> (<span class="dt">Product</span> <span class="dt">Int</span>)</a>
-<a class="sourceLine" id="cb13-16" title="16">ans5 <span class="ot">=</span> interpretEither (fFirstAndSecondCombine [] [<span class="dt">Product</span> <span class="dv">5</span>, <span class="dt">Product</span> <span class="dv">20</span>])</a>
-<a class="sourceLine" id="cb13-17" title="17"><span class="co">-- ans5 == Left &quot;Nah, that didn't work&quot;</span></a></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ot">interpretEither ::</span> <span class="dt">Moybe</span> a <span class="ot">-&gt;</span> <span class="dt">Either</span> <span class="dt">String</span> a</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>interpretEither</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>  <span class="ot">=</span> foldFree interpret</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">where</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="ot">    interpret ::</span> <span class="dt">MoybeF</span> a <span class="ot">-&gt;</span> <span class="dt">Either</span> <span class="dt">String</span> a</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    interpret prog'</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>      <span class="ot">=</span> <span class="kw">case</span> prog' <span class="kw">of</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>          <span class="dt">Jost</span> a  <span class="ot">-&gt;</span> <span class="dt">Right</span> a</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>          <span class="dt">Nothong</span> <span class="ot">-&gt;</span> <span class="dt">Left</span> <span class="st">&quot;Nah, that didn't work&quot;</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a><span class="ot">ans4 ::</span> <span class="dt">Either</span> <span class="dt">String</span> (<span class="dt">Product</span> <span class="dt">Int</span>)</span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>ans4 <span class="ot">=</span> interpretEither (fFirstAndSecondCombine [<span class="dt">Product</span> <span class="dv">10</span>] [<span class="dt">Product</span> <span class="dv">5</span>, <span class="dt">Product</span> <span class="dv">20</span>])</span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a><span class="co">-- ans4 == Right (Product 200)</span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a><span class="ot">ans5 ::</span> <span class="dt">Either</span> <span class="dt">String</span> (<span class="dt">Product</span> <span class="dt">Int</span>)</span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>ans5 <span class="ot">=</span> interpretEither (fFirstAndSecondCombine [] [<span class="dt">Product</span> <span class="dv">5</span>, <span class="dt">Product</span> <span class="dv">20</span>])</span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a><span class="co">-- ans5 == Left &quot;Nah, that didn't work&quot;</span></span></code></pre></div>
 <h3 id="is-thisa-domain-specific-language">Is This…A Domain Specific Language?</h3>
 <p>That’s right. One of the main strengths of <code>Free</code> is in creating small little sub-languages for writing logic, that can be interpreted in a number of different ways (such as <em>“what even is this doing?”</em> and <em>“i don’t understand this code”</em>)</p>
 <h3 id="how-does-this-relate-to-testing">How Does This Relate To Testing?</h3>
@@ -184,57 +184,57 @@
 <h3 id="do-you-have-an-example-of-exactly-that-preferably-centered-about-reading-and-writing-to-a-terminal-window-perchance">Do You Have An Example Of Exactly That, Preferably Centered About Reading And Writing To A Terminal Window, Perchance?</h3>
 <p>Why yes, I do.</p>
 <p>So <code>ConsoleF</code> is a <code>Functor</code> with two commands for input and output from a terminal.</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" title="1"><span class="kw">data</span> <span class="dt">ConsoleF</span> next</a>
-<a class="sourceLine" id="cb14-2" title="2">  <span class="ot">=</span> <span class="dt">Write</span> <span class="dt">String</span> next</a>
-<a class="sourceLine" id="cb14-3" title="3">  <span class="op">|</span> <span class="dt">Read</span> (<span class="dt">String</span> <span class="ot">-&gt;</span> next)</a>
-<a class="sourceLine" id="cb14-4" title="4"></a>
-<a class="sourceLine" id="cb14-5" title="5"><span class="kw">instance</span> <span class="dt">Functor</span> <span class="dt">ConsoleF</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb14-6" title="6">    <span class="fu">fmap</span> f (<span class="dt">Write</span> s next) <span class="ot">=</span> <span class="dt">Write</span> s (f next)</a>
-<a class="sourceLine" id="cb14-7" title="7">    <span class="fu">fmap</span> f (<span class="dt">Read</span> next)    <span class="ot">=</span> <span class="dt">Read</span> (f <span class="op">.</span> next)</a></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">ConsoleF</span> next</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  <span class="ot">=</span> <span class="dt">Write</span> <span class="dt">String</span> next</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">Read</span> (<span class="dt">String</span> <span class="ot">-&gt;</span> next)</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Functor</span> <span class="dt">ConsoleF</span> <span class="kw">where</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">fmap</span> f (<span class="dt">Write</span> s next) <span class="ot">=</span> <span class="dt">Write</span> s (f next)</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">fmap</span> f (<span class="dt">Read</span> next)    <span class="ot">=</span> <span class="dt">Read</span> (f <span class="op">.</span> next)</span></code></pre></div>
 <p>We power it up into a <code>Free Monad</code>…</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb15-1" title="1"><span class="kw">type</span> <span class="dt">Console</span> a <span class="ot">=</span> <span class="dt">Free</span> <span class="dt">ConsoleF</span> a</a></code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">Console</span> a <span class="ot">=</span> <span class="dt">Free</span> <span class="dt">ConsoleF</span> a</span></code></pre></div>
 <p>…and then we write our helpers with <code>liftF</code>…</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb16-1" title="1"><span class="co">-- write to the console</span></a>
-<a class="sourceLine" id="cb16-2" title="2"><span class="ot">fWrite ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Console</span> ()</a>
-<a class="sourceLine" id="cb16-3" title="3">fWrite str <span class="ot">=</span> liftF <span class="op">$</span> <span class="dt">Write</span> str ()</a>
-<a class="sourceLine" id="cb16-4" title="4"></a>
-<a class="sourceLine" id="cb16-5" title="5"><span class="co">-- await user input</span></a>
-<a class="sourceLine" id="cb16-6" title="6"><span class="ot">fRead ::</span> <span class="dt">Console</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb16-7" title="7">fRead <span class="ot">=</span> liftF <span class="op">$</span> <span class="dt">Read</span> <span class="fu">id</span></a></code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- write to the console</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="ot">fWrite ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Console</span> ()</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>fWrite str <span class="ot">=</span> liftF <span class="op">$</span> <span class="dt">Write</span> str ()</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="co">-- await user input</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a><span class="ot">fRead ::</span> <span class="dt">Console</span> <span class="dt">String</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>fRead <span class="ot">=</span> liftF <span class="op">$</span> <span class="dt">Read</span> <span class="fu">id</span></span></code></pre></div>
 <p>…then we write our program with it…</p>
-<div class="sourceCode" id="cb17"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb17-1" title="1"><span class="ot">consoleProg ::</span> <span class="dt">Console</span> ()</a>
-<a class="sourceLine" id="cb17-2" title="2">consoleProg <span class="ot">=</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb17-3" title="3">    fWrite <span class="st">&quot;What is your name?&quot;</span></a>
-<a class="sourceLine" id="cb17-4" title="4">    a <span class="ot">&lt;-</span> fRead</a>
-<a class="sourceLine" id="cb17-5" title="5">    fWrite <span class="op">$</span> <span class="st">&quot;Sure? &quot;</span> <span class="op">++</span> a</a>
-<a class="sourceLine" id="cb17-6" title="6">    b <span class="ot">&lt;-</span> fRead</a>
-<a class="sourceLine" id="cb17-7" title="7">    fWrite <span class="st">&quot;Great.&quot;</span></a></code></pre></div>
+<div class="sourceCode" id="cb17"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ot">consoleProg ::</span> <span class="dt">Console</span> ()</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>consoleProg <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>    fWrite <span class="st">&quot;What is your name?&quot;</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>    a <span class="ot">&lt;-</span> fRead</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>    fWrite <span class="op">$</span> <span class="st">&quot;Sure? &quot;</span> <span class="op">++</span> a</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>    b <span class="ot">&lt;-</span> fRead</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>    fWrite <span class="st">&quot;Great.&quot;</span></span></code></pre></div>
 <p>…then we interpret in <code>IO</code> to make a working program…</p>
-<div class="sourceCode" id="cb18"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb18-1" title="1"><span class="ot">interpretIO ::</span> <span class="dt">Console</span> a <span class="ot">-&gt;</span> <span class="dt">IO</span> a</a>
-<a class="sourceLine" id="cb18-2" title="2">interpretIO</a>
-<a class="sourceLine" id="cb18-3" title="3">  <span class="ot">=</span> foldFree interpret</a>
-<a class="sourceLine" id="cb18-4" title="4">  <span class="kw">where</span></a>
-<a class="sourceLine" id="cb18-5" title="5"><span class="ot">    interpret ::</span> <span class="dt">ConsoleF</span> a <span class="ot">-&gt;</span> <span class="dt">IO</span> a</a>
-<a class="sourceLine" id="cb18-6" title="6">    interpret prog'</a>
-<a class="sourceLine" id="cb18-7" title="7">      <span class="ot">=</span> <span class="kw">case</span> prog' <span class="kw">of</span></a>
-<a class="sourceLine" id="cb18-8" title="8">          <span class="dt">Write</span> s a <span class="ot">-&gt;</span> Prelude.putStrLn s <span class="op">&gt;&gt;</span> <span class="fu">pure</span> a</a>
-<a class="sourceLine" id="cb18-9" title="9">          <span class="dt">Read</span> a    <span class="ot">-&gt;</span> a <span class="op">&lt;$&gt;</span> Prelude.getLine</a></code></pre></div>
+<div class="sourceCode" id="cb18"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="ot">interpretIO ::</span> <span class="dt">Console</span> a <span class="ot">-&gt;</span> <span class="dt">IO</span> a</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>interpretIO</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>  <span class="ot">=</span> foldFree interpret</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">where</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="ot">    interpret ::</span> <span class="dt">ConsoleF</span> a <span class="ot">-&gt;</span> <span class="dt">IO</span> a</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>    interpret prog'</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>      <span class="ot">=</span> <span class="kw">case</span> prog' <span class="kw">of</span></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>          <span class="dt">Write</span> s a <span class="ot">-&gt;</span> Prelude.putStrLn s <span class="op">&gt;&gt;</span> <span class="fu">pure</span> a</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>          <span class="dt">Read</span> a    <span class="ot">-&gt;</span> a <span class="op">&lt;$&gt;</span> Prelude.getLine</span></code></pre></div>
 <p>…then we interpret it in <code>Writer</code> for testing…</p>
-<div class="sourceCode" id="cb19"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb19-1" title="1"><span class="ot">interpretWrite ::</span> <span class="dt">Console</span> a <span class="ot">-&gt;</span> <span class="dt">Writer</span> [<span class="dt">String</span>] a</a>
-<a class="sourceLine" id="cb19-2" title="2">interpretWrite <span class="ot">=</span> foldFree interpretConsoleWrite</a>
-<a class="sourceLine" id="cb19-3" title="3">  <span class="kw">where</span></a>
-<a class="sourceLine" id="cb19-4" title="4">    interpretConsoleWrite prog'</a>
-<a class="sourceLine" id="cb19-5" title="5">      <span class="ot">=</span> <span class="kw">case</span> prog' <span class="kw">of</span></a>
-<a class="sourceLine" id="cb19-6" title="6">          <span class="dt">Write</span> s a <span class="ot">-&gt;</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb19-7" title="7">            _ <span class="ot">&lt;-</span> tell [s]</a>
-<a class="sourceLine" id="cb19-8" title="8">            <span class="fu">pure</span> a</a>
-<a class="sourceLine" id="cb19-9" title="9">          <span class="dt">Read</span> a <span class="ot">-&gt;</span> <span class="kw">do</span></a>
-<a class="sourceLine" id="cb19-10" title="10">            _ <span class="ot">&lt;-</span> tell [<span class="st">&quot;[wait for input]&quot;</span>]</a>
-<a class="sourceLine" id="cb19-11" title="11">            <span class="fu">pure</span> (a <span class="st">&quot;[user input]&quot;</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb19"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="ot">interpretWrite ::</span> <span class="dt">Console</span> a <span class="ot">-&gt;</span> <span class="dt">Writer</span> [<span class="dt">String</span>] a</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>interpretWrite <span class="ot">=</span> foldFree interpretConsoleWrite</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">where</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>    interpretConsoleWrite prog'</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>      <span class="ot">=</span> <span class="kw">case</span> prog' <span class="kw">of</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>          <span class="dt">Write</span> s a <span class="ot">-&gt;</span> <span class="kw">do</span></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>            _ <span class="ot">&lt;-</span> tell [s]</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>            <span class="fu">pure</span> a</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>          <span class="dt">Read</span> a <span class="ot">-&gt;</span> <span class="kw">do</span></span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>            _ <span class="ot">&lt;-</span> tell [<span class="st">&quot;[wait for input]&quot;</span>]</span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>            <span class="fu">pure</span> (a <span class="st">&quot;[user input]&quot;</span>)</span></code></pre></div>
 <p>…run it…</p>
-<div class="sourceCode" id="cb20"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb20-1" title="1"><span class="ot">output ::</span> [<span class="dt">String</span>]</a>
-<a class="sourceLine" id="cb20-2" title="2">output <span class="ot">=</span> (<span class="fu">snd</span> <span class="op">.</span> runWriter <span class="op">.</span> interpretWrite ) consoleProg</a>
-<a class="sourceLine" id="cb20-3" title="3"><span class="co">-- output == [&quot;What is your name?&quot;,&quot;[wait for input]&quot;,&quot;Sure? [user input]&quot;,&quot;[wait for input]&quot;,&quot;Great.&quot;]</span></a></code></pre></div>
+<div class="sourceCode" id="cb20"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="ot">output ::</span> [<span class="dt">String</span>]</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>output <span class="ot">=</span> (<span class="fu">snd</span> <span class="op">.</span> runWriter <span class="op">.</span> interpretWrite ) consoleProg</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- output == [&quot;What is your name?&quot;,&quot;[wait for input]&quot;,&quot;Sure? [user input]&quot;,&quot;[wait for input]&quot;,&quot;Great.&quot;]</span></span></code></pre></div>
 <p>…and we go home for a nice sit down.</p>
 <h3 id="isnt-this-the-point-of-typeclasses">Isn’t This The Point Of Typeclasses?</h3>
 <p>Aye, <a href="https://markkarpov.com/post/free-monad-considered-harmful.html">some would say so</a>. But what’s the point of Haskell if there isn’t 10 ways of doing the same thing, and endless bloody fights to the death about the minor differences between them?</p>

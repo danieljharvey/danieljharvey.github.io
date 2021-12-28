@@ -29,93 +29,93 @@
         
         <div class="info">
           
-          Tags: <a href="../tags/haskell.html">haskell</a>, <a href="../tags/typeclasses.html">typeclasses</a>
+          Tags: <a title="All pages tagged 'haskell'." href="../tags/haskell.html">haskell</a>, <a title="All pages tagged 'typeclasses'." href="../tags/typeclasses.html">typeclasses</a>
           
         </div>
     </section>
     <section>
         <p>Let’s think about things that might or might not happen.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb1-1" title="1"><span class="kw">data</span> <span class="dt">Perhaps</span> a <span class="ot">=</span> <span class="dt">Yeah</span> a <span class="op">|</span> <span class="dt">Nah</span></a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Perhaps</span> a <span class="ot">=</span> <span class="dt">Yeah</span> a <span class="op">|</span> <span class="dt">Nah</span></span></code></pre></div>
 <p>Perhaps is a datatype that we can also use as a container for other data (by holding it inside a nice <code>Yeah</code>), or to show that we have no data with <code>Nah</code>.</p>
 <p>Let’s put things in it.</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" title="1"><span class="ot">john ::</span> <span class="dt">Perhaps</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb2-2" title="2">john <span class="ot">=</span> <span class="dt">Yeah</span> <span class="st">&quot;John&quot;</span></a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ot">john ::</span> <span class="dt">Perhaps</span> <span class="dt">String</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>john <span class="ot">=</span> <span class="dt">Yeah</span> <span class="st">&quot;John&quot;</span></span></code></pre></div>
 <p>Great job. John is having a nice time there. How might we express an absence of John?</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb3-1" title="1"><span class="ot">nope ::</span> <span class="dt">Perhaps</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb3-2" title="2">nope <span class="ot">=</span> <span class="dt">Nah</span></a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ot">nope ::</span> <span class="dt">Perhaps</span> <span class="dt">String</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>nope <span class="ot">=</span> <span class="dt">Nah</span></span></code></pre></div>
 <p>OK. No Johns here.</p>
 <p>So what if we have a function that receives something wrapped in a <code>Perhaps</code> and wants to do stuff with it.</p>
 <p>I guess we have pattern matching, so we can use this to pull stuff out and do things with it. Let’s add some question marks to this name, because that is always a valuable thing to do.</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb4-1" title="1"><span class="ot">questionAdd ::</span> <span class="dt">Perhaps</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Perhaps</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb4-2" title="2">questionAdd <span class="dt">Nah</span>         <span class="ot">=</span> <span class="dt">Nah</span></a>
-<a class="sourceLine" id="cb4-3" title="3">questionAdd (<span class="dt">Yeah</span> name) <span class="ot">=</span> <span class="dt">Yeah</span> (name <span class="op">++</span> <span class="st">&quot;???&quot;</span>)</a>
-<a class="sourceLine" id="cb4-4" title="4"><span class="co">-- questionAdd Nah  = Nah</span></a>
-<a class="sourceLine" id="cb4-5" title="5"><span class="co">-- questionAdd john = Yeah &quot;John???&quot;</span></a></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ot">questionAdd ::</span> <span class="dt">Perhaps</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Perhaps</span> <span class="dt">String</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>questionAdd <span class="dt">Nah</span>         <span class="ot">=</span> <span class="dt">Nah</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>questionAdd (<span class="dt">Yeah</span> name) <span class="ot">=</span> <span class="dt">Yeah</span> (name <span class="op">++</span> <span class="st">&quot;???&quot;</span>)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co">-- questionAdd Nah  = Nah</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co">-- questionAdd john = Yeah &quot;John???&quot;</span></span></code></pre></div>
 <p>Ok. Seems good. What about adding a simple exclaimation point instead? (Remembering of course that anybody more than one at any point is a sure sign of insanity.)</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" title="1"><span class="ot">exclaimAdd ::</span> <span class="dt">Perhaps</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Perhaps</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb5-2" title="2">exclaimAdd <span class="dt">Nah</span>         <span class="ot">=</span> <span class="dt">Nah</span></a>
-<a class="sourceLine" id="cb5-3" title="3">exclaimAdd (<span class="dt">Yeah</span> name) <span class="ot">=</span> <span class="dt">Yeah</span> (name <span class="op">++</span> <span class="st">&quot;!&quot;</span>)</a>
-<a class="sourceLine" id="cb5-4" title="4"><span class="co">-- exclaimAdd Nah  = Nah</span></a>
-<a class="sourceLine" id="cb5-5" title="5"><span class="co">-- exclaimAdd john = Yeah &quot;John!&quot;</span></a></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ot">exclaimAdd ::</span> <span class="dt">Perhaps</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Perhaps</span> <span class="dt">String</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>exclaimAdd <span class="dt">Nah</span>         <span class="ot">=</span> <span class="dt">Nah</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>exclaimAdd (<span class="dt">Yeah</span> name) <span class="ot">=</span> <span class="dt">Yeah</span> (name <span class="op">++</span> <span class="st">&quot;!&quot;</span>)</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co">-- exclaimAdd Nah  = Nah</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="co">-- exclaimAdd john = Yeah &quot;John!&quot;</span></span></code></pre></div>
 <p>Ok. Sure. So far, so functional. Feels like we’re repeating ourselves though. What if we could abstract out away the unwrapping-and-then-wrapping-again and the function itself? Well sure we can! That typeclass is called <code>Functor</code>. Let’s open ghci and take a look.</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb6-1" title="1"><span class="dt">Prelude</span><span class="op">&gt;</span> <span class="op">:</span>i <span class="dt">Functor</span></a></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="dt">Prelude</span><span class="op">&gt;</span> <span class="op">:</span>i <span class="dt">Functor</span></span></code></pre></div>
 <p>Here’s the definition:</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" title="1"><span class="kw">class</span> <span class="dt">Functor</span> (<span class="ot">f ::</span> <span class="op">*</span> <span class="ot">-&gt;</span> <span class="op">*</span>) <span class="kw">where</span></a>
-<a class="sourceLine" id="cb7-2" title="2"><span class="ot">  fmap ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> f a <span class="ot">-&gt;</span> f b</a>
-<a class="sourceLine" id="cb7-3" title="3"><span class="ot">  (&lt;$) ::</span> a <span class="ot">-&gt;</span> f b <span class="ot">-&gt;</span> f a</a>
-<a class="sourceLine" id="cb7-4" title="4">  <span class="ot">{-# MINIMAL fmap #-}</span></a></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> <span class="dt">Functor</span> (<span class="ot">f ::</span> <span class="op">*</span> <span class="ot">-&gt;</span> <span class="op">*</span>) <span class="kw">where</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="ot">  fmap ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> f a <span class="ot">-&gt;</span> f b</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="ot">  (&lt;$) ::</span> a <span class="ot">-&gt;</span> f b <span class="ot">-&gt;</span> f a</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="ot">{-# MINIMAL fmap #-}</span></span></code></pre></div>
 <p>Looks like we can implement it by just using <code>fmap</code>. And that type signature kind of looks like what we want (if we squint very hard indeed). It’s saying take a function of any <code>a</code> to any <code>b</code> (ie, <code>(a -&gt; b)</code>) and then pass me a functor with an <code>a</code> in it (ie, <code>f a</code>) and I will return the same functor but with the <code>b</code> from your function in it (ie, <code>f b</code>). So basically <code>fmap</code> is the “unwrapping-and-then-wrapping-again” we talked about earlier. Sounds good. Let’s implement it.</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb8-1" title="1"><span class="kw">instance</span> <span class="dt">Functor</span> <span class="dt">Perhaps</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb8-2" title="2">  <span class="fu">fmap</span> _ <span class="dt">Nah</span>      <span class="ot">=</span> <span class="dt">Nah</span></a>
-<a class="sourceLine" id="cb8-3" title="3">  <span class="fu">fmap</span> f (<span class="dt">Yeah</span> a) <span class="ot">=</span> <span class="dt">Yeah</span> (f a)</a></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Functor</span> <span class="dt">Perhaps</span> <span class="kw">where</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fmap</span> _ <span class="dt">Nah</span>      <span class="ot">=</span> <span class="dt">Nah</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fmap</span> f (<span class="dt">Yeah</span> a) <span class="ot">=</span> <span class="dt">Yeah</span> (f a)</span></code></pre></div>
 <p>Looks great. The first thing you’ll notice is that the <code>fmap</code> for <code>Nah</code> doesn’t do anything. That’s because although our <code>Yeah</code> can contains some <code>a</code>, our <code>Nah</code> contains nothing at all so cares very little for our <code>a -&gt; b</code> function. However, look! The second line is unwrapping the <code>a</code> from the <code>Yeah</code>, and then making a new <code>Yeah b</code> (because we make a <code>b</code> by running <code>f</code>, which is our <code>a -&gt; b</code> function). Therefore we can throw any old function at this and we should have a Nice Time.</p>
 <p>This function for instance, is used on a <code>String</code> to make the caller look somewhat unhinged.</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" title="1"><span class="ot">exclaim ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb9-2" title="2">exclaim str <span class="ot">=</span> str <span class="op">++</span> <span class="st">&quot;!!!!!!!!!!!!&quot;</span></a>
-<a class="sourceLine" id="cb9-3" title="3"><span class="co">-- exclaim &quot;Horse&quot; == &quot;Horse!!!!!!!!!!!!&quot;</span></a></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ot">exclaim ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">String</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>exclaim str <span class="ot">=</span> str <span class="op">++</span> <span class="st">&quot;!!!!!!!!!!!!&quot;</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- exclaim &quot;Horse&quot; == &quot;Horse!!!!!!!!!!!!&quot;</span></span></code></pre></div>
 <p>But using our new <code>Functor</code> instance means we can run it on our poor friend <code>john</code> from earlier, even though he is wrapped up in all that <code>Yeah</code>.</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" title="1"><span class="ot">veryJohn ::</span> <span class="dt">Perhaps</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb10-2" title="2">veryJohn <span class="ot">=</span> <span class="fu">fmap</span> exclaim john</a>
-<a class="sourceLine" id="cb10-3" title="3"><span class="co">-- veryJohn == Yeah &quot;John!!!!!!!!!!!!&quot;</span></a></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ot">veryJohn ::</span> <span class="dt">Perhaps</span> <span class="dt">String</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>veryJohn <span class="ot">=</span> <span class="fu">fmap</span> exclaim john</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- veryJohn == Yeah &quot;John!!!!!!!!!!!!&quot;</span></span></code></pre></div>
 <p>Sorry John.</p>
 <p>What if we run the same function over a <code>Nah</code>? Does everything explode?</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" title="1"><span class="ot">stillNope ::</span> <span class="dt">Perhaps</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb11-2" title="2">stillNope <span class="ot">=</span> <span class="fu">fmap</span> exclaim nope</a>
-<a class="sourceLine" id="cb11-3" title="3"><span class="co">-- stillNope = Nah</span></a></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ot">stillNope ::</span> <span class="dt">Perhaps</span> <span class="dt">String</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>stillNope <span class="ot">=</span> <span class="fu">fmap</span> exclaim nope</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- stillNope = Nah</span></span></code></pre></div>
 <p>Nah. Seems fine. <code>Nah</code> ignores the function altogether, as it has no <code>a</code> in it, so no interest.</p>
 <p>Ok. So this seems pretty great. There is one thing to know about <code>Functor</code> however that can be a little bit brain bending at first, and that’s the idea that they can be “lawful”. That is to say, that when you <code>fmap</code> over something, it doesn’t also break that thing, and that it unwraps and wraps in the right way. Haskell’s type system can help you make sure your <code>fmap</code> has the right types, but it can’t enforce that your <code>Functor</code> makes sense I’m afraid. That’s up to you.</p>
 <p>The first law is called Identity. It means that if you <code>fmap</code> using an Identity function, nothing will change. This is a trick I suppose - the Identity function looks like this:</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb12-1" title="1"><span class="ot">identity ::</span> a <span class="ot">-&gt;</span> a</a>
-<a class="sourceLine" id="cb12-2" title="2">identity a <span class="ot">=</span> a</a>
-<a class="sourceLine" id="cb12-3" title="3"><span class="co">-- this is also called id in the Prelude</span></a></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ot">identity ::</span> a <span class="ot">-&gt;</span> a</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>identity a <span class="ot">=</span> a</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- this is also called id in the Prelude</span></span></code></pre></div>
 <p>So running it on anything does nothing - the Identity law is basically checking the <code>Functor</code> is up to no funny business. Our Perhaps functor is OK, but what about this chancer?</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb13-1" title="1"><span class="kw">data</span> <span class="dt">Poohoops</span> a <span class="ot">=</span> <span class="dt">Yerp</span> a <span class="op">|</span> <span class="dt">Nerp</span> <span class="kw">deriving</span> (<span class="dt">Eq</span>, <span class="dt">Show</span>)</a>
-<a class="sourceLine" id="cb13-2" title="2"></a>
-<a class="sourceLine" id="cb13-3" title="3"><span class="kw">instance</span> <span class="dt">Functor</span> <span class="dt">Poohoops</span> <span class="kw">where</span></a>
-<a class="sourceLine" id="cb13-4" title="4">    <span class="fu">fmap</span> _ <span class="dt">Nerp</span>     <span class="ot">=</span> <span class="dt">Nerp</span></a>
-<a class="sourceLine" id="cb13-5" title="5">    <span class="fu">fmap</span> f (<span class="dt">Yeah</span> a) <span class="ot">=</span> <span class="dt">Nerp</span></a></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Poohoops</span> a <span class="ot">=</span> <span class="dt">Yerp</span> a <span class="op">|</span> <span class="dt">Nerp</span> <span class="kw">deriving</span> (<span class="dt">Eq</span>, <span class="dt">Show</span>)</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Functor</span> <span class="dt">Poohoops</span> <span class="kw">where</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">fmap</span> _ <span class="dt">Nerp</span>     <span class="ot">=</span> <span class="dt">Nerp</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">fmap</span> f (<span class="dt">Yeah</span> a) <span class="ot">=</span> <span class="dt">Nerp</span></span></code></pre></div>
 <p>If we <code>fmap identity Nerp</code> we get <code>Nerp</code>, so that all seems fine. However, if we <code>fmap identity Yeah "Detroit"</code> then we also get <code>Nerp</code> which is an absolute bloody disaster. This functor is broken. Put it straight in the bin, and set the bin on fire.</p>
 <p>The second law is called Composition. It means that if we <code>fmap</code> one function over our <code>Functor</code> and then <code>fmap</code> a second function over the result, it would be the same as combining the two functions and doing a single <code>fmap</code>.</p>
 <p>I’m sorry. What?</p>
 <p>OK, let’s have an example of that.</p>
 <p>Therefore, if as well as our rather worrying “exclaim” function, we have one for shouting as well (don’t be distracted by the <code>&lt;$&gt;</code> for now, we’ll come to it in future…)</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb14-1" title="1"><span class="ot">capitalise ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">String</span></a>
-<a class="sourceLine" id="cb14-2" title="2">capitalise str <span class="ot">=</span> <span class="fu">toUpper</span> <span class="op">&lt;$&gt;</span> str</a>
-<a class="sourceLine" id="cb14-3" title="3"><span class="co">-- capitalise &quot;Horse&quot; == &quot;HORSE&quot;</span></a></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="ot">capitalise ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">String</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>capitalise str <span class="ot">=</span> <span class="fu">toUpper</span> <span class="op">&lt;$&gt;</span> str</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- capitalise &quot;Horse&quot; == &quot;HORSE&quot;</span></span></code></pre></div>
 <p>…we can combine it to make one terrifying function…</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb15-1" title="1"><span class="ot">shouting ::</span> <span class="dt">Perhaps</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">PerhapsString</span></a>
-<a class="sourceLine" id="cb15-2" title="2">shouting p <span class="ot">=</span> <span class="fu">fmap</span> (capitalise <span class="op">.</span> exclaim) p</a>
-<a class="sourceLine" id="cb15-3" title="3"><span class="co">-- shouting (Yeah &quot;Bruce&quot;) == Yeah &quot;BRUCE!!!!!!!!!!!!&quot;</span></a></code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ot">shouting ::</span> <span class="dt">Perhaps</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">PerhapsString</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>shouting p <span class="ot">=</span> <span class="fu">fmap</span> (capitalise <span class="op">.</span> exclaim) p</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- shouting (Yeah &quot;Bruce&quot;) == Yeah &quot;BRUCE!!!!!!!!!!!!&quot;</span></span></code></pre></div>
 <p>…which is exactly the same as this:</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb16-1" title="1"><span class="ot">shouting2 ::</span> <span class="dt">Perhaps</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">PerhapsString</span></a>
-<a class="sourceLine" id="cb16-2" title="2">shouting2 p <span class="ot">=</span> <span class="fu">fmap</span> capitalise (<span class="fu">fmap</span> exclaim p)</a>
-<a class="sourceLine" id="cb16-3" title="3"><span class="co">-- shouting2 (Yeah &quot;Bruce&quot;) == Yeah &quot;BRUCE!!!!!!!!!!!!&quot;</span></a></code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="ot">shouting2 ::</span> <span class="dt">Perhaps</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">PerhapsString</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>shouting2 p <span class="ot">=</span> <span class="fu">fmap</span> capitalise (<span class="fu">fmap</span> exclaim p)</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- shouting2 (Yeah &quot;Bruce&quot;) == Yeah &quot;BRUCE!!!!!!!!!!!!&quot;</span></span></code></pre></div>
 <p>The Composition law just makes sure these are the same thing, so again, no funny business can take place.</p>
-<div class="sourceCode" id="cb17"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb17-1" title="1"><span class="ot">compositionLaw ::</span> <span class="dt">Bool</span></a>
-<a class="sourceLine" id="cb17-2" title="2">compositionLaw <span class="ot">=</span> <span class="fu">fmap</span> (capitalise <span class="op">.</span> exclaim) (<span class="dt">Yeah</span> <span class="st">&quot;Bruce&quot;</span>)</a>
-<a class="sourceLine" id="cb17-3" title="3">              <span class="op">==</span> <span class="fu">fmap</span> capitalise (<span class="fu">fmap</span> exclaim (<span class="dt">Yeah</span> <span class="st">&quot;Bruce&quot;</span>))</a>
-<a class="sourceLine" id="cb17-4" title="4"><span class="co">-- compositionLaw == True</span></a>
-<a class="sourceLine" id="cb17-5" title="5"><span class="co">-- ie, either way of doing this ends up the same</span></a></code></pre></div>
+<div class="sourceCode" id="cb17"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ot">compositionLaw ::</span> <span class="dt">Bool</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>compositionLaw <span class="ot">=</span> <span class="fu">fmap</span> (capitalise <span class="op">.</span> exclaim) (<span class="dt">Yeah</span> <span class="st">&quot;Bruce&quot;</span>)</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>              <span class="op">==</span> <span class="fu">fmap</span> capitalise (<span class="fu">fmap</span> exclaim (<span class="dt">Yeah</span> <span class="st">&quot;Bruce&quot;</span>))</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="co">-- compositionLaw == True</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="co">-- ie, either way of doing this ends up the same</span></span></code></pre></div>
 <p>Anyway. This is just one introduction to a kind of <code>functor</code>. In short, hand-wavey terms:</p>
 <h4 id="a-functor-is-a-thing-that-lets-you-safely-crap-around-with-the-values-inside-it-without-breaking-the-thing-itself">“A functor is a thing that lets you safely crap around with the values inside it without breaking the thing itself”</h4>
 <p>A few important notes and disclaimers:</p>
