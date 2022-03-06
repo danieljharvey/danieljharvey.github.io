@@ -7,6 +7,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Daniel J. Harvey - A game in Purescript (Part 2 - Effect and Aff)</title>
     <link rel="stylesheet" href="../css/default.css" />
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
 </head>
 
 <body>
@@ -34,9 +44,11 @@
         </div>
     </section>
     <section>
-        <p>Good morning and/or evening. I found myself defaulting to starting with an apology for the amount of time since my last post, then I caught myself and reminded myself that <em>It’s My Blog And I Can Post Whenever I Feel Like It Actually</em>. So with that in mind, let’s continue to today’s main course, at exactly the rambling pace of my choosing.</p>
+        <p>Good morning and/or evening. I found myself defaulting to starting with an apology for the amount of time since my last post, then I caught myself and reminded myself that <em>It’s My Blog And I Can Post Whenever I Feel Like It Actually</em>. So with that in mind, let’s continue to today’s main course, at exactly the rambling pace
+of my choosing.</p>
 <figure>
-<img src="../images/eggmore.png" title="The new game looking completely OK." alt="The new game looking completely OK." /><figcaption aria-hidden="true">The new game looking completely OK.</figcaption>
+<img src="../images/eggmore.png" title="The new game looking completely OK." alt="The new game looking completely OK." />
+<figcaption aria-hidden="true">The new game looking completely OK.</figcaption>
 </figure>
 <p>As I may have mentioned, my current timesink of choice is a Purescript re-write of a browser game I wrote a couple of years back called <a href="http://itistheegg.com/">It Is The Egg</a>. It is going pretty OK, all told, I’ve gotten all the awful fiddly stuff like rendering sorted so now I am free to remake the game logic in nice pure functions and generally have a good time. For those of that don’t spend their free time ignoring their loved ones and instead writing terrible games in a functional programming style, a few notes on the vague architecture that I have settled on.</p>
 <p>It falls into three parts:</p>
@@ -53,7 +65,8 @@
 <p>The Logic layer is run every “turn” of the game and is a function that takes the current game state, any input that has been received since the last turn, and uses this to compute the next game state to pass to Rendering layer. Everything in the Logic layer is pure functions, and is very easy to test, therefore this should have lots of tests because we all good programmers who appreciate software craftsmanship. Anybody that has written Redux reducers should find this very familiar.</p>
 <p>(Anybody vaguely familiar with design patterns in Haskell might be thinking “shit, this sounds a lot like Matt Parsons’ <a href="https://www.parsonsmatt.org/2018/03/22/three_layer_haskell_cake.html">Three Layer Haskell Cake</a> pattern, this could be pretty awkward” - and yes - it is indeed pretty similar, and shamelessly so.)</p>
 <figure>
-<img src="../images/eggs.png" title="More screenshots because code is tiring." alt="More screenshots because code is tiring." /><figcaption aria-hidden="true">More screenshots because code is tiring.</figcaption>
+<img src="../images/eggs.png" title="More screenshots because code is tiring." alt="More screenshots because code is tiring." />
+<figcaption aria-hidden="true">More screenshots because code is tiring.</figcaption>
 </figure>
 <p>So today we’re going to talk about the game setup part, and on the way, discover, as I did, the actual difference between Purescript’s <code>Effect</code> and <code>Aff</code> and how to operate the two of them.</p>
 <h3 id="firstly-some-background">Firstly, some background</h3>
@@ -79,7 +92,8 @@
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="ex">Greetings,</span> Mr Horse</span></code></pre></div>
 <p>The program greets the user, ask them their name, read the response, and use that name in the reply. The type signature for <code>readLine</code> is <code>IO String</code>, meaning a function that does some IO and returns a <code>String</code>. It does not specify when said string will arrive. If the user sits and waits for 100 years to type a response, the program will happily sit and do absolutely nothing else, obediently waiting for the user before continuing with the program.</p>
 <figure>
-<img src="../images/egg-sprite-yellow.png" title="Let's distract ourselves briefly with some eggs." alt="Let’s distract ourselves briefly with some eggs." /><figcaption aria-hidden="true">Let’s distract ourselves briefly with some eggs.</figcaption>
+<img src="../images/egg-sprite-yellow.png" title="Let's distract ourselves briefly with some eggs." alt="Let’s distract ourselves briefly with some eggs." />
+<figcaption aria-hidden="true">Let’s distract ourselves briefly with some eggs.</figcaption>
 </figure>
 <p>Purescript, however, is built on top of Javascript, and some of you may be lucky enough to remember first getting stung by the concepts of callbacks etc when first moving to writing front end code. It’s equivalent function to <code>readLine</code>, looks something like this:</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>readLine</span>
@@ -117,7 +131,8 @@
 <h3 id="what-has-this-got-to-do-with-eggs">What has this got to do with eggs?</h3>
 <p>Sure, sure. Coming back round to our game, we have a similar problem. The game is tile based and so before we can dream of drawing anything we’re going to need to load a big pile of images.</p>
 <figure>
-<img src="../images/egg-sprite.png" title="A sprite sheet for an egg." alt="A sprite sheet for an egg." /><figcaption aria-hidden="true">A sprite sheet for an egg.</figcaption>
+<img src="../images/egg-sprite.png" title="A sprite sheet for an egg." alt="A sprite sheet for an egg." />
+<figcaption aria-hidden="true">A sprite sheet for an egg.</figcaption>
 </figure>
 <p>As we can see in the <a href="https://pursuit.purescript.org/packages/purescript-canvas/4.0.0/docs/Graphics.Canvas">Purescript Canvas Docs</a> we are going to need a <code>CanvasImageSource</code> to draw a sprite onto the canvas:</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ot">drawImage ::</span> <span class="dt">Context2D</span> <span class="ot">-&gt;</span> <span class="dt">CanvasImageSource</span> <span class="ot">-&gt;</span> <span class="dt">Number</span> <span class="ot">-&gt;</span> <span class="dt">Number</span> <span class="ot">-&gt;</span> <span class="dt">Effect</span> <span class="dt">Unit</span></span></code></pre></div>
@@ -158,7 +173,8 @@
 <p>Finally, it creates an <code>Effect Canceler</code> with <code>pure mempty</code> - which just returns a <code>Canceler</code> that does nothing.</p>
 <h3 id="using-our-exciting-new-function">Using our exciting new function</h3>
 <figure>
-<img src="../images/crate.png" title="A sprite of a box." alt="A sprite of a box." /><figcaption aria-hidden="true">A sprite of a box.</figcaption>
+<img src="../images/crate.png" title="A sprite of a box." alt="A sprite of a box." />
+<figcaption aria-hidden="true">A sprite of a box.</figcaption>
 </figure>
 <p>Now instead of using callbacks, we can use regular monad binds to get our images out.</p>
 <div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="ot">loadLots ::</span> <span class="dt">Aff</span> (<span class="dt">Array</span> <span class="dt">CanvasImageSource</span>)</span>

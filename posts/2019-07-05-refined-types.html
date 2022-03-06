@@ -7,6 +7,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Daniel J. Harvey - Refine, fine, fine</title>
     <link rel="stylesheet" href="../css/default.css" />
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
 </head>
 
 <body>
@@ -34,22 +44,29 @@
         </div>
     </section>
     <section>
-        <p>About a month ago I gave a talk about <code>Refined</code> types at a React meetup. Needless to say, it was a resounding success so I thought I would share an adapted version of the slides so that you can all learn to be as learned as me when it comes to such a topic.</p>
+        <p>About a month ago I gave a talk about <code>Refined</code> types at a React meetup.
+Needless to say, it was a resounding success so I thought I would share an
+adapted version of the slides so that you can all learn to be as learned as me
+when it comes to such a topic.</p>
 <p>Let’s start by listing some things that we as programmers generally agree we don’t particularly like:</p>
 <h3 id="runtime-errors-caused-by-javascript-yolo">Runtime errors caused by Javascript YOLO</h3>
 <p>Here is some classic code written in the Javascript programming language:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">makeBig</span>(thing) {</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> thing<span class="op">.</span><span class="fu">toUpperCase</span>()</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
-<p>At a casual glance, it would appear to be some rather convoluted code for making a string uppercase.</p>
+<p>At a casual glance, it would appear to be some rather convoluted code for
+making a string uppercase.</p>
 <p>Therefore, this seems fine:</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">makeBig</span>(<span class="st">'horse'</span>) <span class="co">// 'HORSE'</span></span></code></pre></div>
 <p>But this isn’t so great:</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">makeBig</span>(<span class="dv">12</span>) <span class="co">// Error: toUpperCase is not defined</span></span></code></pre></div>
-<p>What happened? Well it wasn’t really a function for making strings uppercase, it was a function that takes any piece of data, then makes it uppercase if it’s a string, and just breaks weirdly with anything else.</p>
+<p>What happened? Well it wasn’t really a function for making strings uppercase,
+it was a function that takes any piece of data, then makes it uppercase if it’s
+a string, and just breaks weirdly with anything else.</p>
 <p>Another thing we don’t really like doing as programmers is…</p>
 <h3 id="overly-defensive-code-around-user-input">Overly defensive code around user input</h3>
-<p>So if your start in programming involved more than a sprinkling of PHP, then you’ll be used to starting all your functions with the <code>manual typechecking dance</code>.</p>
+<p>So if your start in programming involved more than a sprinkling of PHP, then
+you’ll be used to starting all your functions with the <code>manual typechecking dance</code>.</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">printName</span>(name) {</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (name <span class="op">&amp;&amp;</span> name<span class="op">.</span><span class="at">length</span> <span class="op">&gt;</span> <span class="dv">0</span> <span class="op">&amp;&amp;</span> <span class="kw">typeof</span> name <span class="op">===</span> <span class="st">'string'</span>) then {</span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> name</span>
@@ -57,7 +74,8 @@
 <span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="st">&quot;No name!&quot;</span></span>
 <span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <h3 id="defense-against-the-dark-arts">Defense against the dark arts</h3>
-<p>Another favourite is manually checking our values to check basic mathematical operators aren’t going to explode the whole computer.</p>
+<p>Another favourite is manually checking our values to check basic mathematical
+operators aren’t going to explode the whole computer.</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">divide</span>(a<span class="op">,</span> b) {</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (b <span class="op">==</span> <span class="dv">0</span> <span class="op">||</span> <span class="pp">isNaN</span>(a) <span class="op">||</span> <span class="pp">isNaN</span>(b)) then {</span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="dv">0</span><span class="op">;</span> <span class="co">// would have caused error</span></span>
@@ -72,7 +90,7 @@
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <p>…to only take a string like we intended.</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">makeBig</span>(thing<span class="op">:</span> <span class="dt">string</span>) {</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  return thing<span class="op">.</span><span class="fu">toUpperCase</span>()</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> thing<span class="op">.</span><span class="fu">toUpperCase</span>()</span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <p>Let’s give it a smash:</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">makeBig</span>(<span class="st">'horse'</span>) <span class="co">// 'HORSE'</span></span></code></pre></div>
@@ -91,10 +109,10 @@
 <span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <p>…gets a string type, which means we don’t have to check that <code>name</code> exists…</p>
 <div class="sourceCode" id="cb11"><pre class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">printName</span>(name<span class="op">:</span> <span class="dt">string</span>) {</span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">if</span> (name<span class="op">.</span><span class="at">length</span> <span class="op">&gt;</span> <span class="dv">0</span>) then {</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    return name</span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  } else {</span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    return <span class="st">&quot;No name!&quot;</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (name<span class="op">.</span><span class="at">length</span> <span class="op">&gt;</span> <span class="dv">0</span>) then {</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> name</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="st">&quot;No name!&quot;</span></span>
 <span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <p>…but we still need to check whether <code>name</code> is long enough and return a default if not.</p>
 <h3 id="what-about-that-classic-divide-by-zero-problem">What about that classic divide by zero problem?</h3>
@@ -108,34 +126,45 @@
 <span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <p>We can get rid of the number checks…</p>
 <div class="sourceCode" id="cb13"><pre class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">divide</span>(a<span class="op">:</span> <span class="dt">number</span><span class="op">,</span> b<span class="op">:</span> <span class="dt">number</span>) {</span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">if</span> (b <span class="op">==</span> <span class="dv">0</span>) then {</span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    return <span class="dv">0</span><span class="op">;</span> <span class="co">// would have caused error</span></span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>  } else {</span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    return a <span class="op">/</span> b</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (b <span class="op">==</span> <span class="dv">0</span>) then {</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="dv">0</span><span class="op">;</span> <span class="co">// would have caused error</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> a <span class="op">/</span> b</span>
 <span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>  }</span>
 <span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <p>…but we’ve still got to check for that zero value. Better, but not great. What if I told you we could do better than this?</p>
 <h3 id="refined">Refined</h3>
 <p>Enter <code>Refined</code> types. A Refined type looks like this:</p>
 <div class="sourceCode" id="cb14"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">newtype</span> <span class="dt">Refined</span> predicate value <span class="ot">=</span> <span class="dt">Refined</span> value</span></code></pre></div>
-<p>As it is a <code>newtype</code> it is a wrapper around a value that is used for type purposes at compile time but then erased at run time (so when the program runs, <code>Refined 100</code> is just <code>100</code> as far as memory etc is concerned)</p>
+<p>As it is a <code>newtype</code> it is a wrapper around a value that is used for type
+purposes at compile time but then erased at run time (so when the program runs,
+<code>Refined 100</code> is just <code>100</code> as far as memory etc is concerned)</p>
 <p><code>value</code> is the type of actual data we are refining, for example <code>Int</code> or <code>Number</code>.</p>
 <p><code>predicate</code> is a type that lets us better describe the <code>value</code>.</p>
 <p>The most interesting thing to note here is that <code>predicate</code> only exists on the type side (ie before the <code>=</code>) and not after - this makes it a <code>phantom type</code> which is only used to add contextual information. Let’s see what that actually means…</p>
 <h3 id="making-refined-values">Making Refined values</h3>
-<p>There are a few ways to make <code>Refined</code> values, especially in the Haskell library - we’ll concentrate on two. I’m going to use the types from the Purescript version because a) they’re simpler and b) I made them and am thus less likely to get it wrong.</p>
+<p>There are a few ways to make <code>Refined</code> values, especially in the Haskell
+library - we’ll concentrate on two. I’m going to use the types from the
+Purescript version because a) they’re simpler and b) I made them and am thus
+less likely to get it wrong.</p>
 <div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>refine </span>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="ot">  ::</span> value </span>
 <span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  <span class="ot">-&gt;</span> <span class="dt">Either</span> <span class="dt">RefinedError</span> (<span class="dt">Refined</span> predicate value)</span></code></pre></div>
-<p>This is the regular way to make <code>Refined</code> value - you pass it a plain value and it returns either <code>Left</code> with a <code>RefinedError</code> describing the problem, or <code>Right</code> with the <code>Refined</code> value inside.</p>
+<p>This is the regular way to make <code>Refined</code> value - you pass it a plain value and
+it returns either <code>Left</code> with a <code>RefinedError</code> describing the problem, or <code>Right</code> with
+the <code>Refined</code> value inside.</p>
 <div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>unsafeRefine </span>
 <span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="ot">  ::</span> value </span>
 <span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  <span class="ot">-&gt;</span> <span class="dt">Refined</span> predicate value</span></code></pre></div>
-<p>This ignores the <code>predicate</code> and leaves it to the programmer to go full YOLO and decide whether the predicate will be fine. I have used this to make <code>Monoid</code> classes where I want to add two positive numbers without checking that the outcome will still be positive.</p>
+<p>This ignores the <code>predicate</code> and leaves it to the programmer to go full YOLO
+and decide whether the predicate will be fine. I have used this to make
+<code>Monoid</code> classes where I want to add two positive numbers without checking
+that the outcome will still be positive.</p>
 <h3 id="id">Id</h3>
 <p>The most basic predicate is <code>id</code>, which doesn’t really do anything.</p>
 <div class="sourceCode" id="cb17"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="dt">Refined</span> <span class="dt">Id</span> <span class="dt">Int</span></span></code></pre></div>
-<p>It’s named after the <code>id</code> (or <code>identity</code>) function - the function that returns whatever it receives, basically doing nothing.</p>
+<p>It’s named after the <code>id</code> (or <code>identity</code>) function - the function that returns whatever it
+receives, basically doing nothing.</p>
 <div class="sourceCode" id="cb18"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="ot">identity ::</span> x <span class="ot">-&gt;</span> x</span>
 <span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>identity x <span class="ot">=</span> x</span></code></pre></div>
 <p>For example, any value that is a value <code>Int</code> can be made into a valid <code>Refined Id Int</code>.</p>
@@ -157,7 +186,8 @@
 <span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>positive2 <span class="ot">=</span> refine (<span class="op">-</span><span class="dv">10</span>)</span>
 <span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- positive2 == Left (GreaterThanError 0 (-10))</span></span></code></pre></div>
 <h3 id="from">From</h3>
-<p>We can be even more specific with these types too. The <code>From</code> predicate takes an integer and only allows values equal to or above it.</p>
+<p>We can be even more specific with these types too. The <code>From</code> predicate takes an integer and only allows values equal to or above
+it.</p>
 <div class="sourceCode" id="cb24"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="dt">Refined</span> (<span class="dt">From</span> <span class="dt">D10</span>) <span class="dt">Int</span></span></code></pre></div>
 <p>(A note here - that <code>D10</code> is a type-level <code>10</code>. It is provided by the <a href="https://github.com/bodil/purescript-typelevel">purescript-typelevel</a> package.)</p>
 <p>Therefore this <code>9</code> is clearly taking the piss and totally won’t <code>refine</code>.</p>
@@ -177,7 +207,10 @@
 <span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>to2 <span class="ot">=</span> refine <span class="dv">17</span></span>
 <span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- to2 == Right (Refined 17)</span></span></code></pre></div>
 <h3 id="sizeequalto-sizegreaterthan-sizelessthan">SizeEqualTo, SizeGreaterThan, SizeLessThan</h3>
-<p>Refinements don’t have to just be about numbers - we can use them on <code>foldable</code> structures too, such as <code>Lists</code>. The refinements let us be specific about sizes of said structure. Therefore we could make a non-empty <code>List</code> of <code>Boolean</code> values with <code>Refined (SizeGreaterThan D0) (List Boolean)</code>.</p>
+<p>Refinements don’t have to just be about numbers - we can use them on <code>foldable</code>
+structures too, such as <code>Lists</code>. The refinements let us be specific about sizes
+of said structure. Therefore we could make a non-empty <code>List</code> of <code>Boolean</code>
+values with <code>Refined (SizeGreaterThan D0) (List Boolean)</code>.</p>
 <div class="sourceCode" id="cb29"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="dt">Refined</span> (<span class="dt">SizeGreaterThan</span> <span class="dv">3</span>) (<span class="dt">List</span> <span class="dt">Number</span>)</span></code></pre></div>
 <p>Therefore this list does not <code>refine</code>…</p>
 <div class="sourceCode" id="cb30"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="ot">size1 ::</span> <span class="dt">Refined</span> <span class="dt">RefinedError</span> (<span class="dt">Refined</span> (<span class="dt">SizeGreaterThan</span> <span class="dt">D3</span>) (<span class="dt">List</span> <span class="dt">Number</span>))</span>
@@ -188,14 +221,16 @@
 <span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>size2 <span class="ot">=</span> refine [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>]</span>
 <span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- size2 == Right (Refined [1, 2, 3, 4])</span></span></code></pre></div>
 <h3 id="and-or">And, Or</h3>
-<p>These type signatures are starting to get pretty hefty, but we can do better than that - we’ve also got <code>And</code> and <code>Or</code> for combining them.</p>
+<p>These type signatures are starting to get pretty hefty, but we can do better
+than that - we’ve also got <code>And</code> and <code>Or</code> for combining them.</p>
 <p>Let’s only allow whole numbers from <code>1</code> to <code>100</code>…</p>
 <div class="sourceCode" id="cb32"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="dt">Refined</span> ((<span class="dt">From</span> <span class="dt">D1</span>) <span class="dt">And</span> (<span class="dt">To</span> <span class="dt">D100</span>)) <span class="dt">Int</span></span></code></pre></div>
 <p>Or indeed, allow all whole numbers EXCEPT <code>1</code> to <code>100</code>.</p>
 <div class="sourceCode" id="cb33"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="dt">Refined</span> ((<span class="dt">To</span> <span class="dt">D0</span>) <span class="dt">Or</span> (<span class="dt">From</span> <span class="dt">D101</span>)) <span class="dt">Int</span></span></code></pre></div>
 <p>This type describes the roll of a dice.</p>
 <div class="sourceCode" id="cb34"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">Dice</span> <span class="ot">=</span> <span class="dt">Refined</span> ((<span class="dt">From</span> <span class="dt">D1</span>) <span class="dt">And</span> (<span class="dt">To</span> <span class="dt">D6</span>)) <span class="dt">Int</span></span></code></pre></div>
-<p>Or this one, which describes the first bunch of prime numbers, and is all a bit silly to be honest.</p>
+<p>Or this one, which describes the first bunch of prime numbers, and is all a bit silly
+to be honest.</p>
 <div class="sourceCode" id="cb35"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">Prime</span> </span>
 <span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>  <span class="ot">=</span> <span class="dt">Refined</span> </span>
 <span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>      (<span class="dt">Or</span> (<span class="dt">Equal</span> <span class="dt">D2</span>) </span>
@@ -226,10 +261,17 @@
 <span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>  <span class="ot">=</span> {<span class="ot"> name ::</span> <span class="dt">Refined</span> (<span class="dt">SizeFrom</span> <span class="dv">1</span>) <span class="dt">String</span></span>
 <span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a>    ,<span class="ot"> age  ::</span> <span class="dt">Refined</span> (<span class="dt">From</span> <span class="dv">18</span>) <span class="dt">Int</span></span>
 <span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a>    }</span></code></pre></div>
-<p>…if we want to use it as an API request, sounds like a lot of work right? Maybe not! Because <code>refined</code> instances have <code>fromJSON</code> and <code>toJSON</code> instances for <code>Aeson</code> (or for <code>Argonaut</code> in Purescript) then we can automatically decode them from <code>JSON</code> and make the decoding fail if the <code>predicate</code> does not pass.</p>
-<p>This way, anywhere in our app, <code>name</code> will always be non-empty. and <code>age</code> will always be <code>18</code> or more.</p>
+<p>…if we want to use it as an API request, sounds like a lot of work right?
+Maybe not! Because <code>refined</code> instances have <code>fromJSON</code> and <code>toJSON</code> instances
+for <code>Aeson</code> (or for <code>Argonaut</code> in Purescript) then we can automatically decode
+them from <code>JSON</code> and make the decoding fail if the <code>predicate</code> does not pass.</p>
+<p>This way, anywhere in our app, <code>name</code> will always be non-empty. and <code>age</code> will
+always be <code>18</code> or more.</p>
 <h3 id="well-shit.">Well, shit.</h3>
-<p>Yep. For more details, check out the <a href="http://hackage.haskell.org/package/refined">Refined Haskell library</a> or indeed the <a href="https://github.com/danieljharvey/purescript-refined">purescript-refined</a> library which I ported from the Haskell one.</p>
+<p>Yep. For more details, check out the <a href="http://hackage.haskell.org/package/refined">Refined Haskell
+library</a> or indeed the
+<a href="https://github.com/danieljharvey/purescript-refined">purescript-refined</a>
+library which I ported from the Haskell one.</p>
     </section>
 </article>
 

@@ -7,6 +7,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Daniel J. Harvey - Mr Migration</title>
     <link rel="stylesheet" href="../css/default.css" />
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
 </head>
 
 <body>
@@ -64,7 +74,8 @@
 <h3 id="so">So…</h3>
 <p>What could possibly go wrong with this?</p>
 <figure>
-<img src="../images/migrate-1.png" title="A relatable picture that was not in the presentation to break things up a bit." alt="A relatable picture that was not in the presentation to break things up a bit." /><figcaption aria-hidden="true">A relatable picture that was not in the presentation to break things up a bit.</figcaption>
+<img src="../images/migrate-1.png" title="A relatable picture that was not in the presentation to break things up a bit." alt="A relatable picture that was not in the presentation to break things up a bit." />
+<figcaption aria-hidden="true">A relatable picture that was not in the presentation to break things up a bit.</figcaption>
 </figure>
 <h3 id="problem-one">Problem One</h3>
 <p><code>Company A</code> have found that DB schema changes make changing the application more difficult than they would like. Therefore they choose to use <strong>event sourcing</strong>. As the application changes, the DB schemas keep up, but they are soon left with an event table full of various historical versions of JSON data.</p>
@@ -93,7 +104,8 @@
 <p>Business is going pretty well, I can’t imagine my meeting this afternoon will go badly…</p>
 <h3 id="oh-no">Oh no!</h3>
 <figure>
-<img src="../images/migrate-2.png" title="A change in business requirements has been spotted." alt="A change in business requirements has been spotted." /><figcaption aria-hidden="true">A change in business requirements has been spotted.</figcaption>
+<img src="../images/migrate-2.png" title="A change in business requirements has been spotted." alt="A change in business requirements has been spotted." />
+<figcaption aria-hidden="true">A change in business requirements has been spotted.</figcaption>
 </figure>
 <h3 id="pivot-immediately">Pivot immediately</h3>
 <p>Apparently we can increase profitability by <em>30%</em> by using newtypes properly.</p>
@@ -116,7 +128,8 @@
 <h3 id="hold-on-though">Hold On Though</h3>
 <p>Business is obviously booming now, but what are we going to do about:</p>
 <ul>
-<li><p>Third parties that will insist on using <code>OldUser</code> in their API calls for the next 18 months</p></li>
+<li><p>Third parties that will insist on using <code>OldUser</code> in their API calls for the
+next 18 months</p></li>
 <li><p>Stored JSON data with the old data shape</p></li>
 </ul>
 <h3 id="what-options-do-we-have">What options do we have?</h3>
@@ -140,7 +153,8 @@
 <h3 id="decision-time">Decision time</h3>
 <p>If you choose Option <code>1</code>, you are on your own. However, if you have chosen Option <code>2</code>, read on…</p>
 <figure>
-<img src="../images/migrate-3.png" title="Another picture of an angry business person." alt="Another picture of an angry business person." /><figcaption aria-hidden="true">Another picture of an angry business person.</figcaption>
+<img src="../images/migrate-3.png" title="Another picture of an angry business person." alt="Another picture of an angry business person." />
+<figcaption aria-hidden="true">Another picture of an angry business person.</figcaption>
 </figure>
 <h3 id="functions-we-will-need-migrate">Functions we will need: migrate</h3>
 <p>The first thing we’ll need is a function to convert our <em>old terrible datatype</em> into our <em>new incredible exciting datatype</em>, in this case <code>OldUser</code> to <code>NewUser</code>.</p>
@@ -183,7 +197,8 @@
 <h3 id="so-this-method-is-a-no">So this method is a no?</h3>
 <p>I don’t think so. But writing all of that is a bit much. Hopefully right now you are asking “Why can’t I get the compiler to do this for me?”.</p>
 <figure>
-<img src="../images/migrate-4.png" title="The compiler is your friend." alt="The compiler is your friend." /><figcaption aria-hidden="true">The compiler is your friend.</figcaption>
+<img src="../images/migrate-4.png" title="The compiler is your friend." alt="The compiler is your friend." />
+<figcaption aria-hidden="true">The compiler is your friend.</figcaption>
 </figure>
 <h3 id="good-point.">Good Point.</h3>
 <p>OK! Let’s give it a smash. We start by making a typeclass and using it to version tag our datatype.</p>
@@ -258,16 +273,19 @@
 <div class="sourceCode" id="cb25"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">NewInfo</span></span>
 <span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>  <span class="ot">=</span> <span class="dt">NewInfo</span></span>
 <span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>      {<span class="ot"> amount ::</span> <span class="dt">Pennies</span> }</span></code></pre></div>
-<p>In our static typed ivory tower, we are fine, but our clients keep sending us this:</p>
+<p>In our static typed ivory tower, we are fine, but our clients keep sending us
+this:</p>
 <div class="sourceCode" id="cb26"><pre class="sourceCode json"><code class="sourceCode json"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span> <span class="dt">&quot;amount&quot;</span><span class="fu">:</span> <span class="dv">100</span> <span class="fu">}</span></span></code></pre></div>
 <p>What is it? 100 pennies? 100 pounds? How can we stop this confusion?</p>
 <h3 id="solution-checking-for-duplicates-with-quickcheck">Solution: Checking for duplicates with QuickCheck</h3>
 <p><code>Data.Migratable</code> provides us with the <code>matchAll</code> function:</p>
 <div class="sourceCode" id="cb27"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="ot">matchAll ::</span> <span class="dt">IO</span> (<span class="dt">Either</span> [<span class="dt">MatchError</span>] [<span class="dt">Integer</span>])</span></code></pre></div>
 <ul>
-<li><p>It uses <code>QuickCheck</code> and it’s <code>Arbitrary</code> instances to generate random <code>JSON</code> values for each datatype</p></li>
+<li><p>It uses <code>QuickCheck</code> and it’s <code>Arbitrary</code> instances to generate random <code>JSON</code>
+values for each datatype</p></li>
 <li><p>Then tries to load each generated value as each version of the datatype</p></li>
-<li><p>And tells us how many version of a datatype each generated instance is able to decode</p></li>
+<li><p>And tells us how many version of a datatype each generated instance is able
+to decode</p></li>
 <li><p>If it’s one each - we’re going to have a good time:</p></li>
 </ul>
 <div class="sourceCode" id="cb28"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>describe <span class="st">&quot;Uses Arbitrary to generate said tests&quot;</span> <span class="op">$</span> <span class="kw">do</span></span>
@@ -377,7 +395,8 @@
 <li><p>Avoid historical code making new code more complicated.</p></li>
 </ul>
 <h3 id="but-does-it-work">But does it work?</h3>
-<p>Who knows? See the code at <a href="https://github.com/danieljharvey/migratable">https://github.com/danieljharvey/migratable</a> and decide for yourself. I mean, the tests pass, but what does that really tell us.</p>
+<p>Who knows? See the code at
+<a href="https://github.com/danieljharvey/migratable">https://github.com/danieljharvey/migratable</a> and decide for yourself. I mean, the tests pass, but what does that really tell us.</p>
 <h3 id="addendum">Addendum</h3>
 <p>After the talk, somebody suggested that it’s all very well accepting old JSON data version in an API, but really you’d need to provide the response in the old format too. This was a really annoyingly good point, so this is the next feature I am working on for the library - the plan so far is to create a kind of opposite of the <code>Migratable</code> typeclass for responses, that goes from newer to older versions instead.</p>
     </section>

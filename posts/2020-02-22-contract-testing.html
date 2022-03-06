@@ -7,6 +7,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Daniel J. Harvey - Contract testing with Quickcheck</title>
     <link rel="stylesheet" href="../css/default.css" />
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
 </head>
 
 <body>
@@ -34,17 +44,36 @@
         </div>
     </section>
     <section>
-        <p>Hello. I hope you are well. Over the last few months I have been trying out a method for generating <code>Contract Tests</code> between services using <code>Arbitrary</code> instances from <a href="https://hackage.haskell.org/package/QuickCheck">Quickcheck</a> which I thought it might be good to share. It’s not particularly clever, which is partially what I like about it, and as a result I may not have been the first to come up with it. If I have therefore somewhat stolen your thunder please accept my apologies in advance and then maybe do some reading around SEO.</p>
+        <p>Hello. I hope you are well. Over the last few months I have been trying out a
+method for generating <code>Contract Tests</code> between services using <code>Arbitrary</code>
+instances from <a href="https://hackage.haskell.org/package/QuickCheck">Quickcheck</a> which I thought it might be good to share. It’s not particularly clever, which is
+partially what I like about it, and as a result I may not have been the first
+to come up with it. If I have therefore somewhat stolen your thunder please
+accept my apologies in advance and then maybe do some reading around SEO.</p>
 <h3 id="what-is-contract-testing-anyway">What is Contract Testing anyway?</h3>
-<p>Contract Testing is a way of checking that two services that are going to communicate agree on what is going to be sent and received between the two. There is a good intro to the concept on the <a href="https://docs.pact.io/">Pact website</a> - which is itself a contract testing tool. It is a good tool - HOWEVER it takes a lot of work and I am lazy so there what I am going to describe is hopefully less work.</p>
-<p>For example, a frontend says “I am going to call <code>/users/horse/1000</code> - is that cool?” and the contract test confirms that the backend is indeed “cool” with that, shows what kind of thing it would return from that call, to which the frontend confirms it is also “cool” with that.</p>
+<p>Contract Testing is a way of checking that two services that are going to
+communicate agree on what is going to be sent and received between the two.
+There is a good intro to the concept on the <a href="https://docs.pact.io/">Pact
+website</a> - which is itself a contract testing tool. It
+is a good tool - HOWEVER it takes a lot of work and I am lazy so there what I
+am going to describe is hopefully less work.</p>
+<p>For example, a frontend says “I am going to call <code>/users/horse/1000</code> - is that cool?”
+and the contract test confirms that the backend is indeed “cool” with that,
+shows what kind of thing it would return from that call, to which the frontend
+confirms it is also “cool” with that.</p>
 <figure>
-<img src="../images/contract-handshake.png" title="This is what the agreement between the services probably looked like." alt="This is the agreement between the services probably looked like." /><figcaption aria-hidden="true">This is the agreement between the services probably looked like.</figcaption>
+<img src="../images/contract-handshake.png" title="This is what the agreement between the services probably looked like." alt="This is the agreement between the services probably looked like." />
+<figcaption aria-hidden="true">This is the agreement between the services probably looked
+like.</figcaption>
 </figure>
 <h3 id="what-is-quickcheck">What is Quickcheck?</h3>
-<p>Quickcheck is a Haskell library that does a thing called Property Testing. It has since been ported to many other languages. A nice intro lives here at <a href="https://www.schoolofhaskell.com/user/pbv/an-introduction-to-quickcheck-testing">School of Haskell</a> - the tldr is that it lets us test properties about our programs by randomly generating examples and seeing if they fit rules that we define.</p>
+<p>Quickcheck is a Haskell library that does a thing called Property Testing. It has since been ported to many other languages. A nice intro lives here
+at <a href="https://www.schoolofhaskell.com/user/pbv/an-introduction-to-quickcheck-testing">School of
+Haskell</a> - the tldr is that it lets us test properties about our programs by randomly generating examples and seeing if they fit rules that we define.</p>
 <h3 id="so-what-is-your-so-called-idea-then">So, what is your so-called idea then?</h3>
-<p>OK. So one of the main concepts behind QuickCheck is the <code>Arbitrary</code> typeclass. Any datatype with an instance of this typeclass is able to generate random example values that can be used for testing.</p>
+<p>OK. So one of the main concepts behind QuickCheck is the <code>Arbitrary</code> typeclass.
+Any datatype with an instance of this typeclass is able to generate random
+example values that can be used for testing.</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">module</span> <span class="dt">ContractTests</span> <span class="kw">where</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="dt">Data.Aeson</span></span>
@@ -64,12 +93,19 @@
 <span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>      ]</span></code></pre></div>
 <p>This datatype <code>Horse</code> describes the two kinds of horse, <code>BigHorse</code> and <code>SmallHorse</code>. As is hopefully hand-wavingly evident, when the <code>arbitrary</code> function is run it returns one of <code>BigHorse</code> or <code>SmallHorse</code>.</p>
 <figure>
-<img src="../images/contract-horse.png" title="This is a horse." alt="This is a horse." /><figcaption aria-hidden="true">This is a horse.</figcaption>
+<img src="../images/contract-horse.png" title="This is a horse." alt="This is a horse." />
+<figcaption aria-hidden="true">This is a horse.</figcaption>
 </figure>
-<p>If we can make one <code>Horse</code>, then surely we can make a load of them? Indeed! This is what the instance for <code>List</code> look like - the <code>Arbitrary a =&gt;</code> constraint means that if we can make any <code>Arbitrary</code> value, we can make a list of them.</p>
+<p>If we can make one <code>Horse</code>, then surely we can make a load of them? Indeed!
+This is what the instance for <code>List</code> look like - the <code>Arbitrary a =&gt;</code>
+constraint means that if we can make any <code>Arbitrary</code> value, we can make a list
+of them.</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">instance</span> <span class="dt">Arbitrary</span> a <span class="ot">=&gt;</span> <span class="dt">Arbitrary</span> [a] <span class="kw">where</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">...</span></span></code></pre></div>
-<p>The Quickcheck library defines instances for most basic types, as well as most collections, therefore it is quite simple to build <code>Arbitrary</code> instances for our request and response datatypes - and that is exactly what we’re going to do.</p>
+<p>The Quickcheck library defines instances for most basic types, as well as most
+collections, therefore it is quite simple to build <code>Arbitrary</code> instances for
+our request and response datatypes - and that is exactly what we’re going to
+do.</p>
 <h3 id="an-example">An example</h3>
 <p>Let’s think about a nice simple API. It receives <code>POST</code> requests in <code>JSON</code> format that translate into a datatype that looks like this:</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">APIRequest</span></span>
@@ -78,13 +114,15 @@
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>      ,<span class="ot"> age       ::</span> <span class="dt">Int</span></span>
 <span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>      ,<span class="ot"> horseSize ::</span> <span class="dt">Horse</span></span>
 <span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>      }</span></code></pre></div>
-<p>Assuming that the requests are OK, it returns a response shaped like this (again, sent over the wire in <code>JSON</code> format).</p>
+<p>Assuming that the requests are OK, it returns a response shaped like this
+(again, sent over the wire in <code>JSON</code> format).</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">APIResponse</span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="ot">=</span> <span class="dt">APIResponse</span></span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>      {<span class="ot"> weight ::</span> <span class="dt">Int</span></span>
 <span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>      ,<span class="ot"> goodHorse ::</span> <span class="dt">Bool</span></span>
 <span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>      }</span></code></pre></div>
-<p>These types are shown in <code>Haskell</code>, but the equivalent pair will also exist in the frontend, and it’s the compatibility between the two pairs that we will be checking.</p>
+<p>These types are shown in <code>Haskell</code>, but the equivalent pair will also exist in
+the frontend, and it’s the compatibility between the two pairs that we will be checking.</p>
 <p>Our testing is going to work like this:</p>
 <ol type="1">
 <li>Our frontend will generate 100 example <code>APIRequest</code> values</li>
@@ -103,7 +141,8 @@
 </ol>
 <p>Essentially, a contract between two services is a complete set of these for each endpoint. In this article I will explain the <code>Haskell</code> part of this, and will follow with the front end portion in the next one.</p>
 <figure>
-<img src="../images/contract-horses.png" title="These are all horses." alt="These are all horses." /><figcaption aria-hidden="true">These are all horses.</figcaption>
+<img src="../images/contract-horses.png" title="These are all horses." alt="These are all horses." />
+<figcaption aria-hidden="true">These are all horses.</figcaption>
 </figure>
 <h3 id="creating-the-sample-responses">Creating the sample responses</h3>
 <p>We’re going to need to add some typeclass instances for our <code>APIResponse</code> type first, so let’s change it to the following:</p>
@@ -120,7 +159,11 @@
 <span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>  arbitrary <span class="ot">=</span> genericArbitrary</span></code></pre></div>
 <p><code>genericArbitrary</code> is provided by the <code>generic-arbitrary</code> package which allows <code>Arbitrary</code> instances to be created for any datatype with a <code>Generic</code> instance. (For more intro on the idea of generics, the <a href="https://hackage.haskell.org/package/base-4.12.0.0/docs/GHC-Generics.html">Hackage</a> page is a good start.)</p>
 <p><code>ToJSON</code> is provided by <code>Aeson</code>, the excellent package for all dealings with JSON, and deserves a whole post of it’s own. For our purposes, all we need to know is that for any datatype with a <code>Generic</code> instance, we can derive a free typeclass for turning it to and from JSON.</p>
-<p>The special sauce for all of this action is the <code>generate</code> function from <code>Test.QuickCheck.Gen</code>, which generates any number of values for a given <code>Arbitrary</code> instance. We use this with a bunch of other housekeeping functions to take these 100 items and turn them into 100 files. I have broken this down into a bunch of functions so that it’s hopefully easier to follow.</p>
+<p>The special sauce for all of this action is the <code>generate</code> function from
+<code>Test.QuickCheck.Gen</code>, which generates any number of values for a given
+<code>Arbitrary</code> instance. We use this with a bunch of other housekeeping functions to take these 100
+items and turn them into 100 files. I have broken this down into a bunch of
+functions so that it’s hopefully easier to follow.</p>
 <p>Firstly, a couple of helpers for adding index numbers to lists…</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ot">indexList ::</span> [a] <span class="ot">-&gt;</span> [(<span class="dt">Int</span>, a)]</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>indexList as <span class="ot">=</span></span>
@@ -133,7 +176,11 @@
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;./&quot;</span> <span class="op">&lt;&gt;</span> path <span class="op">&lt;&gt;</span> <span class="st">&quot;/&quot;</span> <span class="op">&lt;&gt;</span> (<span class="fu">show</span> <span class="fu">index</span>) <span class="op">&lt;&gt;</span> <span class="st">&quot;.json&quot;</span></span>
 <span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="co">-- createPath &quot;output&quot; 1 == &quot;./output/1.json&quot;</span></span></code></pre></div>
-<p>Next, we will make our functions for generating instances and saving them to files. This first function uses a <code>Proxy</code> (from <a href="https://hackage.haskell.org/package/base-4.12.0.0/docs/Data-Proxy.html">Data.Proxy</a>) to pass the type we would like to generate (as such). We have chosen <code>100</code> as it is as good a number as any.</p>
+<p>Next, we will make our functions for generating instances and saving them to
+files. This first function uses a <code>Proxy</code> (from
+<a href="https://hackage.haskell.org/package/base-4.12.0.0/docs/Data-Proxy.html">Data.Proxy</a>)
+to pass the type we would like to generate (as such). We have chosen <code>100</code> as
+it is as good a number as any.</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ot">getResponses ::</span> (<span class="dt">Arbitrary</span> a) <span class="ot">=&gt;</span> <span class="dt">Proxy</span> a <span class="ot">-&gt;</span> <span class="dt">IO</span> [a]</span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>getResponses _ <span class="ot">=</span> generate <span class="op">$</span> vector <span class="dv">100</span></span></code></pre></div>
 <p>This next function takes our list of randomised values, turns them to JSON, and pops them in a <code>Tuple</code> along with an index.</p>
@@ -141,7 +188,8 @@
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>listToJSON <span class="ot">=</span> (indexList <span class="op">.</span> jsonifyList)</span>
 <span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">where</span></span>
 <span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    jsonifyList <span class="ot">=</span> <span class="fu">fmap</span> encode</span></code></pre></div>
-<p>Finally, we put them together along with some glue code (using <code>writeFile</code> from <code>Data.ByteString.Lazy</code>) to save the generated <code>JSON</code> files.</p>
+<p>Finally, we put them together along with some glue code (using <code>writeFile</code> from
+<code>Data.ByteString.Lazy</code>) to save the generated <code>JSON</code> files.</p>
 <div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ot">contractWrite ::</span></span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  (<span class="dt">ToJSON</span> a, <span class="dt">Arbitrary</span> a) <span class="ot">=&gt;</span></span>
 <span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">Proxy</span> a <span class="ot">-&gt;</span></span>
@@ -152,26 +200,33 @@
 <span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>        BS.writeFile (createPath path <span class="fu">index</span>) json</span>
 <span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>  responses <span class="ot">&lt;-</span> listToJSON <span class="op">&lt;$&gt;</span> (getResponses arbType)</span>
 <span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mapM_</span> (saveFile srcPath) responses</span></code></pre></div>
-<p>To use it with our datatype, we use a <code>Proxy</code> as such to pass it the type we want (in our case, <code>APIResponse</code>, but the same code will work for any type with <code>Arbitrary</code> and <code>ToJSON</code> instances)</p>
+<p>To use it with our datatype, we use a <code>Proxy</code> as such to pass it the type we
+want (in our case, <code>APIResponse</code>, but the same code will work for any type with
+<code>Arbitrary</code> and <code>ToJSON</code> instances)</p>
 <div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ot">contractWriteAPIResponses ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> ()</span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>contractWriteAPIResponses srcPath <span class="ot">=</span></span>
 <span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  contractWrite (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">APIResponse</span>) srcPath</span></code></pre></div>
 <p>If we crack this open in <code>ghci</code> we can run <code>contractWriteAPIResponses "sample"</code>, and it will create files called <code>1.json</code>, <code>2.json</code> (up to <code>100.json</code>) in the <code>sample</code> folder in the current working directory.</p>
-<p>Our frontend tests can now read these and make sure that they understand them. But how do we make sure our backend understands the front end requests?</p>
+<p>Our frontend tests can now read these and make sure that they understand them.
+But how do we make sure our backend understands the front end requests?</p>
 <figure>
-<img src="../images/contract-business-man.png" title="I am feeling bad about how many words there are." alt="I am feeling bad about how many words there are." /><figcaption aria-hidden="true">I am feeling bad about how many words there are.</figcaption>
+<img src="../images/contract-business-man.png" title="I am feeling bad about how many words there are." alt="I am feeling bad about how many words there are." />
+<figcaption aria-hidden="true">I am feeling bad about how many words there
+are.</figcaption>
 </figure>
 <h3 id="reading-the-sample-requests">Reading the sample requests</h3>
 <p>Assuming that our front end has also created some sample requests in a similar fashion, reading them and checking they are decodable is a simpler affair.</p>
 <p>Given a path that points to a folder full of 100 json files, we can write code to attempt to read them. We are reusing the <code>createPath</code> function from above, but other than, this should do it.</p>
-<p>This function takes a <code>Proxy</code> for our decoding type, a path and an index, and tries to decode the file it finds.</p>
+<p>This function takes a <code>Proxy</code> for our decoding type, a path and an index, and
+tries to decode the file it finds.</p>
 <div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ot">testFile ::</span> <span class="dt">FromJSON</span> a <span class="ot">=&gt;</span> <span class="dt">Proxy</span> a <span class="ot">-&gt;</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> (<span class="dt">Maybe</span> a)</span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>testFile _ path i <span class="ot">=</span> <span class="kw">do</span></span>
 <span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>  str <span class="ot">&lt;-</span> BS.readFile (createPath path i)</span>
 <span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">case</span> eitherDecode str <span class="kw">of</span></span>
 <span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Left</span> e <span class="ot">-&gt;</span> <span class="fu">putStrLn</span> (<span class="fu">show</span> e) <span class="op">&gt;&gt;=</span> \_ <span class="ot">-&gt;</span> <span class="fu">pure</span> <span class="dt">Nothing</span></span>
 <span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Right</span> b <span class="ot">-&gt;</span> <span class="fu">pure</span> (<span class="dt">Just</span> b)</span></code></pre></div>
-<p>Here we take a path to the folder full of files and attempt to read <code>100</code> numbered <code>.json</code> files in it.</p>
+<p>Here we take a path to the folder full of files and attempt to read <code>100</code>
+numbered <code>.json</code> files in it.</p>
 <div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ot">contractRead ::</span> <span class="dt">FromJSON</span> a <span class="ot">=&gt;</span> <span class="dt">Proxy</span> a <span class="ot">-&gt;</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Int</span></span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>contractRead arbType srcPath <span class="ot">=</span> <span class="kw">do</span></span>
 <span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>  maybeFound <span class="ot">&lt;-</span> <span class="fu">mapM</span> (testFile arbType srcPath) [<span class="dv">1</span> <span class="op">..</span> <span class="dv">100</span>]</span>
@@ -184,8 +239,11 @@
 <h3 id="digression-1.">Digression 1.</h3>
 <p>Note we have used a <code>Proxy</code> type here to pass the type around. An alternative way to do this could be a mixture of <code>TypeApplications</code> and <code>ScopedTypeVariables</code> but in the spirit of <code>#simplehaskell</code> we’ll avoid them.</p>
 <h3 id="digression-2.">Digression 2.</h3>
-<p>Whilst preaching simplicity, it seems enjoyably hypocritical to point out in the same breath that we needn’t have made a standalone instance of <code>arbitrary</code> each time, and it’s actually a great opportunity to crack open <code>DerivingVia</code>.</p>
-<p>An alternative method could looks something like this, and save up to 15 characters per datatype.</p>
+<p>Whilst preaching simplicity, it seems enjoyably hypocritical to point out in
+the same breath that we needn’t have made a standalone instance of <code>arbitrary</code>
+each time, and it’s actually a great opportunity to crack open <code>DerivingVia</code>.</p>
+<p>An alternative method could looks something like this, and save up to 15
+characters per datatype.</p>
 <div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- this newtype can derive Arbitrary via Generic, so we use Deriving Via to</span></span>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="co">-- steal it's powers!</span></span>
 <span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="kw">newtype</span> <span class="dt">GenericArb</span> a</span>
@@ -212,7 +270,9 @@
 <span id="cb15-24"><a href="#cb15-24" aria-hidden="true" tabindex="-1"></a>  <span class="kw">deriving</span> (<span class="dt">Generic</span>, <span class="dt">ToJSON</span>)</span>
 <span id="cb15-25"><a href="#cb15-25" aria-hidden="true" tabindex="-1"></a>  <span class="kw">deriving</span> (<span class="dt">Arbitrary</span>) via (<span class="dt">GenericArb</span> <span class="dt">APIResponse2</span>)</span></code></pre></div>
 <h3 id="make-sense">Make sense?</h3>
-<p>No. Thought not. Regardless, I’ll follow up with how to great the front end part. I’ll be using <code>Typescript</code> because quite frankly if you understand this then doing it in <code>Purescript</code> isn’t wildly different.</p>
+<p>No. Thought not. Regardless, I’ll follow up with how to great the front end
+part. I’ll be using <code>Typescript</code> because quite frankly if you understand this
+then doing it in <code>Purescript</code> isn’t wildly different.</p>
     </section>
 </article>
 

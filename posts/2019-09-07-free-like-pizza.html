@@ -7,6 +7,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Daniel J. Harvey - Free like pizza, not like jazz</title>
     <link rel="stylesheet" href="../css/default.css" />
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
 </head>
 
 <body>
@@ -42,7 +52,8 @@
 <p>With this crushing piece of disappointment aside, let’s look at what they actually are.</p>
 <h3 id="dogs-disguised-as-people-by-way-of-wearing-a-coat-and-hat">Dogs Disguised As People By Way Of Wearing A Coat And Hat</h3>
 <figure>
-<img src="../images/dogs-in-coat.png" title="Bear with me here." alt="Bear with me here." /><figcaption aria-hidden="true">Bear with me here.</figcaption>
+<img src="../images/dogs-in-coat.png" title="Bear with me here." alt="Bear with me here." />
+<figcaption aria-hidden="true">Bear with me here.</figcaption>
 </figure>
 <p>Let’s start with the idea of a <code>Functor</code>. If this is confusing to you I have written a <a href="http://localhost:8000/posts/2018-11-16-typeclasses-functor.html">vague explanation</a> and so have much more <a href="http://www.tomharding.me/2017/03/27/fantas-eel-and-specification-6/">competent</a> <a href="http://adit.io/posts/2013-04-17-functors,_applicatives,_and_monads_in_pictures.html">people</a> which are probably worth digesting before we go on.</p>
 <p>A functor is a data structure which contains some other data, and we can “map over” the data inside it to change that without fucking up the functor itself. For example, we can use the <code>map</code> function on a <code>Maybe</code> value, and it will change the <code>a</code> on a <code>Just</code>, and do nothing on <code>Nothing</code>.</p>
@@ -107,7 +118,8 @@
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">Moybe</span> a <span class="ot">=</span> <span class="dt">Free</span> <span class="dt">MoybeF</span> a</span></code></pre></div>
 <p><em>(An aside: this metaphor felt a lot more powerful in my mind, but a cursory image search came up with a lot less than I had expected, and quite frankly this picture creeps me the fuck out).</em></p>
 <figure>
-<img src="../images/free-structure.png" title="You deserve better than this." alt="You deserve better than this." /><figcaption aria-hidden="true">You deserve better than this.</figcaption>
+<img src="../images/free-structure.png" title="You deserve better than this." alt="You deserve better than this." />
+<figcaption aria-hidden="true">You deserve better than this.</figcaption>
 </figure>
 <p>OK. So now, by use of the <code>liftF</code> functor from <code>Control.Monad.Free</code>, we can change any <code>MoybeF</code> value into a <code>Moybe</code> monad value instead. Let’s define some helper functions that do this:</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- lift a into the Moybe monad</span></span>

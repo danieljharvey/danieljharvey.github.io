@@ -7,6 +7,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Daniel J. Harvey - A game in Purescript (Part 1 - Semigroups)</title>
     <link rel="stylesheet" href="../css/default.css" />
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
 </head>
 
 <body>
@@ -37,7 +47,8 @@
         <p>Hello! I hope you are well. It has been a little while between posts as I keep starting things and then not finishing them.</p>
 <p>My most recent distraction has been remaking a game that I wrote a year or two back called <a href="http://itistheegg.com/">It Is The Egg</a>, which is an HTML canvas game where eggs roll around and generally have a nice time. I wanted to add more levels and features but I have no strong desire to write Typescript in my free time, so I have made the somewhat foolish and time-sucking decision to port it over to Purescript.</p>
 <figure>
-<img src="../images/it-is-the-egg.png" title="The original game in it's full glory" alt="The original game in it’s full glory." /><figcaption aria-hidden="true">The original game in it’s full glory.</figcaption>
+<img src="../images/it-is-the-egg.png" title="The original game in it's full glory" alt="The original game in it’s full glory." />
+<figcaption aria-hidden="true">The original game in it’s full glory.</figcaption>
 </figure>
 <p>So far I’ve learned a few things, listed thus:</p>
 <ol type="1">
@@ -151,7 +162,8 @@
 <span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">else</span> turnAround player</span></code></pre></div>
 <p>(Readers with a keen eye will notice we did not use anything particularly clever or typeclass based here, I just included it for completeness.)</p>
 <figure>
-<img src="../images/eggy2.png" title="Another screenshot of the original game to break up the large amount of text." alt="Another screenshot of the original game to break up the large amount of text." /><figcaption aria-hidden="true">Another screenshot of the original game to break up the large amount of text.</figcaption>
+<img src="../images/eggy2.png" title="Another screenshot of the original game to break up the large amount of text." alt="Another screenshot of the original game to break up the large amount of text." />
+<figcaption aria-hidden="true">Another screenshot of the original game to break up the large amount of text.</figcaption>
 </figure>
 <h3 id="actually-moving-that-egg-around">Actually moving that egg around</h3>
 <p>Let’s get back to moving the egg around. Once we’ve worked out that our egg is moving somewhere it is allowed to, we need to actually update the <code>offsetX</code> and <code>offsetY</code> in it’s <code>position</code> so that’s in the new location and ready to go through all this hell again. As web browsers are flaky at best, instead of moving by a set amount the actually amount to increment the change depends on how much time has passed since the last frame. Therefore we need a function that takes the amount to move and a <code>Player</code>, and returns a new <code>Player</code> that has moved in some way.</p>
