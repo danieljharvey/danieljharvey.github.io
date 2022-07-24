@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <title>Daniel J Harvey: Internet website</title>
+    <link href="https://danieljharvey.github.io//atom.xml" rel="self" />
+    <link href="https://danieljharvey.github.io/" />
+    <id>https://danieljharvey.github.io//atom.xml</id>
+    <author>
+        <name>Daniel J. Harvey</name>
+        <email>danieljamesharvey@gmail.com</email>
+    </author>
+    <updated>2022-07-24T00:00:00Z</updated>
+    <entry>
+    <title>Hindley Milner typechecking by example</title>
+    <link href="https://danieljharvey.github.io//posts/2022-07-24-typechecking-pt1.html" />
+    <id>https://danieljharvey.github.io//posts/2022-07-24-typechecking-pt1.html</id>
+    <published>2022-07-24T00:00:00Z</published>
+    <updated>2022-07-24T00:00:00Z</updated>
+    <summary type="html"><![CDATA[This is the post description]]></summary>
+</entry>
+<entry>
+    <title>Property testing a content-addressed language</title>
+    <link href="https://danieljharvey.github.io//posts/2021-12-28-property-testing-mimsa.html" />
+    <id>https://danieljharvey.github.io//posts/2021-12-28-property-testing-mimsa.html</id>
+    <published>2021-12-28T00:00:00Z</published>
+    <updated>2021-12-28T00:00:00Z</updated>
+    <summary type="html"><![CDATA[This is the post description]]></summary>
+</entry>
+<entry>
+    <title>What the hell is a content addressed language</title>
+    <link href="https://danieljharvey.github.io//posts/2021-12-28-content-addressed-languages.html" />
+    <id>https://danieljharvey.github.io//posts/2021-12-28-content-addressed-languages.html</id>
+    <published>2021-12-28T00:00:00Z</published>
+    <updated>2021-12-28T00:00:00Z</updated>
+    <summary type="html"><![CDATA[This is the post description]]></summary>
+</entry>
+<entry>
+    <title>Newtypes for Cheap</title>
+    <link href="https://danieljharvey.github.io//posts/2020-03-28-tags-and-shit.html" />
+    <id>https://danieljharvey.github.io//posts/2020-03-28-tags-and-shit.html</id>
+    <published>2020-03-28T00:00:00Z</published>
+    <updated>2020-03-28T00:00:00Z</updated>
+    <summary type="html"><![CDATA[This is the post description]]></summary>
+</entry>
+<entry>
+    <title>Contract testing with Typescript</title>
+    <link href="https://danieljharvey.github.io//posts/2020-02-23-typescript-contract-tests.html" />
+    <id>https://danieljharvey.github.io//posts/2020-02-23-typescript-contract-tests.html</id>
+    <published>2020-02-23T00:00:00Z</published>
+    <updated>2020-02-23T00:00:00Z</updated>
+    <summary type="html"><![CDATA[This is the post description]]></summary>
+</entry>
+<entry>
+    <title>Contract testing with Quickcheck</title>
+    <link href="https://danieljharvey.github.io//posts/2020-02-22-contract-testing.html" />
+    <id>https://danieljharvey.github.io//posts/2020-02-22-contract-testing.html</id>
+    <published>2020-02-22T00:00:00Z</published>
+    <updated>2020-02-22T00:00:00Z</updated>
+    <summary type="html"><![CDATA[This is the post description]]></summary>
+</entry>
+<entry>
+    <title>The Genius Of Concrete</title>
+    <link href="https://danieljharvey.github.io//posts/2019-10-09-the-genius-of-concrete.html" />
+    <id>https://danieljharvey.github.io//posts/2019-10-09-the-genius-of-concrete.html</id>
+    <published>2019-10-09T00:00:00Z</published>
+    <updated>2019-10-09T00:00:00Z</updated>
+    <summary type="html"><![CDATA[This is the post description]]></summary>
+</entry>
+<entry>
+    <title>Free like pizza, not like jazz</title>
+    <link href="https://danieljharvey.github.io//posts/2019-09-07-free-like-pizza.html" />
+    <id>https://danieljharvey.github.io//posts/2019-09-07-free-like-pizza.html</id>
+    <published>2019-09-07T00:00:00Z</published>
+    <updated>2019-09-07T00:00:00Z</updated>
+    <summary type="html"><![CDATA[This is the post description]]></summary>
+</entry>
+<entry>
+    <title>Mr Migration</title>
+    <link href="https://danieljharvey.github.io//posts/2019-07-14-data-migrations.html" />
+    <id>https://danieljharvey.github.io//posts/2019-07-14-data-migrations.html</id>
+    <published>2019-07-14T00:00:00Z</published>
+    <updated>2019-07-14T00:00:00Z</updated>
+    <summary type="html"><![CDATA[This is the post description]]></summary>
+</entry>
+<entry>
+    <title>Refine, fine, fine</title>
+    <link href="https://danieljharvey.github.io//posts/2019-07-05-refined-types.html" />
+    <id>https://danieljharvey.github.io//posts/2019-07-05-refined-types.html</id>
+    <published>2019-07-05T00:00:00Z</published>
+    <updated>2019-07-05T00:00:00Z</updated>
+    <summary type="html"><![CDATA[This is the post description]]></summary>
+</entry>
+
+</feed>

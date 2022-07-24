@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"
+    xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <channel>
+        <title>Daniel J Harvey: Internet website</title>
+        <link>https://danieljharvey.github.io/</link>
+        <description><![CDATA[Writing about computers]]></description>
+        <atom:link href="https://danieljharvey.github.io//rss.xml" rel="self"
+                   type="application/rss+xml" />
+        <lastBuildDate>Sun, 24 Jul 2022 00:00:00 UT</lastBuildDate>
+        <item>
+    <title>Hindley Milner typechecking by example</title>
+    <link>https://danieljharvey.github.io//posts/2022-07-24-typechecking-pt1.html</link>
+    <description><![CDATA[This is the post description]]></description>
+    <pubDate>Sun, 24 Jul 2022 00:00:00 UT</pubDate>
+    <guid>https://danieljharvey.github.io//posts/2022-07-24-typechecking-pt1.html</guid>
+    <dc:creator>Daniel J. Harvey</dc:creator>
+</item>
+<item>
+    <title>Property testing a content-addressed language</title>
+    <link>https://danieljharvey.github.io//posts/2021-12-28-property-testing-mimsa.html</link>
+    <description><![CDATA[This is the post description]]></description>
+    <pubDate>Tue, 28 Dec 2021 00:00:00 UT</pubDate>
+    <guid>https://danieljharvey.github.io//posts/2021-12-28-property-testing-mimsa.html</guid>
+    <dc:creator>Daniel J. Harvey</dc:creator>
+</item>
+<item>
+    <title>What the hell is a content addressed language</title>
+    <link>https://danieljharvey.github.io//posts/2021-12-28-content-addressed-languages.html</link>
+    <description><![CDATA[This is the post description]]></description>
+    <pubDate>Tue, 28 Dec 2021 00:00:00 UT</pubDate>
+    <guid>https://danieljharvey.github.io//posts/2021-12-28-content-addressed-languages.html</guid>
+    <dc:creator>Daniel J. Harvey</dc:creator>
+</item>
+<item>
+    <title>Newtypes for Cheap</title>
+    <link>https://danieljharvey.github.io//posts/2020-03-28-tags-and-shit.html</link>
+    <description><![CDATA[This is the post description]]></description>
+    <pubDate>Sat, 28 Mar 2020 00:00:00 UT</pubDate>
+    <guid>https://danieljharvey.github.io//posts/2020-03-28-tags-and-shit.html</guid>
+    <dc:creator>Daniel J. Harvey</dc:creator>
+</item>
+<item>
+    <title>Contract testing with Typescript</title>
+    <link>https://danieljharvey.github.io//posts/2020-02-23-typescript-contract-tests.html</link>
+    <description><![CDATA[This is the post description]]></description>
+    <pubDate>Sun, 23 Feb 2020 00:00:00 UT</pubDate>
+    <guid>https://danieljharvey.github.io//posts/2020-02-23-typescript-contract-tests.html</guid>
+    <dc:creator>Daniel J. Harvey</dc:creator>
+</item>
+<item>
+    <title>Contract testing with Quickcheck</title>
+    <link>https://danieljharvey.github.io//posts/2020-02-22-contract-testing.html</link>
+    <description><![CDATA[This is the post description]]></description>
+    <pubDate>Sat, 22 Feb 2020 00:00:00 UT</pubDate>
+    <guid>https://danieljharvey.github.io//posts/2020-02-22-contract-testing.html</guid>
+    <dc:creator>Daniel J. Harvey</dc:creator>
+</item>
+<item>
+    <title>The Genius Of Concrete</title>
+    <link>https://danieljharvey.github.io//posts/2019-10-09-the-genius-of-concrete.html</link>
+    <description><![CDATA[This is the post description]]></description>
+    <pubDate>Wed, 09 Oct 2019 00:00:00 UT</pubDate>
+    <guid>https://danieljharvey.github.io//posts/2019-10-09-the-genius-of-concrete.html</guid>
+    <dc:creator>Daniel J. Harvey</dc:creator>
+</item>
+<item>
+    <title>Free like pizza, not like jazz</title>
+    <link>https://danieljharvey.github.io//posts/2019-09-07-free-like-pizza.html</link>
+    <description><![CDATA[This is the post description]]></description>
+    <pubDate>Sat, 07 Sep 2019 00:00:00 UT</pubDate>
+    <guid>https://danieljharvey.github.io//posts/2019-09-07-free-like-pizza.html</guid>
+    <dc:creator>Daniel J. Harvey</dc:creator>
+</item>
+<item>
+    <title>Mr Migration</title>
+    <link>https://danieljharvey.github.io//posts/2019-07-14-data-migrations.html</link>
+    <description><![CDATA[This is the post description]]></description>
+    <pubDate>Sun, 14 Jul 2019 00:00:00 UT</pubDate>
+    <guid>https://danieljharvey.github.io//posts/2019-07-14-data-migrations.html</guid>
+    <dc:creator>Daniel J. Harvey</dc:creator>
+</item>
+<item>
+    <title>Refine, fine, fine</title>
+    <link>https://danieljharvey.github.io//posts/2019-07-05-refined-types.html</link>
+    <description><![CDATA[This is the post description]]></description>
+    <pubDate>Fri, 05 Jul 2019 00:00:00 UT</pubDate>
+    <guid>https://danieljharvey.github.io//posts/2019-07-05-refined-types.html</guid>
+    <dc:creator>Daniel J. Harvey</dc:creator>
+</item>
+
+    </channel>
+</rss>
