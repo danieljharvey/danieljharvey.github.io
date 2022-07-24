@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - Hindley Milner typechecking by example</title>
+    <link rel="stylesheet" href="../css/default.css" />
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="../">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="../">Home</a>
+            <a href="../contact.html">Contact</a>
+            <a href="../archive.html">Archive</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        <h1>Hindley Milner typechecking by example</h1>
+        <article>
+    <section class="header">
+        Posted on July 24, 2022
+        
+        <div class="info">
+          
+          Tags: <a title="All pages tagged 'plt'." href="../tags/plt.html">plt</a>, <a title="All pages tagged 'mimsa'." href="../tags/mimsa.html">mimsa</a>, <a title="All pages tagged 'typechecker'." href="../tags/typechecker.html">typechecker</a>
+          
+        </div>
+    </section>
+    <section>
+        <p>So I’ve been getting really interested in typechecking, and well, the best way
+to learn is to try and explain it in words, so here we go.</p>
+<p>There are many kinds of typechecking, but today I want to explain a variation
+on Hindley Milner (I’ve also seen it called Damas Milner, please feel free to
+ping with the actual truth, fact fans). This kind of type system is the kind
+you’ll find under OCaml, Elm, Haskell and Purescript, although each language has their own variations (and in the case of Haskell, a terrifying number of extensions to it).</p>
+<h2 id="a-working-example">A working example</h2>
+<p>We’re going to start by typechecking the simplest stuff, and then build up
+features as we go. There are three stages to our algorithm, <code>Elaboration</code>,
+<code>Unification</code> and <code>Substitution</code>. We’ll introduce them as we need them.</p>
+<blockquote>
+<p><strong>🥚 Elaboration 🥚</strong></p>
+<p>Here go through the expression we’d like to typecheck, marking each
+part of the AST with the thing we think it is (and if we don’t know, we sort of guess). We’ll also produce
+a set of constraints about the types we’ve worked out (a constraint is
+something like <strong>“I don’t know <code>a</code> or <code>b</code> are but I know they’re the same
+thing”</strong>)</p>
+</blockquote>
+<h3 id="literals">Literals</h3>
+<p>Literals are static values declared in code. Our toy language has the
+<code>Boolean</code>, <code>Integer</code> and <code>String</code> types. As this means there is no ambiguity
+between them, we can work out their types in the <code>Elaboration</code> stage alone.</p>
+<figure>
+<img src="../images/typecheck-1-elaborate-literals.png" alt="Elaborating literal values" />
+<figcaption aria-hidden="true">Elaborating literal values</figcaption>
+</figure>
+<p>The values are on the left in black, the types on the right in blue. No weird surprises here, hopefully.</p>
+<h3 id="let-bindings">Let bindings</h3>
+<p>It is nice to be able to give things names, so we should have some let bindings
+in our language. These allow us to introduce a new concept - the typechecking
+environment. A let binding has two sub-expressions - the first is the one
+that gets “bound” and assigned to the name, and then the body, which can refer
+to the bound expression by name.</p>
+<figure>
+<img src="../images/typecheck-1-elaborate-let.png" alt="Elaborating let binding for let a = 1 in True" />
+<figcaption aria-hidden="true">Elaborating let binding for <code>let a = 1 in True</code></figcaption>
+</figure>
+<p>In this example, our environment (shown in green) is initially empty, but as we were able to
+elaborate the type of <code>a</code> as <code>Integer</code>, the environment when typechecking the
+body also includes <code>a == Integer</code>. However, this has no effect on the type of
+the whole expression, as the body of the let binding is <code>True</code> which we know is of type <code>Boolean</code>.</p>
+<h3 id="variable">Variable</h3>
+<p>It’s all well and good making variables, but it’s even more useful to refer to
+them later. Given a typechecking environment that already knows about <code>b</code>, we
+can look it up:</p>
+<figure>
+<img src="../images/typecheck-1-elaborate-var.png" alt="Elaborating variable b" />
+<figcaption aria-hidden="true">Elaborating variable <code>b</code></figcaption>
+</figure>
+<p>If it’s not there, we
+throw a type error and tell the user they’ve made a typo or something. If it
+is, then we return the type from the environment.</p>
+<h3 id="if-then-else">If / Then / Else</h3>
+<p>An if statement in our language is an expression, meaning it must return
+something from both the <code>then</code> and the <code>else</code> branch. It contains three
+sub-expressions, one for the predicate we are testing (which must be of type
+<code>Boolean</code>), one for the <code>then</code> branch, and one for the <code>else</code> branch.</p>
+<figure>
+<img src="../images/typecheck-1-elaborate-if.png" alt="Elaborating if True then 1 else 2" />
+<figcaption aria-hidden="true">Elaborating <code>if True then 1 else 2</code></figcaption>
+</figure>
+<p>Because each of these sub-expressions are literal values, we can elaborate their
+values as we did above. The return type is <code>Integer</code>, as that is the type we
+have worked out for the <code>then</code> branch (it could as well be the type of the
+<code>else</code> branch, they should be the same).</p>
+<p>How do we ensure all our rules work out? That’s the job of the constraints that
+we have generated (shown in red). We have one that ensures the type of <code>True</code> matches
+<code>Boolean</code>, and another that ensures the types of the <code>then</code> and <code>else</code> branches are the same.</p>
+<blockquote>
+<p><strong>🥚 Unification 🥚</strong></p>
+<p>Now that we have constraints, we need to check they make sense. Unification in the context of typechecking is about smashing two things
+together and seeing what we learn.</p>
+<p>The outcome of unification is either a type error or a set of substitutions, such as <strong>“replace all <code>c</code> values with <code>String</code>”</strong>.</p>
+</blockquote>
+<p>Here the two things are the same in both cases, so everything is fine and we
+learn nothing new.</p>
+<figure>
+<img src="../images/typecheck-1-unify-if.png" alt="Unifying if / then / else expressions" />
+<figcaption aria-hidden="true">Unifying if / then / else expressions</figcaption>
+</figure>
+<h3 id="lambda">Lambda</h3>
+<p>A lambda is a function abstraction. When elaborating lambdas, we don’t know what the type of the argument will be. Different type systems have different approaches to this problem.
+One solution is to make the programmer annotate the argument with a type (ie,
+<code>\(a: String) -&gt; ...</code>). However, Hindley Milner typechecking is all about
+minimising type annotations, so instead we’ll guess it. We do this by creating a fresh unknown type variable called a
+“unification variable”. Each of these should be unique within the typechecking,
+so they often use numbers with an internal counter to generate fresh ones.
+We’re going to use the unimaginative <code>unknown-1</code>.</p>
+<figure>
+<img src="../images/typecheck-1-elaborate-lambda.png" alt="Elaborating lambda \a -&gt; a" />
+<figcaption aria-hidden="true">Elaborating lambda <code>\a -&gt; a</code></figcaption>
+</figure>
+<p>Then, when we elaborate the body of the lambda, we add <code>a == unknown-1</code> to the
+environment, which makes typechecking the variable <code>a</code> straightforward, making
+the type of the whole lambda <code>unknown-1 -&gt; unknown-1</code> (the <code>-&gt;</code> meaning “a
+function from a to b”)</p>
+<h3 id="function-application">Function application</h3>
+<h4 id="elaboration">Elaboration</h4>
+<p>What’s the use in functions if we can’t apply values to them? Given the <code>id</code> function has already been defined, let’s apply a value to it.</p>
+<figure>
+<img src="../images/typecheck-1-elaborate-application.png" alt="Elaborating function application for id True" />
+<figcaption aria-hidden="true">Elaborating function application for <code>id True</code></figcaption>
+</figure>
+<p>Since the function type is <code>unknown-1 -&gt; unknown-1</code>, we apply <code>Boolean</code> to it,
+by creating a constraint between the first <code>unknown-1</code> and <code>Boolean</code>. Then the
+return type from elaboration is the second half of the function type (also
+<code>unknown-1</code>).</p>
+<p>Surely it should be <code>Boolean</code> though right? No, but also, yes, but also, it’s
+complicated…</p>
+<h4 id="unifying-our-new-constraint">Unifying our new constraint</h4>
+<p>Let’s look at the constraint we’ve generated during elaboration.</p>
+<figure>
+<img src="../images/typecheck-1-unify-application.png" alt="Unifying function application" />
+<figcaption aria-hidden="true">Unifying function application</figcaption>
+</figure>
+<p>As we briefly mentioned earlier, we unify values to learn things about them. Because <code>unknown-1</code> is a unification variable, it represents an unknown thing that we are trying to find out more about.
+Unifying it with <code>Boolean</code> tells us <code>unknown-1</code> is actually <code>Boolean</code>, and therefore we can substitute any instance of <code>unknown-1</code> for <code>Boolean</code>.</p>
+<h4 id="apply-the-substitution">Apply the substitution</h4>
+<p>We apply a substitution by changing all instances of one thing in a type for another. Applying a substitution to the result of elaboration gives us our final type,
+<code>Boolean</code></p>
+<figure>
+<img src="../images/typecheck-1-substitute-application.png" alt="Substituting function application" />
+<figcaption aria-hidden="true">Substituting function application</figcaption>
+</figure>
+<blockquote>
+<p><strong>🥚 Substitution 🥚</strong></p>
+<p>Assuming we had no type errors in the previous step, then
+subsitution is the process of taking all the things we have learned and
+applying them to both to expression and to the other substitutions.</p>
+<p>For example, if we have learned <strong>“<code>a</code> is an <code>Integer</code>”</strong> then we can change any <code>a</code>
+values in our expression to <code>Integer</code>, and also change the substitution <strong>“<code>c</code>
+is a pair of <code>a</code> and <code>b</code>”</strong> into <strong>“<code>c</code> is a pair of <code>Integer</code> and <code>b</code>”</strong>.</p>
+</blockquote>
+<h3 id="a-bigger-example">A bigger example</h3>
+<p>To see Hindley Milner typechecking in action, here is a slightly bigger
+example. Here we’ll see how we can get full type inference without a type
+annotation in sight.</p>
+<figure>
+<img src="../images/typecheck-1-elaborate-lambda-2.png" alt="Elaborating \a -&gt; if a then 1 else 2" />
+<figcaption aria-hidden="true">Elaborating <code>\a -&gt; if a then 1 else 2</code></figcaption>
+</figure>
+<p>We start by elaborating the function argument, <code>a</code>. We have no idea what it is,
+so we create a unification variable, <code>unknown-1</code>, and use that instead.</p>
+<p>Then we move onto the body of the lambda, an if expression. The predicate
+expression is <code>a</code>. Fortunately, we already have the type for <code>a</code> in the type
+environment - so we can grab it. We don’t know what <code>unknown-1</code> is yet, but we
+have another piece of information on our side - the predicate for an <code>if</code> must
+be a <code>Boolean</code>. We express this by creating a new constraint <code>unknown-1 == Boolean</code>.</p>
+<p>The <code>then</code> and <code>else</code> expressions are both literals, so we can infer those
+quite simply, making <code>Integer</code> the return type of the <code>if</code> expression. There is
+also another constraint here, that both branches should have the same type -
+<code>Integer == Integer</code>.</p>
+<h4 id="unifying-our-new-constraints">Unifying our new constraints</h4>
+<p>We have two contraints from elaboration.</p>
+<p>First <code>Integer == Integer</code>, which teaches us nothing (but does type check).</p>
+<figure>
+<img src="../images/typecheck-1-unify-lambda-2.png" alt="Unifying big lambda" />
+<figcaption aria-hidden="true">Unifying big lambda</figcaption>
+</figure>
+<p>Secondly <code>unknown-1 == Boolean</code> gives us a substitution.</p>
+<h4 id="apply-the-substitution-1">Apply the substitution</h4>
+<figure>
+<img src="../images/typecheck-1-substitute-lambda-2.png" alt="Substituting big lambda" />
+<figcaption aria-hidden="true">Substituting big lambda</figcaption>
+</figure>
+<p>So, therefore, the type of <code>\a -&gt; if a then 1 else 2</code> is <code>Boolean -&gt; Integer</code>.</p>
+<h3 id="thats-all-folks">That’s all folks</h3>
+<p>The writing that is, that is the end of the writing. There is a bunch more to
+Hindley Milner typechecking, we’ve neatly sidestepped any complicated
+polymorphism, however rest assured that it doesn’t make things <em>too</em> much
+complicated which is nice. I might write about that in future, so given the
+glacial pace of my writing, look forward to a sequel in 2024.</p>
+<p>Make sense? If not, <a href="../contact.html">get in touch</a>!</p>
+<p>Further reading:</p>
+<p><a href="https://gilmi.me/blog/tags/giml">giml</a></p>
+<p><a href="https://smunix.github.io/dev.stephendiehl.com/fun/006_hindley_milner.html">Write you a Haskell</a></p>
+<p><a href="https://github.com/danieljharvey/mimsa">mimsa</a></p>
+    </section>
+</article>
+
+    </main>
+
+    <footer>
+        Site proudly generated by
+        <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+    </footer>
+</body>
+
+</html>
