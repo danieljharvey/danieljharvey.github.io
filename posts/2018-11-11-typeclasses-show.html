@@ -39,7 +39,7 @@
         
         <div class="info">
           
-          Tags: <a title="All pages tagged 'haskell'." href="../tags/haskell.html">haskell</a>, <a title="All pages tagged 'typeclasses'." href="../tags/typeclasses.html">typeclasses</a>
+          Tags: <a title="All pages tagged 'haskell'." href="../tags/haskell.html" rel="tag">haskell</a>, <a title="All pages tagged 'typeclasses'." href="../tags/typeclasses.html" rel="tag">typeclasses</a>
           
         </div>
     </section>
@@ -122,15 +122,15 @@
 <p>By defining a <code>show</code> function for each of our tags (and recursively calling <code>show</code> for tags with child elements) we can generate HTML markup using one easy function:</p>
 <div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="dt">Prelude</span><span class="op">&gt;</span> <span class="fu">show</span> website</span></code></pre></div>
 <p>Hooray! A website!</p>
-<div class="sourceCode" id="cb17"><pre class="sourceCode html"><code class="sourceCode html"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">&lt;div&gt;</span></span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">&lt;h1&gt;</span>My interesting website<span class="kw">&lt;/h1&gt;</span></span>
-<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">&lt;p&gt;</span>Item of interest<span class="kw">&lt;/p&gt;</span></span>
-<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">&lt;a</span> <span class="er">href</span><span class="ot">=</span><span class="st">&quot;http://danieljharvey.github.io&quot;</span><span class="kw">&gt;</span> <span class="kw">&lt;p&gt;</span>Website<span class="kw">&lt;/p&gt;</span> <span class="kw">&lt;/a&gt;</span></span>
-<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>  <span class="kw">&lt;div&gt;</span></span>
-<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">&lt;p&gt;</span>Sub-item<span class="kw">&lt;/p&gt;</span></span>
-<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">&lt;p&gt;</span>Another sub-item<span class="kw">&lt;/p&gt;</span></span>
-<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">&lt;/div&gt;</span></span>
-<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a><span class="kw">&lt;/div&gt;</span></span></code></pre></div>
+<div class="sourceCode" id="cb17"><pre class="sourceCode html"><code class="sourceCode html"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">div</span><span class="dt">&gt;</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&lt;</span><span class="kw">h1</span><span class="dt">&gt;</span>My interesting website<span class="dt">&lt;/</span><span class="kw">h1</span><span class="dt">&gt;</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&lt;</span><span class="kw">p</span><span class="dt">&gt;</span>Item of interest<span class="dt">&lt;/</span><span class="kw">p</span><span class="dt">&gt;</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&lt;</span><span class="kw">a</span><span class="ot"> href</span><span class="op">=</span><span class="st">&quot;http://danieljharvey.github.io&quot;</span><span class="dt">&gt;</span> <span class="dt">&lt;</span><span class="kw">p</span><span class="dt">&gt;</span>Website<span class="dt">&lt;/</span><span class="kw">p</span><span class="dt">&gt;</span> <span class="dt">&lt;/</span><span class="kw">a</span><span class="dt">&gt;</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&lt;</span><span class="kw">div</span><span class="dt">&gt;</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&lt;</span><span class="kw">p</span><span class="dt">&gt;</span>Sub-item<span class="dt">&lt;/</span><span class="kw">p</span><span class="dt">&gt;</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&lt;</span><span class="kw">p</span><span class="dt">&gt;</span>Another sub-item<span class="dt">&lt;/</span><span class="kw">p</span><span class="dt">&gt;</span></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&lt;/</span><span class="kw">div</span><span class="dt">&gt;</span></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">div</span><span class="dt">&gt;</span></span></code></pre></div>
 <p>(Actually it comes out in one big line, and then I added the line breaks to fit it on the page. Oh, the lies!)</p>
 <p>It could do with a bit of sprucing up, and a few more tags, but in my by no means humble opinion we’re on our way to creating the next React-beater. Great job, <code>show</code>.</p>
 <p>(Incidentally, although this is a more fun example of <code>show</code>, I’d probably recommend just using a normal function for this kind of thing. Something classic like <code>renderTree :: (Show a) =&gt; Tree a -&gt; String</code> maybe. This isn’t strictly what the <code>Show</code> typeclass is for. There is also another type class called <code>Read</code> whose job is to turn the <code>String</code> output of <code>show</code> back into the original data type, and so making a clever <code>show</code> instance you’re somewhat implicitly promising that you can turn it back somehow. This could end up being a Bad Time, and that’s exactly the kind of time we don’t want to have.)</p>

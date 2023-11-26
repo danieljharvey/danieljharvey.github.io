@@ -39,7 +39,7 @@
         
         <div class="info">
           
-          Tags: <a title="All pages tagged 'plt'." href="../tags/plt.html">plt</a>, <a title="All pages tagged 'mimsa'." href="../tags/mimsa.html">mimsa</a>, <a title="All pages tagged 'typechecker'." href="../tags/typechecker.html">typechecker</a>, <a title="All pages tagged 'llvm'." href="../tags/llvm.html">llvm</a>
+          Tags: <a title="All pages tagged 'plt'." href="../tags/plt.html" rel="tag">plt</a>, <a title="All pages tagged 'mimsa'." href="../tags/mimsa.html" rel="tag">mimsa</a>, <a title="All pages tagged 'typechecker'." href="../tags/typechecker.html" rel="tag">typechecker</a>, <a title="All pages tagged 'llvm'." href="../tags/llvm.html" rel="tag">llvm</a>
           
         </div>
     </section>
@@ -138,7 +138,7 @@ instead. For example:</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ot">oneWhichIsAnInteger ::</span> <span class="dt">Expr</span> (<span class="dt">Type</span> ())</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>oneWhichIsAnInteger <span class="ot">=</span> <span class="dt">EPrim</span> (<span class="dt">TPrim</span> () <span class="dt">TInt</span>) (<span class="dt">PInt</span> <span class="dv">1</span>)</span></code></pre></div>
 <p>The entire typechecker lives
-<a href="https://github.com/danieljharvey/mimsa/blob/trunk/llvm-calc2/src/Calc/Typecheck/Elaborate.hs">here</a>.
+<a href="https://github.com/danieljharvey/llvm-calc/blob/trunk/llvm-calc2/src/Calc/Typecheck/Elaborate.hs">here</a>.
 Let’s go through the key parts:</p>
 <hr />
 <div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- | this is the function we run</span></span>
@@ -266,7 +266,7 @@ are!</p>
 <figcaption aria-hidden="true">Huh?</figcaption>
 </figure>
 <p>You can see all the error rendering code
-<a href="https://github.com/danieljharvey/mimsa/blob/trunk/llvm-calc2/src/Calc/Typecheck/Error.hs">here</a>.</p>
+<a href="https://github.com/danieljharvey/llvm-calc/blob/trunk/llvm-calc2/src/Calc/Typecheck/Error.hs">here</a>.</p>
 <hr />
 <div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ot">infer ::</span> <span class="dt">Expr</span> ann <span class="ot">-&gt;</span> <span class="dt">Either</span> (<span class="dt">TypeError</span> ann) (<span class="dt">Expr</span> (<span class="dt">Type</span> ann))</span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>infer (<span class="dt">EPrim</span> ann prim) <span class="ot">=</span></span>
@@ -286,7 +286,7 @@ are!</p>
 <p>Lastly, here’s <code>check</code>. We only use it when comparing arms of <code>if</code> statements,
 but soon this will become more interesting.</p>
 <p>You can see all of the typechecker code
-<a href="https://github.com/danieljharvey/mimsa/blob/trunk/llvm-calc2/src/Calc/Typecheck/Elaborate.hs">here</a>.</p>
+<a href="https://github.com/danieljharvey/llvm-calc/blob/trunk/llvm-calc2/src/Calc/Typecheck/Elaborate.hs">here</a>.</p>
 <hr />
 <h2 id="interpreting-our-new-friends">Interpreting our new friends</h2>
 <p>Before heading back into LLVM land, let’s update our manual interpreter so we
@@ -343,7 +343,7 @@ in an if statement. Our typechecker <em>should</em> stop this happening of cours
 taking a peek, and then interpreting the appropriate branch. If we don’t need a
 branch, there’s no need to interpret it!</p>
 <p>You can see all of the interpreter code
-<a href="https://github.com/danieljharvey/mimsa/blob/trunk/llvm-calc2/src/Calc/Interpreter.hs">here</a>.</p>
+<a href="https://github.com/danieljharvey/llvm-calc/blob/trunk/llvm-calc2/src/Calc/Interpreter.hs">here</a>.</p>
 <h2 id="ok-llvm-time">OK, LLVM time</h2>
 <p>I feel like I’m rushing through all this, and maybe copy pasta-ing an entire
 typechecker in the preamble was somewhat undisclined of me.</p>
@@ -504,7 +504,7 @@ to work which LLVM type to use.</p>
 <span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>typeToLLVM (<span class="dt">TPrim</span> _ <span class="dt">TBool</span>) <span class="ot">=</span> LLVM.i1</span>
 <span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>typeToLLVM (<span class="dt">TPrim</span> _ <span class="dt">TInt</span>) <span class="ot">=</span> LLVM.i32</span></code></pre></div>
 <p>You can see all of the LLVM conversion code
-<a href="https://github.com/danieljharvey/mimsa/blob/trunk/llvm-calc2/src/Calc/Compile/ToLLVM.hs">here</a>.</p>
+<a href="https://github.com/danieljharvey/llvm-calc/blob/trunk/llvm-calc2/src/Calc/Compile/ToLLVM.hs">here</a>.</p>
 <hr />
 <h3 id="well-thats-that">Well that’s that</h3>
 <p>Congratulations, you are all bidirectional type checking experts now. Hopefully that was
@@ -513,7 +513,7 @@ Great!</p>
 <p>Make sense? If not, <a href="../contact.html">get in touch</a>!</p>
 <p>Further reading:</p>
 <p><a href="https://llvm.org/docs/LangRef.html">llvm reference</a></p>
-<p><a href="https://github.com/danieljharvey/mimsa">mimsa</a></p>
+<p><a href="https://github.com/danieljharvey/llvm-calc">llvm-calc</a></p>
     </section>
 </article>
 

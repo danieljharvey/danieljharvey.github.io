@@ -39,7 +39,7 @@
         
         <div class="info">
           
-          Tags: <a title="All pages tagged 'plt'." href="../tags/plt.html">plt</a>, <a title="All pages tagged 'mimsa'." href="../tags/mimsa.html">mimsa</a>, <a title="All pages tagged 'typechecker'." href="../tags/typechecker.html">typechecker</a>, <a title="All pages tagged 'llvm'." href="../tags/llvm.html">llvm</a>
+          Tags: <a title="All pages tagged 'plt'." href="../tags/plt.html" rel="tag">plt</a>, <a title="All pages tagged 'mimsa'." href="../tags/mimsa.html" rel="tag">mimsa</a>, <a title="All pages tagged 'typechecker'." href="../tags/typechecker.html" rel="tag">typechecker</a>, <a title="All pages tagged 'llvm'." href="../tags/llvm.html" rel="tag">llvm</a>
           
         </div>
     </section>
@@ -56,7 +56,7 @@ such as pattern matching, lambdas and ADTs in much depth.</p>
 entirely working but tiny language, get it all working, and then as we add
 features to the language, we’ll also add a typechecker and introduce more LLVM
 concepts. The source code for the whole working calculator, along with a basic repl, can be found
-at <a href="https://github.com/danieljharvey/mimsa/tree/trunk/llvm-calc">llvm-calc</a>.</p>
+at <a href="https://github.com/danieljharvey/llvm-calc/tree/trunk/llvm-calc">llvm-calc</a>.</p>
 <h2 id="our-language">Our language</h2>
 <p>The first iteration of our language is going to be the most basic of
 calculators. Here is a valid program in our language:</p>
@@ -93,7 +93,7 @@ input from a user.</p>
 <p>Given some user input, parsing returns either a valid <code>Expr</code> or a (hopefully)
 helpful error.</p>
 <p>The whole parser can be seen
-<a href="https://github.com/danieljharvey/mimsa/tree/trunk/llvm-calc/src/Calc/Parser">here</a>. We’ll not go into too much depth as there are already lots of great references
+<a href="https://github.com/danieljharvey/llvm-calc/tree/trunk/llvm-calc/src/Calc/Parser">here</a>. We’ll not go into too much depth as there are already lots of great references
 on parsing, but a few details are worth noting:</p>
 <h3 id="which-library">Which library?</h3>
 <p>We’ll be using a library called
@@ -160,7 +160,7 @@ internally. Although it’s pretty clear how this calculator should work, it
 will be useful to compare our own simple interpreter with the LLVM output as
 things get more complicated.</p>
 <p>You can view the full code
-<a href="https://github.com/danieljharvey/mimsa/blob/trunk/llvm-calc/src/Calc/Interpreter.hs">here</a>.
+<a href="https://github.com/danieljharvey/llvm-calc/blob/trunk/llvm-calc/src/Calc/Interpreter.hs">here</a>.
 As you can see, there isn’t very much of it:</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ot">interpret ::</span></span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">Expr</span> ann <span class="ot">-&gt;</span></span>
@@ -285,7 +285,7 @@ invariably generate LLVM errors, we’ll at least we able to look at the error
 and reference the code we’ve given it to try and work out what went wrong.</p>
 <h3 id="shut-up-and-show-me-some-haskell-code">Shut up and show me some Haskell code</h3>
 <p>The whole module can be seen
-<a href="https://github.com/danieljharvey/mimsa/blob/trunk/llvm-calc/src/Calc/Compile/ToLLVM.hs">here</a>, but let’s look at the highlights:</p>
+<a href="https://github.com/danieljharvey/llvm-calc/blob/trunk/llvm-calc/src/Calc/Compile/ToLLVM.hs">here</a>, but let’s look at the highlights:</p>
 <hr />
 <div class="sourceCode" id="cb20"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="ot">primToLLVM ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">LLVM.Operand</span></span>
 <span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>primToLLVM i <span class="ot">=</span> LLVM.int32 (<span class="fu">fromIntegral</span> i)</span></code></pre></div>
@@ -362,7 +362,7 @@ we created, then running <code>clang</code> to compile it into an executable. I 
 much stole the compiling code from
 <a href="https://blog.josephmorag.com/posts/mcc3/">Micro-C</a> (thanks/sorry, Joseph!).
 You can see our slightly tattered version
-<a href="https://github.com/danieljharvey/mimsa/blob/trunk/llvm-calc/src/Calc/Compile/RunLLVM.hs">here</a> if for some reason you don’t believe any of this actually works.</p>
+<a href="https://github.com/danieljharvey/llvm-calc/blob/trunk/llvm-calc/src/Calc/Compile/RunLLVM.hs">here</a> if for some reason you don’t believe any of this actually works.</p>
 <h3 id="well-thats-that">Well that’s that</h3>
 <p>Congratulations, you are all low-level compiler experts now. Hopefully that was
 somewhat helpful. Next time we’ll be adding the equality operator and some basic control flow.
@@ -370,7 +370,7 @@ Exciting!</p>
 <p>Make sense? If not, <a href="../contact.html">get in touch</a>!</p>
 <p>Further reading:</p>
 <p><a href="https://llvm.org/docs/LangRef.html">llvm reference</a></p>
-<p><a href="https://github.com/danieljharvey/mimsa">mimsa</a></p>
+<p><a href="https://github.com/danieljharvey/llvm-calc">llvm-calc</a></p>
     </section>
 </article>
 

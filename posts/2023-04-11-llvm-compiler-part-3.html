@@ -39,13 +39,13 @@
         
         <div class="info">
           
-          Tags: <a title="All pages tagged 'plt'." href="../tags/plt.html">plt</a>, <a title="All pages tagged 'mimsa'." href="../tags/mimsa.html">mimsa</a>, <a title="All pages tagged 'typechecker'." href="../tags/typechecker.html">typechecker</a>, <a title="All pages tagged 'llvm'." href="../tags/llvm.html">llvm</a>
+          Tags: <a title="All pages tagged 'plt'." href="../tags/plt.html" rel="tag">plt</a>, <a title="All pages tagged 'mimsa'." href="../tags/mimsa.html" rel="tag">mimsa</a>, <a title="All pages tagged 'typechecker'." href="../tags/typechecker.html" rel="tag">typechecker</a>, <a title="All pages tagged 'llvm'." href="../tags/llvm.html" rel="tag">llvm</a>
           
         </div>
     </section>
     <section>
         <p>Welcome to part 3 of this series in compiling functional languages to LLVM. In
-<a href="../posts/2023-02-23-llvm-compiler-part-2.html">part 1</a> we added basic control
+<a href="../posts/2023-02-23-llvm-compiler-part-2.html">part 2</a> we added basic control
 flow to our langauge with an <code>if / then / else</code> construct.</p>
 <p>Today we’re going to get one important step towards a functional programming
 language by adding functions and variables.</p>
@@ -238,7 +238,7 @@ the <code>State</code> instead of <code>Reader</code>:</p>
 <span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>      throwError (<span class="dt">FunctionNotFound</span> ann fnName allFunctions)</span></code></pre></div>
 <p>These types, and the functions used to store / fetch variables and functions
 are defined
-<a href="https://github.com/danieljharvey/mimsa/blob/trunk/llvm-calc3/src/Calc/Typecheck/Types.hs">here</a>.</p>
+<a href="https://github.com/danieljharvey/llvm-calc/blob/trunk/llvm-calc3/src/Calc/Typecheck/Types.hs">here</a>.</p>
 <h3 id="elaborating-a-function">Elaborating a function</h3>
 <p>Our functions have types for the arguments, so we push them into the <code>Reader</code>
 environment, and then elaborate the expression inside.</p>
@@ -296,7 +296,7 @@ will have a <code>TFunction</code> type.</p>
 <h2 id="updating-the-interpreter">Updating the interpreter</h2>
 <p>We won’t go into the interpreter changes today, they work in the same way as
 the typechecker,
-storing variables in the <code>Reader</code> env and functions in the <code>State</code>. <a href="https://github.com/danieljharvey/mimsa/blob/trunk/llvm-calc3/src/Calc/Interpreter.hs">The code
+storing variables in the <code>Reader</code> env and functions in the <code>State</code>. <a href="https://github.com/danieljharvey/llvm-calc/blob/trunk/llvm-calc3/src/Calc/Interpreter.hs">The code
 lives
 here</a>.</p>
 <h2 id="to-the-ir">To the IR!</h2>
@@ -377,7 +377,7 @@ stateful. We’re going to define a couple more types:</p>
 it’s nice to capture them properly rather than just throwing with <code>error</code>.</p>
 <p>It means we also need a similar set of functions for adding and looking up
 functions and variables, which can be found
-<a href="https://github.com/danieljharvey/mimsa/blob/trunk/llvm-calc3/src/Calc/Compile/ToLLVM.hs#L38">here</a> and are hopefully unsurprising.</p>
+<a href="https://github.com/danieljharvey/llvm-calc/blob/trunk/llvm-calc3/src/Calc/Compile/ToLLVM.hs#L38">here</a> and are hopefully unsurprising.</p>
 <p>A lot of our implementation are various “turn things into LLVM” functions:</p>
 <div class="sourceCode" id="cb31"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="ot">typeToLLVM ::</span> <span class="dt">Type</span> ann <span class="ot">-&gt;</span> <span class="dt">LLVM.Type</span></span>
 <span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>typeToLLVM (<span class="dt">TPrim</span> _ <span class="dt">TBool</span>) <span class="ot">=</span> LLVM.i1</span>
@@ -470,7 +470,7 @@ which takes our typechecked <code>Module</code> and creates an LLVM module.</p>
 <span id="cb37-20"><a href="#cb37-20" aria-hidden="true" tabindex="-1"></a>      <span class="co">-- return success exit code of `0`</span></span>
 <span id="cb37-21"><a href="#cb37-21" aria-hidden="true" tabindex="-1"></a>      LLVM.ret (LLVM.int32 <span class="dv">0</span>)</span></code></pre></div>
 <p>You can see all of the LLVM generation code
-<a href="https://github.com/danieljharvey/mimsa/blob/trunk/llvm-calc3/src/Calc/Compile/ToLLVM.hs">here</a>.</p>
+<a href="https://github.com/danieljharvey/llvm-calc/blob/trunk/llvm-calc3/src/Calc/Compile/ToLLVM.hs">here</a>.</p>
 <hr />
 <h3 id="well-well-well-if-its-not-the-end-of-the-article">Well, well, well, if it’s not the end of the article</h3>
 <p>Congratulations, you are all functional programming language implementation experts now. Hopefully you found that somewhat interesting and/or useful.
@@ -478,7 +478,7 @@ Next time we’ll be adding basic product types and pattern matching. Great!</p>
 <p>Make sense? If not, <a href="../contact.html">get in touch</a>!</p>
 <p>Further reading:</p>
 <p><a href="https://llvm.org/docs/LangRef.html">llvm reference</a></p>
-<p><a href="https://github.com/danieljharvey/mimsa">mimsa</a></p>
+<p><a href="https://github.com/danieljharvey/llvm-calc">llvm-calc</a></p>
     </section>
 </article>
 
