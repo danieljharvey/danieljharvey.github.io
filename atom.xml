@@ -10,8 +10,16 @@
         <email>danieljamesharvey@gmail.com</email>
         
     </author>
-    <updated>2023-04-11T00:00:00Z</updated>
+    <updated>2024-07-03T00:00:00Z</updated>
     <entry>
+    <title>llvm-calc is dead, long live wasm-calc</title>
+    <link href="https://danieljharvey.github.io//posts/2024-07-03-wasm-compiler-part-1.html" />
+    <id>https://danieljharvey.github.io//posts/2024-07-03-wasm-compiler-part-1.html</id>
+    <published>2024-07-03T00:00:00Z</published>
+    <updated>2024-07-03T00:00:00Z</updated>
+    <summary type="html"><![CDATA[This is the post description]]></summary>
+</entry>
+<entry>
     <title>Compiling a functional language to LLVM, part 3</title>
     <link href="https://danieljharvey.github.io//posts/2023-04-11-llvm-compiler-part-3.html" />
     <id>https://danieljharvey.github.io//posts/2023-04-11-llvm-compiler-part-3.html</id>
@@ -81,14 +89,6 @@
     <id>https://danieljharvey.github.io//posts/2020-02-22-contract-testing.html</id>
     <published>2020-02-22T00:00:00Z</published>
     <updated>2020-02-22T00:00:00Z</updated>
-    <summary type="html"><![CDATA[This is the post description]]></summary>
-</entry>
-<entry>
-    <title>The Genius Of Concrete</title>
-    <link href="https://danieljharvey.github.io//posts/2019-10-09-the-genius-of-concrete.html" />
-    <id>https://danieljharvey.github.io//posts/2019-10-09-the-genius-of-concrete.html</id>
-    <published>2019-10-09T00:00:00Z</published>
-    <updated>2019-10-09T00:00:00Z</updated>
     <summary type="html"><![CDATA[This is the post description]]></summary>
 </entry>
 
