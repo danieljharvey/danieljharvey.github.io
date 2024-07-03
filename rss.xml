@@ -10,10 +10,10 @@
         <lastBuildDate>Wed, 03 Jul 2024 00:00:00 UT</lastBuildDate>
         <item>
     <title>llvm-calc is dead, long live wasm-calc</title>
-    <link>https://danieljharvey.github.io//posts/2024-07-03-wasm-compiler-part-1.html</link>
+    <link>https://danieljharvey.github.io//posts/2024-07-03-announcing-wasm-calc.html</link>
     <description><![CDATA[This is the post description]]></description>
     <pubDate>Wed, 03 Jul 2024 00:00:00 UT</pubDate>
-    <guid>https://danieljharvey.github.io//posts/2024-07-03-wasm-compiler-part-1.html</guid>
+    <guid>https://danieljharvey.github.io//posts/2024-07-03-announcing-wasm-calc.html</guid>
     <dc:creator>Daniel J. Harvey</dc:creator>
 </item>
 <item>

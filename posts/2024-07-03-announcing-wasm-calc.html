@@ -51,7 +51,7 @@ LLVM, and I have to confess, I came <a href="https://github.com/danieljharvey/ll
 <img src="../images/failure.webp" title="Failure" alt="Failure" />
 <figcaption aria-hidden="true">Failure</figcaption>
 </figure>
-<p>Until recent versions, it tried to be helpful by making you specify types
+<p>Until recent versions, LLVM tried to be helpful by making you specify types
 for all pointers you pass around. This is really helpful in simple cases as you
 get basic typechecking at compile time. However, once you start implementing things like sum types (ie, reserve a slab of memory, and stuff it with one of several sets of data), it becomes super annoying.</p>
 <p>For example, compiling an <code>Either&lt;Int, Bool&gt;</code> type requires you to constantly cast between “arbitrary array type we’ve chosen
