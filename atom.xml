@@ -10,8 +10,16 @@
         <email>danieljamesharvey@gmail.com</email>
         
     </author>
-    <updated>2024-07-03T00:00:00Z</updated>
+    <updated>2025-07-26T00:00:00Z</updated>
     <entry>
+    <title>Let's write a database (part 1)</title>
+    <link href="https://danieljharvey.github.io//posts/2025-07-26-fuck-it-lets-write-a-database.html" />
+    <id>https://danieljharvey.github.io//posts/2025-07-26-fuck-it-lets-write-a-database.html</id>
+    <published>2025-07-26T00:00:00Z</published>
+    <updated>2025-07-26T00:00:00Z</updated>
+    <summary type="html"><![CDATA[This is the post description]]></summary>
+</entry>
+<entry>
     <title>llvm-calc is dead, long live wasm-calc</title>
     <link href="https://danieljharvey.github.io//posts/2024-07-03-announcing-wasm-calc.html" />
     <id>https://danieljharvey.github.io//posts/2024-07-03-announcing-wasm-calc.html</id>
@@ -81,14 +89,6 @@
     <id>https://danieljharvey.github.io//posts/2020-02-23-typescript-contract-tests.html</id>
     <published>2020-02-23T00:00:00Z</published>
     <updated>2020-02-23T00:00:00Z</updated>
-    <summary type="html"><![CDATA[This is the post description]]></summary>
-</entry>
-<entry>
-    <title>Contract testing with Quickcheck</title>
-    <link href="https://danieljharvey.github.io//posts/2020-02-22-contract-testing.html" />
-    <id>https://danieljharvey.github.io//posts/2020-02-22-contract-testing.html</id>
-    <published>2020-02-22T00:00:00Z</published>
-    <updated>2020-02-22T00:00:00Z</updated>
     <summary type="html"><![CDATA[This is the post description]]></summary>
 </entry>
 

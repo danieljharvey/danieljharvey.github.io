@@ -7,8 +7,16 @@
         <description><![CDATA[Writing about computers]]></description>
         <atom:link href="https://danieljharvey.github.io//rss.xml" rel="self"
                    type="application/rss+xml" />
-        <lastBuildDate>Wed, 03 Jul 2024 00:00:00 UT</lastBuildDate>
+        <lastBuildDate>Sat, 26 Jul 2025 00:00:00 UT</lastBuildDate>
         <item>
+    <title>Let's write a database (part 1)</title>
+    <link>https://danieljharvey.github.io//posts/2025-07-26-fuck-it-lets-write-a-database.html</link>
+    <description><![CDATA[This is the post description]]></description>
+    <pubDate>Sat, 26 Jul 2025 00:00:00 UT</pubDate>
+    <guid>https://danieljharvey.github.io//posts/2025-07-26-fuck-it-lets-write-a-database.html</guid>
+    <dc:creator>Daniel J. Harvey</dc:creator>
+</item>
+<item>
     <title>llvm-calc is dead, long live wasm-calc</title>
     <link>https://danieljharvey.github.io//posts/2024-07-03-announcing-wasm-calc.html</link>
     <description><![CDATA[This is the post description]]></description>
@@ -78,14 +86,6 @@
     <description><![CDATA[This is the post description]]></description>
     <pubDate>Sun, 23 Feb 2020 00:00:00 UT</pubDate>
     <guid>https://danieljharvey.github.io//posts/2020-02-23-typescript-contract-tests.html</guid>
-    <dc:creator>Daniel J. Harvey</dc:creator>
-</item>
-<item>
-    <title>Contract testing with Quickcheck</title>
-    <link>https://danieljharvey.github.io//posts/2020-02-22-contract-testing.html</link>
-    <description><![CDATA[This is the post description]]></description>
-    <pubDate>Sat, 22 Feb 2020 00:00:00 UT</pubDate>
-    <guid>https://danieljharvey.github.io//posts/2020-02-22-contract-testing.html</guid>
     <dc:creator>Daniel J. Harvey</dc:creator>
 </item>
 
