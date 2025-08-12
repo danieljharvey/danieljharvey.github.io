@@ -7,8 +7,16 @@
         <description><![CDATA[Writing about computers]]></description>
         <atom:link href="https://danieljharvey.github.io//rss.xml" rel="self"
                    type="application/rss+xml" />
-        <lastBuildDate>Sat, 26 Jul 2025 00:00:00 UT</lastBuildDate>
+        <lastBuildDate>Tue, 05 Aug 2025 00:00:00 UT</lastBuildDate>
         <item>
+    <title>Let's write a database (part 2)</title>
+    <link>https://danieljharvey.github.io//posts/2025-08-05-lets-write-a-database-part-2.html</link>
+    <description><![CDATA[This is the post description]]></description>
+    <pubDate>Tue, 05 Aug 2025 00:00:00 UT</pubDate>
+    <guid>https://danieljharvey.github.io//posts/2025-08-05-lets-write-a-database-part-2.html</guid>
+    <dc:creator>Daniel J. Harvey</dc:creator>
+</item>
+<item>
     <title>Let's write a database (part 1)</title>
     <link>https://danieljharvey.github.io//posts/2025-07-26-fuck-it-lets-write-a-database.html</link>
     <description><![CDATA[This is the post description]]></description>
@@ -78,14 +86,6 @@
     <description><![CDATA[This is the post description]]></description>
     <pubDate>Sat, 28 Mar 2020 00:00:00 UT</pubDate>
     <guid>https://danieljharvey.github.io//posts/2020-03-28-tags-and-shit.html</guid>
-    <dc:creator>Daniel J. Harvey</dc:creator>
-</item>
-<item>
-    <title>Contract testing with Typescript</title>
-    <link>https://danieljharvey.github.io//posts/2020-02-23-typescript-contract-tests.html</link>
-    <description><![CDATA[This is the post description]]></description>
-    <pubDate>Sun, 23 Feb 2020 00:00:00 UT</pubDate>
-    <guid>https://danieljharvey.github.io//posts/2020-02-23-typescript-contract-tests.html</guid>
     <dc:creator>Daniel J. Harvey</dc:creator>
 </item>
 

@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - Let's write a database (part 2)</title>
+    <link rel="stylesheet" href="../css/default.css" />
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="../">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="../">Home</a>
+            <a href="../contact.html">Contact</a>
+            <a href="../archive.html">Archive</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        <h1>Let's write a database (part 2)</h1>
+        <article>
+    <section class="header">
+        Posted on August  5, 2025
+        
+        <div class="info">
+          
+          Tags: <a title="All pages tagged 'database'." href="../tags/database.html" rel="tag">database</a>, <a title="All pages tagged 'query-engine'." href="../tags/query-engine.html" rel="tag">query-engine</a>, <a title="All pages tagged 'rust'." href="../tags/rust.html" rel="tag">rust</a>
+          
+        </div>
+    </section>
+    <section>
+        <p>Hello, hello, hello. Welcome to part two of this adventure where we’re making a database by hand. In part one we stole a SQL parser, did some table scans, filtered some results, and projected the ones we’re interested in. I promised we’d look at joins today, but first we need to do a bit of housekeeping.</p>
+<p>If you’d like to look at the code, it’s <a href="https://github.com/danieljharvey/lets-build-a-database">right here</a>.</p>
+<h2 id="storing-our-rows-better">Storing our rows better</h2>
+<p>Previously we passed our rows around as <code>Vec&lt;serde_json::Value&gt;</code> so each row was a JSON value that looked like this:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode json"><code class="sourceCode json"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span> </span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;id&quot;</span><span class="fu">:</span> <span class="dv">1</span><span class="fu">,</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;name&quot;</span><span class="fu">:</span> <span class="st">&quot;Mr Horse&quot;</span><span class="fu">,</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;age&quot;</span><span class="fu">:</span> <span class="dv">100</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<p>This is poor for two reasons:</p>
+<ol type="1">
+<li><p>Having the column names in every row is wasteful</p></li>
+<li><p>If we want to rename columns (or disambiguate the “name” column from two tables that have been joined), we have to change every row</p></li>
+</ol>
+<p>Instead we have a <code>Row</code> type that contains a <code>Vec</code> full of individual <code>serde_json::Value</code> types for each column entry:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">struct</span> Row <span class="op">{</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> items<span class="op">:</span> <span class="dt">Vec</span><span class="op">&lt;</span><span class="pp">serde_json::</span>Value<span class="op">&gt;,</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>And we pass around a single <code>Schema</code> type that holds all the column names:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">struct</span> Schema <span class="op">{</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> columns<span class="op">:</span> <span class="dt">Vec</span><span class="op">&lt;</span>Column<span class="op">&gt;,</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">struct</span> Column <span class="op">{</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> name<span class="op">:</span> <span class="dt">String</span><span class="op">,</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<h2 id="changes-to-our-query-functions">Changes to our query functions</h2>
+<p>Previously we just returned a big pile of rows from each query function, but now each one returns a <code>QueryStep</code> type:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">struct</span> QueryStep <span class="op">{</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> schema<span class="op">:</span> Schema<span class="op">,</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> rows<span class="op">:</span> <span class="dt">Vec</span><span class="op">&lt;</span>Row<span class="op">&gt;,</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>Now we have a bunch of rows, and a <code>Schema</code> so we know what’s in them.</p>
+<h3 id="from">From</h3>
+<p>When selecting fields, we grab all the rows, and then return a schema too. These are hardcoded for now:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> schema(table_name<span class="op">:</span> <span class="op">&amp;</span>TableName) <span class="op">-&gt;</span> <span class="dt">Vec</span><span class="op">&lt;</span>Column<span class="op">&gt;</span> <span class="op">{</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    <span class="cf">match</span> table_name<span class="op">.</span><span class="dv">0</span><span class="op">.</span>as_str() <span class="op">{</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;Album&quot;</span> <span class="op">=&gt;</span> <span class="pp">vec!</span>[<span class="st">&quot;AlbumId&quot;</span><span class="op">.</span>into()<span class="op">,</span> <span class="st">&quot;Title&quot;</span><span class="op">.</span>into()<span class="op">,</span> <span class="st">&quot;ArtistId&quot;</span><span class="op">.</span>into()]<span class="op">,</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;Artist&quot;</span> <span class="op">=&gt;</span> <span class="pp">vec!</span>[<span class="st">&quot;ArtistId&quot;</span><span class="op">.</span>into()<span class="op">,</span> <span class="st">&quot;Name&quot;</span><span class="op">.</span>into()]<span class="op">,</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;Track&quot;</span> <span class="op">=&gt;</span> <span class="pp">vec!</span>[</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;TrackId&quot;</span><span class="op">.</span>into()<span class="op">,</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;Name&quot;</span><span class="op">.</span>into()<span class="op">,</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;AlbumId&quot;</span><span class="op">.</span>into()<span class="op">,</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;MediaTypeId&quot;</span><span class="op">.</span>into()<span class="op">,</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;GenreId&quot;</span><span class="op">.</span>into()<span class="op">,</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;Composer&quot;</span><span class="op">.</span>into()<span class="op">,</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;Milliseconds&quot;</span><span class="op">.</span>into()<span class="op">,</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;Bytes&quot;</span><span class="op">.</span>into()<span class="op">,</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;UnitPrice&quot;</span><span class="op">.</span>into()<span class="op">,</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>        ]<span class="op">,</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>        _ <span class="op">=&gt;</span> <span class="pp">todo!</span>(<span class="st">&quot;unknown schema&quot;</span>)<span class="op">,</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<h3 id="filtering">Filtering</h3>
+<p>For instance, this means our filtering now looks like this, passing the schema through unchanged from whatever <code>Query</code> it wraps:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="pp">Query::</span>Filter(Filter <span class="op">{</span> from<span class="op">,</span> filter <span class="op">}</span>) <span class="op">=&gt;</span> <span class="op">{</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> QueryStep <span class="op">{</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>        schema<span class="op">,</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>        rows<span class="op">,</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span> <span class="op">=</span> run_query(from)<span class="op">?;</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> <span class="kw">mut</span> filtered_rows <span class="op">=</span> <span class="pp">vec!</span>[]<span class="op">;</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> row <span class="kw">in</span> rows <span class="op">{</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="pp">filter::</span>apply_predicate(<span class="op">&amp;</span>row<span class="op">,</span> <span class="op">&amp;</span>schema<span class="op">,</span> filter)<span class="op">?</span> <span class="op">{</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>            filtered_rows<span class="op">.</span>push(row)<span class="op">;</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Ok</span>(QueryStep <span class="op">{</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>        schema<span class="op">,</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>        rows<span class="op">:</span> filtered_rows</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>)</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<h3 id="projections">Projections</h3>
+<p>Our projections let us drop and reorder fields, so they’ll change the schemas as well as the rows:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="pp">Query::</span>Project(Project <span class="op">{</span> from<span class="op">,</span> fields <span class="op">}</span>) <span class="op">=&gt;</span> <span class="op">{</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> QueryStep <span class="op">{</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>        schema<span class="op">,</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>        rows<span class="op">,</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span> <span class="op">=</span> run_query(from)<span class="op">?;</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> <span class="kw">mut</span> projected_rows <span class="op">=</span> <span class="pp">vec!</span>[]<span class="op">;</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> row <span class="kw">in</span> <span class="op">&amp;</span>rows <span class="op">{</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>        projected_rows<span class="op">.</span>push(<span class="pp">project::</span>project_fields(row<span class="op">,</span> <span class="op">&amp;</span>schema<span class="op">,</span> fields)<span class="op">?</span>)<span class="op">;</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> schema <span class="op">=</span> <span class="pp">project::</span>project_schema(<span class="op">&amp;</span>schema<span class="op">,</span> fields)<span class="op">?;</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Ok</span>(QueryStep <span class="op">{</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>        schema<span class="op">,</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>        rows<span class="op">:</span> projected_rows<span class="op">,</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>)</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>As well as a <code>project_fields</code> function we have a matching <code>project_schema</code> function that creates a new schema.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">fn</span> project_schema(schema<span class="op">:</span> <span class="op">&amp;</span>Schema<span class="op">,</span> fields<span class="op">:</span> <span class="op">&amp;</span>[Column]) </span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="op">-&gt;</span> <span class="dt">Result</span><span class="op">&lt;</span>Schema<span class="op">,</span> QueryError<span class="op">&gt;</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> <span class="kw">mut</span> columns <span class="op">=</span> <span class="pp">vec!</span>[]<span class="op">;</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> field <span class="kw">in</span> fields <span class="op">{</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> index <span class="op">=</span> schema<span class="op">.</span>get_index_for_column(field)<span class="op">.</span>ok_or_else(<span class="op">||</span> <span class="op">{</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>      <span class="pp">QueryError::</span>ColumnNotFoundInSchema <span class="op">{</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>        column_name<span class="op">:</span> field<span class="op">.</span>clone()<span class="op">,</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>      <span class="op">}</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span>)<span class="op">?;</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> column <span class="op">=</span> schema</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>      <span class="op">.</span>columns</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>      <span class="op">.</span>get(index)</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>      <span class="op">.</span>ok_or(<span class="pp">QueryError::</span>IndexNotFoundInSchema <span class="op">{</span> index <span class="op">}</span>)<span class="op">?;</span></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>    columns<span class="op">.</span>push(column<span class="op">.</span>clone())<span class="op">;</span></span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>  <span class="cn">Ok</span>(Schema <span class="op">{</span> columns <span class="op">}</span>)</span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<h3 id="outputting-everything">Outputting everything</h3>
+<p>We still want to output everything in JSON as before, so our <code>QueryStep</code> has a <code>to_json</code> function that puts everything back as it was before.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">impl</span> QueryStep <span class="op">{</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="co">// reconstruct JSON output</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">pub</span> <span class="kw">fn</span> to_json(<span class="op">&amp;</span><span class="kw">self</span>) <span class="op">-&gt;</span> <span class="pp">serde_json::</span>Value <span class="op">{</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> <span class="kw">mut</span> output_rows <span class="op">=</span> <span class="pp">vec!</span>[]<span class="op">;</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> row <span class="kw">in</span> <span class="op">&amp;</span><span class="kw">self</span><span class="op">.</span>rows <span class="op">{</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>      <span class="kw">let</span> <span class="kw">mut</span> output_row <span class="op">=</span> <span class="pp">serde_json::Map::</span>new()<span class="op">;</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>      <span class="cf">for</span> column <span class="kw">in</span> <span class="op">&amp;</span><span class="kw">self</span><span class="op">.</span>schema<span class="op">.</span>columns <span class="op">{</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>        <span class="kw">let</span> value <span class="op">=</span> row<span class="op">.</span>get_column(column<span class="op">,</span> <span class="op">&amp;</span><span class="kw">self</span><span class="op">.</span>schema)<span class="op">.</span>unwrap()<span class="op">;</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>        output_row<span class="op">.</span>insert(column<span class="op">.</span>to_string()<span class="op">,</span> value<span class="op">.</span>clone())<span class="op">;</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>      <span class="op">}</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>      output_rows<span class="op">.</span>push(<span class="pp">serde_json::Value::</span>Object(output_row))<span class="op">;</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>    <span class="pp">serde_json::Value::</span>Array(output_rows)</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>After this, all the outputs look the same as before and our tests all pass again. Nice!</p>
+<h2 id="whats-next">What’s next?</h2>
+<p>OK, we’ve got all our ducks in a row, next time we’ll do the joins, I promise.</p>
+<p>Make sense? If not, <a href="../contact.html">get in touch</a>!</p>
+    </section>
+</article>
+
+    </main>
+
+    <footer>
+      <p>Site proudly generated by
+      <a href="http://jaspervdj.be/hakyll">Hakyll</a></p>
+      <p>Links for nerds:
+        <a href="../atom.xml">atom</a>
+        <a href="../rss.xml">rss</a></p>
+
+    </footer>
+</body>
+
+</html>
