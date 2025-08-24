@@ -64,7 +64,7 @@ language by adding functions and variables.</p>
 <li>They can’t call themselves recursively (ie, <code>function factorial(a: Integer) { if a == 0 then 1 else a * factorial(a - 1) }</code>. This is to simplify the typechecker
 implementation for the time being rather than any limitation in LLVM - we’ll come back round to making this
 possible.</li>
-<li>We must define all function arguments up front (ie, <code>a: Integer, b: Boolean</code>). It is possible to infer these, but let’s keep things simple for
+<li>We must define all function arguments up front (ie, <code>a: Integer, b:   Boolean</code>). It is possible to infer these, but let’s keep things simple for
 now.</li>
 <li>Functions can only call functions defined before them. This can be solved by
 doing some dependency analysis before typechecking (ie, move things around to

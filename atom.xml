@@ -10,8 +10,16 @@
         <email>danieljamesharvey@gmail.com</email>
         
     </author>
-    <updated>2025-08-05T00:00:00Z</updated>
+    <updated>2025-08-24T00:00:00Z</updated>
     <entry>
+    <title>Let's write a database (part 3)</title>
+    <link href="https://danieljharvey.github.io//posts/2025-08-24-lets-write-a-database-part-3.html" />
+    <id>https://danieljharvey.github.io//posts/2025-08-24-lets-write-a-database-part-3.html</id>
+    <published>2025-08-24T00:00:00Z</published>
+    <updated>2025-08-24T00:00:00Z</updated>
+    <summary type="html"><![CDATA[This is the post description]]></summary>
+</entry>
+<entry>
     <title>Let's write a database (part 2)</title>
     <link href="https://danieljharvey.github.io//posts/2025-08-05-lets-write-a-database-part-2.html" />
     <id>https://danieljharvey.github.io//posts/2025-08-05-lets-write-a-database-part-2.html</id>
@@ -81,14 +89,6 @@
     <id>https://danieljharvey.github.io//posts/2021-12-28-content-addressed-languages.html</id>
     <published>2021-12-28T00:00:00Z</published>
     <updated>2021-12-28T00:00:00Z</updated>
-    <summary type="html"><![CDATA[This is the post description]]></summary>
-</entry>
-<entry>
-    <title>Newtypes for Cheap</title>
-    <link href="https://danieljharvey.github.io//posts/2020-03-28-tags-and-shit.html" />
-    <id>https://danieljharvey.github.io//posts/2020-03-28-tags-and-shit.html</id>
-    <published>2020-03-28T00:00:00Z</published>
-    <updated>2020-03-28T00:00:00Z</updated>
     <summary type="html"><![CDATA[This is the post description]]></summary>
 </entry>
 
