@@ -7,8 +7,16 @@
         <description><![CDATA[Writing about computers]]></description>
         <atom:link href="https://danieljharvey.github.io//rss.xml" rel="self"
                    type="application/rss+xml" />
-        <lastBuildDate>Sun, 24 Aug 2025 00:00:00 UT</lastBuildDate>
+        <lastBuildDate>Sun, 07 Sep 2025 00:00:00 UT</lastBuildDate>
         <item>
+    <title>Let's write a database (part 4)</title>
+    <link>https://danieljharvey.github.io//posts/2025-09-07-ordering-and-limits.html</link>
+    <description><![CDATA[This is the post description]]></description>
+    <pubDate>Sun, 07 Sep 2025 00:00:00 UT</pubDate>
+    <guid>https://danieljharvey.github.io//posts/2025-09-07-ordering-and-limits.html</guid>
+    <dc:creator>Daniel J. Harvey</dc:creator>
+</item>
+<item>
     <title>Let's write a database (part 3)</title>
     <link>https://danieljharvey.github.io//posts/2025-08-24-lets-write-a-database-part-3.html</link>
     <description><![CDATA[This is the post description]]></description>
@@ -78,14 +86,6 @@
     <description><![CDATA[This is the post description]]></description>
     <pubDate>Tue, 28 Dec 2021 00:00:00 UT</pubDate>
     <guid>https://danieljharvey.github.io//posts/2021-12-28-property-testing-mimsa.html</guid>
-    <dc:creator>Daniel J. Harvey</dc:creator>
-</item>
-<item>
-    <title>What the hell is a content addressed language</title>
-    <link>https://danieljharvey.github.io//posts/2021-12-28-content-addressed-languages.html</link>
-    <description><![CDATA[This is the post description]]></description>
-    <pubDate>Tue, 28 Dec 2021 00:00:00 UT</pubDate>
-    <guid>https://danieljharvey.github.io//posts/2021-12-28-content-addressed-languages.html</guid>
     <dc:creator>Daniel J. Harvey</dc:creator>
 </item>
 
