@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - Let's write a database (part 4)</title>
+    <link rel="stylesheet" href="../css/default.css" />
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="../">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="../">Home</a>
+            <a href="../contact.html">Contact</a>
+            <a href="../archive.html">Archive</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        <h1>Let's write a database (part 4)</h1>
+        <article>
+    <section class="header">
+        Posted on September  7, 2025
+        
+        <div class="info">
+          
+          Tags: <a title="All pages tagged 'database'." href="../tags/database.html" rel="tag">database</a>, <a title="All pages tagged 'query-engine'." href="../tags/query-engine.html" rel="tag">query-engine</a>, <a title="All pages tagged 'rust'." href="../tags/rust.html" rel="tag">rust</a>
+          
+        </div>
+    </section>
+    <section>
+        <p>Hello, hello, hello. Welcome to part four of this adventure where we’re making a database by hand. In part three we did some joins, and today we’re doing to do some limiting.</p>
+<p>If you’d like to look at the code, it’s <a href="https://github.com/danieljharvey/lets-build-a-database">right here</a>.</p>
+<h2 id="no-no-no-no-no-no-no-no-no-no-no-no-theres-no-limits">No no, no no no no, no no no no, no no, there’s no limits</h2>
+<p>Limit is very straightforward, it’s used to control the amount of data we get back from a query.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">select</span> <span class="op">*</span> <span class="kw">from</span> albums <span class="kw">limit</span> <span class="dv">10</span></span></code></pre></div>
+<p>…will get 10 items from the albums table. To help decide how we choose <em>which</em> 10, we’ll need ordering which will come next.</p>
+<p>We add a new <code>Limit</code> to the <code>Query</code> type, containing the following:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">pub</span> <span class="kw">struct</span> Limit <span class="op">{</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> from<span class="op">:</span> <span class="dt">Box</span><span class="op">&lt;</span>Query<span class="op">&gt;,</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">pub</span> limit<span class="op">:</span> <span class="dt">u64</span><span class="op">,</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>Then we add this to our <code>run_query</code> function:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="pp">Query::</span>Limit(Limit <span class="op">{</span> limit<span class="op">,</span> from <span class="op">}</span>) <span class="op">=&gt;</span> <span class="op">{</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> QueryStep <span class="op">{</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>        schema<span class="op">,</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>        <span class="kw">mut</span> rows<span class="op">,</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span> <span class="op">=</span> run_query(from)<span class="op">?;</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> size<span class="op">:</span> <span class="dt">usize</span> <span class="op">=</span> (<span class="op">*</span>limit)<span class="op">.</span>try_into()<span class="op">.</span>unwrap()<span class="op">;</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    rows<span class="op">.</span>truncate(size)<span class="op">;</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Ok</span>(QueryStep <span class="op">{</span> schema<span class="op">,</span> rows <span class="op">}</span>)</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>That’s the whole thing. What a disappointing blog post.</p>
+<h2 id="whats-next">What’s next?</h2>
+<p>Next time we’re doing ordering, which is marginally more exciting, but not that exciting tbh.</p>
+<p>Make sense? If not, <a href="../contact.html">get in touch</a>!</p>
+    </section>
+</article>
+
+    </main>
+
+    <footer>
+      <p>Site proudly generated by
+      <a href="http://jaspervdj.be/hakyll">Hakyll</a></p>
+      <p>Links for nerds:
+        <a href="../atom.xml">atom</a>
+        <a href="../rss.xml">rss</a></p>
+
+    </footer>
+</body>
+
+</html>
