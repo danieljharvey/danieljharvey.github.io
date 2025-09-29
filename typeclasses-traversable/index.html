@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - Typeclasses - Traversable</title>
+    <link rel="stylesheet" href="https://danieljharvey.github.io/main.css">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="/">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="/">Posts</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        
+<h1 class="title">
+  Typeclasses - Traversable
+</h1>
+<p class="subtitle"><strong>2018-12-22</strong></p>
+<p>
+ <p class="blog-meta">
+        
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/haskell/"
+          >#haskell</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/typeclasses/"
+          >#typeclasses</a
+        >
+         
+      </p>
+
+<p>Let's think about Trees.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">MyTree</span><span> a = </span><span style="color:#d08770;">Leaf</span><span> a | </span><span style="color:#d08770;">Branch</span><span> (</span><span style="color:#d08770;">MyTree</span><span> a) (</span><span style="color:#d08770;">MyTree</span><span> a)
+</span></code></pre>
+<p>A tree can be either a <code>Leaf</code> with contains some of value, or a Branch that has two slots for either another <code>Branch</code> or perhaps a <code>Leaf</code>.</p>
+<p>We can build up a tree like this:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">sampleTree </span><span style="color:#b48ead;">:: MyTree Int
+</span><span>sampleTree = </span><span style="color:#d08770;">Branch</span><span> (</span><span style="color:#d08770;">Branch</span><span> (</span><span style="color:#d08770;">Leaf 2</span><span>) (</span><span style="color:#d08770;">Leaf 3</span><span>)) (</span><span style="color:#d08770;">Branch</span><span> (</span><span style="color:#d08770;">Leaf 5</span><span>) (</span><span style="color:#d08770;">Leaf 2</span><span>))
+</span></code></pre>
+<p>So if you remember way back when when we talked about <a href="/posts/2018-12-03-typeclasses-foldable.html">foldable</a>, we can very easily teach this <code>MyTree</code> type we have created to fold over itself and do handy things.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">instance Foldable MyTree where
+</span><span>  foldMap f (</span><span style="color:#d08770;">Branch</span><span> l r) = (foldMap f l) &lt;&gt; (foldMap f r)
+</span><span>  foldMap f (</span><span style="color:#d08770;">Leaf</span><span> a) = f a
+</span></code></pre>
+<p>Then we can ask it to do helpful things like add up all the values in the tree.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">sampleTreeTotal </span><span style="color:#b48ead;">:: Int
+</span><span>sampleTreeTotal = getSum $ foldMap </span><span style="color:#d08770;">Sum</span><span> sampleTree
+</span><span style="color:#65737e;">-- sampleTreeTotal == 12
+</span></code></pre>
+<p>Great!</p>
+<p>This is all very well and good, but what if our tree contains more complex types that just a number? It is entirely plausible to end up with a bunch of optional values like this:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">maybeTree </span><span style="color:#b48ead;">:: MyTree</span><span> (</span><span style="color:#b48ead;">Maybe Int</span><span>)
+</span><span>maybeTree = </span><span style="color:#d08770;">Branch</span><span> (</span><span style="color:#d08770;">Branch</span><span> (</span><span style="color:#d08770;">Leaf </span><span>$ </span><span style="color:#d08770;">Just 2</span><span>) (</span><span style="color:#d08770;">Leaf </span><span>$ </span><span style="color:#d08770;">Just 3</span><span>)) (</span><span style="color:#d08770;">Branch</span><span> (</span><span style="color:#d08770;">Leaf </span><span>$ </span><span style="color:#d08770;">Just 5</span><span>) (</span><span style="color:#d08770;">Leaf </span><span>$ </span><span style="color:#d08770;">Just 2</span><span>))
+</span></code></pre>
+<p>We could add up all the values without too much trouble, but what if we want to remove all the <code>Just</code> and <code>Nothing</code> from the <code>MyTree</code> but keep the structure intact? Enter <code>Traversal</code>!</p>
+<h3 id="traversable">Traversable</h3>
+<p>What does <code>ghci</code> have to say about it?</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span>*</span><span style="color:#d08770;">Main</span><span>&gt; :i </span><span style="color:#d08770;">Traversable
+</span></code></pre>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">class</span><span> (</span><span style="color:#ebcb8b;">Functor </span><span style="color:#bf616a;">t</span><span>, </span><span style="color:#ebcb8b;">Foldable </span><span style="color:#bf616a;">t</span><span>) =&gt; </span><span style="color:#ebcb8b;">Traversable</span><span> (</span><span style="color:#bf616a;">t</span><span> :: * -&gt; *) </span><span style="color:#b48ead;">where
+</span><span>  </span><span style="color:#8fa1b3;">traverse </span><span style="color:#b48ead;">:: Applicative </span><span style="color:#bf616a;">f </span><span style="color:#b48ead;">=&gt;</span><span> (</span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">f b</span><span>) </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">t a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">f</span><span> (</span><span style="color:#bf616a;">t b</span><span>)
+</span><span>  </span><span style="color:#8fa1b3;">sequenceA </span><span style="color:#b48ead;">:: Applicative </span><span style="color:#bf616a;">f </span><span style="color:#b48ead;">=&gt; </span><span style="color:#bf616a;">t</span><span> (</span><span style="color:#bf616a;">f a</span><span>) </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">f</span><span> (</span><span style="color:#bf616a;">t a</span><span>)
+</span><span>  {-# </span><span style="color:#b48ead;">MINIMAL</span><span> traverse | sequenceA #-}
+</span></code></pre>
+<p>A few things here:</p>
+<ol>
+<li>The <code>(Functor t, Foldable t) =&gt;</code> part means we'll need to create <code>Foldable</code> and <code>Functor</code> instances for our datatype before it's allowed to be <code>Traversable</code> too.</li>
+<li>The <code>Applicative f =&gt;</code> part means whichever other type we use it with must have an instance of <code>Applicative</code>. Fortunately many useful typeclasses are.</li>
+<li>We can implement either <code>traverse</code> or <code>sequenceA</code> and the rest will sort itself out.</li>
+</ol>
+<p>We'll choose <code>traverse</code> for our example.</p>
+<p>Firstly, let's make a <code>Functor</code> instance for <code>MyTree</code>. Nothing untoward here, we just recurse through the tree and run <code>f</code> on any <code>a</code>s we find laying around. We'll not need to use this directly ourselves but it be used internally by other functions.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">instance Functor MyTree where
+</span><span>  fmap f (</span><span style="color:#d08770;">Branch</span><span> l r) = </span><span style="color:#d08770;">Branch</span><span> (fmap f l) (fmap f r)
+</span><span>  fmap f (</span><span style="color:#d08770;">Leaf</span><span> a) = </span><span style="color:#d08770;">Leaf</span><span> (f a)
+</span></code></pre>
+<p>Now let's implement a <code>Traversable</code> instance for <code>MyTree</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">instance Traversable MyTree where
+</span><span>  traverse f (</span><span style="color:#d08770;">Branch</span><span> l r) = </span><span style="color:#d08770;">Branch </span><span>&lt;$&gt; (traverse f l) &lt;*&gt; (traverse f r)
+</span><span>  traverse f (</span><span style="color:#d08770;">Leaf</span><span> a) = </span><span style="color:#d08770;">Leaf </span><span>&lt;$&gt; f a
+</span></code></pre>
+<p>A few notes here:</p>
+<ol>
+<li><code>&lt;$&gt;</code> is the infix version of <code>fmap</code>. <code>(+1) &lt;$&gt; Just 2</code> is the same as <code>fmap (+1) Just 2</code>. Writing it this way shows us how similar it is to the <code>functor</code> instance.</li>
+<li><code>&lt;*&gt;</code> is the infix version of <code>apply</code> from <code>Applicative</code>. Our <code>Applicative f =&gt;</code> constraint means this is supplied by whichever <code>Applicative</code> we are using in this function. As we will see, this means different applicatives give us very different outcomes.</li>
+</ol>
+<p>It's perhaps not the most intuitive thing to look at and understand, so let's try using and see what's up. Although we've implemented the typeclass using <code>traverse</code>, the more intuitive function it provides us is <code>sequence</code>, which is sort of a "swap the types around" function. Let's try it with a few different instances of <code>Applicative</code> to get a feel for it.</p>
+<h3 id="maybe">Maybe</h3>
+<p>Although we just casually used <code>Maybe</code>, earlier, let's clarify what it is. The type definition looks something like this:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">Maybe</span><span> a = </span><span style="color:#d08770;">Just</span><span> a | </span><span style="color:#d08770;">Nothing
+</span></code></pre>
+<p>It is just for holding a value that might be there (<code>Just "i am a value"</code>) or expressing a lack of value (<code>Nothing</code>). Let's put some in our <code>MyTree</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">maybeTree </span><span style="color:#b48ead;">:: MyTree</span><span> (</span><span style="color:#b48ead;">Maybe Int</span><span>)
+</span><span>maybeTree = </span><span style="color:#d08770;">Branch</span><span> (</span><span style="color:#d08770;">Branch</span><span> (</span><span style="color:#d08770;">Leaf </span><span>$ </span><span style="color:#d08770;">Just 2</span><span>) (</span><span style="color:#d08770;">Leaf </span><span>$ </span><span style="color:#d08770;">Just 3</span><span>)) (</span><span style="color:#d08770;">Branch</span><span> (</span><span style="color:#d08770;">Leaf </span><span>$ </span><span style="color:#d08770;">Just 5</span><span>) (</span><span style="color:#d08770;">Leaf </span><span>$ </span><span style="color:#d08770;">Just 2</span><span>))
+</span></code></pre>
+<p>...and use <code>sequence</code> to pull them out and wrap the whole thing in a <code>Maybe</code> instead.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">justTree </span><span style="color:#b48ead;">:: Maybe</span><span> (</span><span style="color:#b48ead;">MyTree Int</span><span>)
+</span><span>justTree = sequence maybeTree
+</span><span style="color:#65737e;">-- justTree == Just (Branch (Branch (Leaf 2) (Leaf 3)) (Branch (Leaf 5) (Leaf 2)))
+</span></code></pre>
+<p>What's gone on here then? All of the <code>Just</code> values inside the tree have gone, but have been replaced with a single <code>Just</code> at the start. If you squint, it kind of looks like we've turned the types inside out, and we kind of have. If this seems a bit odd to comprehend, it might remind you of this javascript:</p>
+<pre data-lang="javascript" style="background-color:#2b303b;color:#c0c5ce;" class="language-javascript "><code class="language-javascript" data-lang="javascript"><span style="color:#b48ead;">const </span><span style="color:#bf616a;">promise1 </span><span>= </span><span style="color:#ebcb8b;">Promise</span><span>.</span><span style="color:#96b5b4;">resolve</span><span>(&quot;</span><span style="color:#a3be8c;">yeah</span><span>&quot;)
+</span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">promise2 </span><span>= </span><span style="color:#ebcb8b;">Promise</span><span>.</span><span style="color:#96b5b4;">resolve</span><span>(&quot;</span><span style="color:#a3be8c;">great</span><span>&quot;)
+</span><span>
+</span><span style="color:#ebcb8b;">Promise</span><span>.</span><span style="color:#96b5b4;">all</span><span>([</span><span style="color:#bf616a;">promise1</span><span>, </span><span style="color:#bf616a;">promise2</span><span>]).</span><span style="color:#96b5b4;">then</span><span>(</span><span style="color:#bf616a;">as </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>  </span><span style="color:#ebcb8b;">console</span><span>.</span><span style="color:#96b5b4;">log</span><span>(</span><span style="color:#bf616a;">as</span><span>); </span><span style="color:#65737e;">// [&quot;yeah&quot;, &quot;great&quot;]
+</span><span>})
+</span></code></pre>
+<p>Here we can taken an array of Promises, and returned a single Promise returning an array of values. However, what happens if one of those promises fails?</p>
+<pre data-lang="javascript" style="background-color:#2b303b;color:#c0c5ce;" class="language-javascript "><code class="language-javascript" data-lang="javascript"><span style="color:#b48ead;">const </span><span style="color:#bf616a;">promise1 </span><span>= </span><span style="color:#ebcb8b;">Promise</span><span>.</span><span style="color:#96b5b4;">resolve</span><span>(&quot;</span><span style="color:#a3be8c;">yeah</span><span>&quot;)
+</span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">promise2 </span><span>= </span><span style="color:#ebcb8b;">Promise</span><span>.</span><span style="color:#96b5b4;">reject</span><span>(&quot;</span><span style="color:#a3be8c;">great</span><span>&quot;)
+</span><span>
+</span><span style="color:#ebcb8b;">Promise</span><span>.</span><span style="color:#96b5b4;">all</span><span>([</span><span style="color:#bf616a;">promise1</span><span>, </span><span style="color:#bf616a;">promise2</span><span>]).</span><span style="color:#96b5b4;">then</span><span>(</span><span style="color:#bf616a;">as </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>  </span><span style="color:#65737e;">// never happens!
+</span><span>}).</span><span style="color:#96b5b4;">catch</span><span>(() </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>  </span><span style="color:#ebcb8b;">console</span><span>.</span><span style="color:#96b5b4;">log</span><span>(&#39;</span><span style="color:#a3be8c;">everything went terribly wrong</span><span>&#39;)
+</span><span>})
+</span></code></pre>
+<p>It short circuits and fails! Going back to our tree, let's try putting a <code>Nothing</code> in there and see how that changes things.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">nothingTree </span><span style="color:#b48ead;">:: Maybe</span><span> (</span><span style="color:#b48ead;">MyTree Int</span><span>)
+</span><span>nothingTree = sequence </span><span style="color:#d08770;">Branch</span><span> (</span><span style="color:#d08770;">Leaf Nothing</span><span>) (</span><span style="color:#d08770;">Leaf </span><span>$ </span><span style="color:#d08770;">Just 3</span><span>))
+</span><span style="color:#65737e;">-- nothingTree == Nothing
+</span></code></pre>
+<p>Ok! So the same behaviour! Why is that though? There's nothing in our <code>MyTree</code> structure that does any checking of these sorts of things.</p>
+<p>The key here is in how <code>apply</code> (or <code>&lt;*&gt;</code>) is implemented in <code>Maybe</code> itself:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">instance Applicative Maybe where
+</span><span>    pure = </span><span style="color:#d08770;">Just
+</span><span>
+</span><span>    </span><span style="color:#d08770;">Just</span><span> f  &lt;*&gt; m      = fmap f m
+</span><span>    </span><span style="color:#d08770;">Nothing </span><span>&lt;*&gt; _      = </span><span style="color:#d08770;">Nothing
+</span></code></pre>
+<p>Basically, as soon as we find any <code>Nothing</code>, whatever we're doing becomes <code>Nothing</code>, so therefore <code>Maybe</code> is giving us our same short-circuiting behaviour from the javascript Promise.</p>
+<p>Good? Great. Let's look at another.</p>
+<h3 id="list">List</h3>
+<p><code>List</code> is another interesting <code>Applicative</code> in that it treats every list like a set of possibilities.</p>
+<p>It's defined as something like this:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">List</span><span> a = </span><span style="color:#d08770;">Cons</span><span> a (</span><span style="color:#d08770;">List</span><span> a) | </span><span style="color:#d08770;">Nil
+</span></code></pre>
+<p>Look what happens when we <code>sequence</code> this small tree that contains a <code>List</code> in each of it's leaves...</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">invertedListTree </span><span style="color:#b48ead;">::</span><span> [</span><span style="color:#b48ead;">MyTree Int</span><span>]
+</span><span>invertedListTree = sequence </span><span style="color:#d08770;">Branch</span><span> (</span><span style="color:#d08770;">Leaf</span><span> [</span><span style="color:#d08770;">1</span><span>,</span><span style="color:#d08770;">2</span><span>]) (</span><span style="color:#d08770;">Leaf</span><span> [</span><span style="color:#d08770;">3</span><span>,</span><span style="color:#d08770;">4</span><span>])
+</span><span style="color:#65737e;">{-
+</span><span style="color:#65737e;">invertedListTree ==
+</span><span style="color:#65737e;">  [ Branch (Leaf 1) (Leaf 3)
+</span><span style="color:#65737e;">  , Branch (Leaf 1) (Leaf 4)
+</span><span style="color:#65737e;">  , Branch (Leaf 2) (Leaf 3)
+</span><span style="color:#65737e;">  , Branch (Leaf 2) (Leaf 4)
+</span><span style="color:#65737e;">  ]
+</span><span style="color:#65737e;">-}
+</span></code></pre>
+<p>It returns a <code>List</code> of every possible <code>MyTree Int</code> that could be made using the items in each list. If you look at the page on <a href="/posts/2018-11-17-typeclasses-applicative.markdown">applicative</a> - particularly the <code>applicativeList</code> - this may make more sense.</p>
+<p>This <code>sequence</code> function we are using is merely <code>traverse id</code> by the way - so we can start to mess with it even more by using <code>traverse</code> with different functions. By passing the <code>reverse</code> function, we can get the same thing but backwards...</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">reversedListTree </span><span style="color:#b48ead;">::</span><span> [</span><span style="color:#b48ead;">MyTree Int</span><span>]
+</span><span>reversedListTree = traverse reverse listTree
+</span><span style="color:#65737e;">{-
+</span><span style="color:#65737e;">reversedListTree ==
+</span><span style="color:#65737e;">  [ Branch (Leaf 2) (Leaf 4)
+</span><span style="color:#65737e;">  , Branch (Leaf 2) (Leaf 3)
+</span><span style="color:#65737e;">  , Branch (Leaf 1) (Leaf 4)
+</span><span style="color:#65737e;">  , Branch (Leaf 1) (Leaf 3)
+</span><span style="color:#65737e;">]
+</span><span style="color:#65737e;">-}
+</span></code></pre>
+<p>(Why? I don't know, it's difficult coming up with useful examples all the time, give me a break.)</p>
+<p>What about <code>Either</code>?</p>
+<h3 id="either">Either</h3>
+<p><code>Either</code> is used to express a value that could be one of two things. It's datatype looks something like:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">Either</span><span> a b = </span><span style="color:#d08770;">Left</span><span> a | </span><span style="color:#d08770;">Right</span><span> b
+</span></code></pre>
+<p><code>Left</code> usually expresses an error or something, whilst <code>Right</code> expresses everything being somewhat Hunky Dory.</p>
+<p>What happens when all the values are <code>Right</code>?</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">rightTree </span><span style="color:#b48ead;">:: Either String</span><span> (</span><span style="color:#b48ead;">MyTree Int</span><span>)
+</span><span>rightTree = sequence </span><span style="color:#d08770;">Branch</span><span> (</span><span style="color:#d08770;">Leaf </span><span>$ </span><span style="color:#d08770;">Right 100</span><span>) (</span><span style="color:#d08770;">Leaf </span><span>$ </span><span style="color:#d08770;">Right 200</span><span>)
+</span><span style="color:#65737e;">-- rightTree == Right (Branch (Leaf 100) (Leaf 200))
+</span></code></pre>
+<p>OK, that seems reasonable, just like the <code>Maybe</code> really.</p>
+<p>What about if we throw a <code>Left</code> in there?</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">failsTree </span><span style="color:#b48ead;">:: Either String</span><span> (</span><span style="color:#b48ead;">MyTree Int</span><span>)
+</span><span>failsTree = sequence $ </span><span style="color:#d08770;">Branch</span><span> (</span><span style="color:#d08770;">Leaf </span><span>$ </span><span style="color:#d08770;">Right 1</span><span>) (</span><span style="color:#d08770;">Leaf </span><span>$ </span><span style="color:#d08770;">Left </span><span>&quot;</span><span style="color:#a3be8c;">2</span><span>&quot;)
+</span><span style="color:#65737e;">-- failsTree == Left &quot;2&quot;
+</span></code></pre>
+<p>OK - we get the <code>Left</code> value back, which seems reasonable (especially looking at the type signature of our new structure).</p>
+<p>What about if there are multiple <code>Left</code> values inside?</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">failsTree2 </span><span style="color:#b48ead;">:: Either String</span><span> (</span><span style="color:#b48ead;">MyTree Int</span><span>)
+</span><span>failsTree2 = sequence $ </span><span style="color:#d08770;">Branch</span><span> (</span><span style="color:#d08770;">Leaf </span><span>$ </span><span style="color:#d08770;">Left </span><span>&quot;</span><span style="color:#a3be8c;">1</span><span>&quot;) (</span><span style="color:#d08770;">Branch</span><span> (</span><span style="color:#d08770;">Leaf </span><span>$ </span><span style="color:#d08770;">Left </span><span>&quot;</span><span style="color:#a3be8c;">2</span><span>&quot;) (</span><span style="color:#d08770;">Leaf </span><span>$ </span><span style="color:#d08770;">Left </span><span>&quot;</span><span style="color:#a3be8c;">3</span><span>&quot;))
+</span><span style="color:#65737e;">-- failsTree2 == Left &quot;1&quot;
+</span></code></pre>
+<p>Oh. That seems somewhat counterintuitive. Even though we have many <code>Left</code> items in our tree, when we <code>sequence</code> them we only get the first one back. If you want to know why - sure - it's because of the way <code>Either</code> implements the <code>&lt;*&gt;</code> function. Is there an alterntaive in which we get more of the <code>Left</code> items back? Yes - see the bonus item at the bottom of the page.</p>
+<h3 id="so-what-does-this-mean">So what does this mean?</h3>
+<p>Basically (lol), what these examples hopefully start to show is that <code>traverse</code> let's us combine different types together. Whilst <code>Foldable</code> used a <code>Monoid</code> instance to combine values together with <code>&lt;&gt;</code>, <code>Traversable</code> lets us combine them together using their <code>Applicative</code> instance and <code>&lt;*&gt;</code>. <code>Applicative</code> is a pretty powerful typeclass that let's us do a lot of wild shit, so <code>Traversable</code> ends up pretty powerful as a result. A lot of the <code>Lens</code> package uses <code>Traversable</code>, so understanding this gives you a much better idea of what's doing.</p>
+<p>There are plenty of <code>Traversable</code> instances in the wild to play with, so try smashing a few things together and see what happens. In case it's not entirely obvious, that's basically all I did in writing this article.</p>
+<p>Anyhow, that's enough for now I think.</p>
+<p>Make sense? If not, why not <a href="/contact.html">get in touch</a>?</p>
+<p>Further reading:</p>
+<p><a href="http://hackage.haskell.org/package/base-4.12.0.0/docs/Data-Traversable.html">Data.Traversable</a></p>
+<h3 id="bonus-item-validation">Bonus item: Validation</h3>
+<p>If you were enjoying the <code>Either</code> example but wondering if there's a way to gather all of the <code>Left</code> values in a tree, then, firstly, yes, and secondly, it's done using a different datatype called <code>Validation</code>. We won't go into it in depth now, but it's much like an <code>Either</code> that let's you collect <code>Left</code> items together.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">validationTree </span><span style="color:#b48ead;">:: MyTree</span><span> (</span><span style="color:#b48ead;">Validation</span><span> [</span><span style="color:#b48ead;">String</span><span>] </span><span style="color:#b48ead;">Int</span><span>)
+</span><span>validationTree = </span><span style="color:#d08770;">Branch</span><span> (</span><span style="color:#d08770;">Leaf </span><span>$ </span><span style="color:#d08770;">Success 100</span><span>) (</span><span style="color:#d08770;">Branch</span><span> (</span><span style="color:#d08770;">Leaf </span><span>$ </span><span style="color:#d08770;">Failure</span><span> [&quot;</span><span style="color:#a3be8c;">2</span><span>&quot;]) (</span><span style="color:#d08770;">Leaf </span><span>$ </span><span style="color:#d08770;">Failure</span><span> [&quot;</span><span style="color:#a3be8c;">3</span><span>&quot;]))
+</span></code></pre>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">collectFails </span><span style="color:#b48ead;">:: Validation</span><span> [</span><span style="color:#b48ead;">String</span><span>] (</span><span style="color:#b48ead;">MyTree Int</span><span>)
+</span><span>collectFails = traverse id validationTree
+</span><span style="color:#65737e;">-- collectFails == Failure [&quot;2&quot;,&quot;3&quot;]
+</span></code></pre>
+
+
+    </main>
+
+    <footer>
+      <p><a href="mailto:danieljamesharvey@gmail.com">Contact</a> |
+      <a href="https://github.com/danieljharvey">Github</a></p>
+      <p>Links for nerds:
+        <a href="/atom.xml">atom</a>
+        <a href="/rss.xml">rss</a></p>
+
+    </footer>
+</body>
+
+</html>

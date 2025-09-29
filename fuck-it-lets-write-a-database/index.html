@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - Let's write a database (part 1)</title>
+    <link rel="stylesheet" href="https://danieljharvey.github.io/main.css">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="/">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="/">Posts</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        
+<h1 class="title">
+  Let&#x27;s write a database (part 1)
+</h1>
+<p class="subtitle"><strong>2025-07-26</strong></p>
+<p>
+ <p class="blog-meta">
+        
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/database/"
+          >#database</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/filter/"
+          >#filter</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/from/"
+          >#from</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/project/"
+          >#project</a
+        >
+         
+      </p>
+
+<p>So, confession, I love playing on the computer, but I'm terrible at SQL. I know that it's Good or whatever and there's this whole very sensible looking <a href="https://en.wikipedia.org/wiki/Relational_algebra">Relational Algebra</a> behind it all, but like when I have to interact with it, I get the job done and then immediately wipe whatever I learned from my brain.</p>
+<p>Enough is enough. It's time to learn it properly. And what better way than to write an ANSI SQL database from scratch!</p>
+<h2 id="disclaimers-etc">Disclaimers etc</h2>
+<p>Setting some expectations, this is very much a "fun" learning project, and we're gonna get a lot of things wrong. We'll be using Rust, because I write that a lot atm and so it's what my brain thinks in, but I would definitely not read this hoping for a Rust tutorial because I am almost as bad at Rust as SQL. I am going to describe things in a very hand-wavy way that will probably annoy people that know what they're talking about, but it's my blog and I can do what I want.</p>
+<h2 id="so-let-s-do-it">So, let's do it?</h2>
+<p>OK. So what we're going to do in part 1 is:</p>
+<ul>
+<li>Make (steal) a SQL parser</li>
+<li>Do a table scan (<code>From</code>)</li>
+<li>Filter results from that table (<code>Filter</code>)</li>
+<li>Choose the fields we want to look at (<code>Project</code>)</li>
+</ul>
+<p>We're going to be concentrating on the Query Engine part of the database initially,mostly because I'm more interested in it, so our tables are going to be static JSON files taken from the <a href="https://github.com/marko-knoebl/chinook-database-json">chinook dataset</a>. We are using this because it's full of rock albums and it's nice to be reminder that Led Zeppelin are a totally sick band from time to time.</p>
+<h2 id="our-types">Our types</h2>
+<p>We might not be implementing in Haskell but it's spirit lives on - let's start by defining the types of our query.</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#65737e;">// the type that defines a query
+</span><span style="color:#b48ead;">enum </span><span>Query {
+</span><span>  From(From),
+</span><span>  Filter(Filter),
+</span><span>  Project(Project)
+</span><span>}
+</span><span>
+</span><span style="color:#65737e;">// select `FROM` a table
+</span><span style="color:#b48ead;">struct </span><span>From {
+</span><span>  </span><span style="color:#bf616a;">table_name</span><span>: TableName
+</span><span>}
+</span><span>
+</span><span style="color:#65737e;">// filter the results for a `WHERE` clause
+</span><span style="color:#b48ead;">struct </span><span>Filter {
+</span><span>  </span><span style="color:#bf616a;">from</span><span>: Box&lt;Query&gt;,
+</span><span>  </span><span style="color:#bf616a;">filter</span><span>: Expr,
+</span><span>}
+</span><span>
+</span><span style="color:#65737e;">// boolean expression type
+</span><span style="color:#b48ead;">pub enum </span><span>Expr {
+</span><span>  ColumnComparison {
+</span><span>    column: Column,
+</span><span>    op: Op,
+</span><span>    literal: serde_json::Value,
+</span><span>  }
+</span><span>}
+</span><span>
+</span><span style="color:#65737e;">// compare two items  
+</span><span style="color:#b48ead;">pub enum </span><span>Op {
+</span><span>  Equals,
+</span><span>}
+</span><span>
+</span><span style="color:#65737e;">// choose which fields to return 
+</span><span style="color:#b48ead;">struct </span><span>Project {
+</span><span>  </span><span style="color:#bf616a;">from</span><span>: Box&lt;Query&gt;,
+</span><span>  </span><span style="color:#bf616a;">fields</span><span>: Vec&lt;ColumnName&gt; 
+</span><span>}
+</span><span>
+</span><span style="color:#65737e;">// name of a table
+</span><span style="color:#b48ead;">struct </span><span>TableName(pub String);
+</span><span>
+</span><span style="color:#65737e;">// name of a column
+</span><span style="color:#b48ead;">struct </span><span>ColumnName(pub String);
+</span></code></pre>
+<h2 id="a-parser">A parser</h2>
+<p>This could quickly become a parsing tutorial and we don't want that, so we're going to use the <a href="https://docs.rs/sqlparser/latest/sqlparser">sqlparser</a> crate. It takes a string input and returns either it's own AST or an error. We'll pattern match on this and extract only the things we support into a <code>Query</code> type we defined above.</p>
+<p>Nothing about this is very interesting, so I will just <a href="https://github.com/danieljharvey/lets-build-a-database/blob/main/crates/core/src/parser.rs#L51">link to it</a>. Know that we parse some SQL and make the types above.</p>
+<h2 id="our-run-query-function">Our <code>run_query</code> function</h2>
+<p>Now we've worked out what the user wants, we need to run the query. Initially we'll do this by matching on the <code>Query</code> type.</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">pub fn </span><span style="color:#8fa1b3;">run_query</span><span>(</span><span style="color:#bf616a;">query</span><span>: &amp;Query) -&gt; Vec&lt;serde_json::Value&gt; {
+</span><span>  </span><span style="color:#b48ead;">match</span><span> query {
+</span><span>    Query::From(_) =&gt; todo!(&quot;</span><span style="color:#a3be8c;">Query::From</span><span>&quot;), 
+</span><span>    Query::Filter(_) =&gt; todo!(&quot;</span><span style="color:#a3be8c;">Query::Filter</span><span>&quot;), 
+</span><span>    Query::Project(_) =&gt; todo!(&quot;</span><span style="color:#a3be8c;">Query::Project</span><span>&quot;)
+</span><span>  }
+</span><span>}
+</span></code></pre>
+<p>We'll fill these <code>todo!</code> out one by one now.</p>
+<h2 id="query-from">Query::From</h2>
+<p>The first thing we'll implement is a simple table scan. A table scan is "get all of the rows in the table". If you're thinking "that doesn't sound wildly performant", rest assured your Software Craftsperson spidey-sense is still working correctly. However, our tables only have ~300 items in them, so for now we'll live with it until we start thinking about indexes.</p>
+<p>Here is some code. Forgive me, Padre.</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">table_scan</span><span>(</span><span style="color:#bf616a;">table_name</span><span>: &amp;TableName) -&gt; Vec&lt;serde_json::Value&gt; {
+</span><span>  </span><span style="color:#b48ead;">match</span><span> table_name.</span><span style="color:#d08770;">0.</span><span style="color:#96b5b4;">as_str</span><span>() {
+</span><span>    &quot;</span><span style="color:#a3be8c;">Album</span><span>&quot; =&gt; {
+</span><span>      </span><span style="color:#b48ead;">let</span><span> my_str = include_str!(&quot;</span><span style="color:#a3be8c;">../static/Album.json</span><span>&quot;);
+</span><span>      serde_json::from_str::&lt;Vec&lt;serde_json::Value&gt;&gt;(my_str).</span><span style="color:#96b5b4;">unwrap</span><span>()
+</span><span>    },
+</span><span>    &quot;</span><span style="color:#a3be8c;">Artist</span><span>&quot; =&gt; {
+</span><span>      </span><span style="color:#b48ead;">let</span><span> my_str = include_str!(&quot;</span><span style="color:#a3be8c;">../static/Artist.json</span><span>&quot;);
+</span><span>      serde_json::from_str::&lt;Vec&lt;serde_json::Value&gt;&gt;(my_str).</span><span style="color:#96b5b4;">unwrap</span><span>()
+</span><span>    }
+</span><span>    _ =&gt; panic!(&quot;</span><span style="color:#a3be8c;">table not found {table_name:?}</span><span>&quot;),
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Let's smash that into our <code>run_query</code> function:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">pub fn </span><span style="color:#8fa1b3;">run_query</span><span>(</span><span style="color:#bf616a;">query</span><span>: &amp;Query) -&gt; Vec&lt;serde_json::Value&gt; {
+</span><span>  </span><span style="color:#b48ead;">match</span><span> query {
+</span><span>    Query::From(From { table_name }) =&gt; </span><span style="color:#96b5b4;">table_scan</span><span>(table_name), 
+</span><span>    </span><span style="color:#65737e;">// ..  
+</span></code></pre>
+<p>It is not good code, but it is code. We'd test it, but it would still fail because of the other <code>todo!</code>. Oh well. Onwards.</p>
+<h2 id="query-filter">Query::Filter</h2>
+<p>Call me a staunch traditionalist, but often when I am accessing a database I do not wish to download all of it's data at once. We're going to allow users to filter data using a <code>where</code> clause, which lets us define properties about rows we are interested in.</p>
+<p>Let's recap on our <code>Expr</code> type:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">pub enum </span><span>Expr {
+</span><span>  ColumnComparison {
+</span><span>    column: Column,
+</span><span>    op: Op,
+</span><span>    literal: serde_json::Value,
+</span><span>  },
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">pub enum </span><span>Op {
+</span><span>  Equals,
+</span><span>}
+</span></code></pre>
+<p>This is pretty limited, but it does let us express <code>select * from Album where album_id = 1</code>.</p>
+<p>We start by defining a function for deciding whether we care about a row. It takes a row (which we store as a <code>serde_json::Value</code>) and an <code>Expr</code>, returning a <code>bool</code> telling us to keep the row or throw it in the bin.</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">apply_predicate</span><span>(</span><span style="color:#bf616a;">row</span><span>: &amp;serde_json::Value, </span><span style="color:#bf616a;">where_expr</span><span>: &amp;Expr) -&gt; </span><span style="color:#b48ead;">bool </span><span>{
+</span><span>  </span><span style="color:#b48ead;">match</span><span> where_expr {
+</span><span>    Expr::ColumnComparison {
+</span><span>      column,
+</span><span>      op,
+</span><span>      literal,
+</span><span>    } =&gt; {
+</span><span>      </span><span style="color:#65737e;">// unwrap row into a map
+</span><span>      </span><span style="color:#b48ead;">let</span><span> row_object = row.</span><span style="color:#96b5b4;">as_object</span><span>().</span><span style="color:#96b5b4;">unwrap</span><span>();
+</span><span>
+</span><span>      </span><span style="color:#65737e;">// grab the column we care about 
+</span><span>      </span><span style="color:#b48ead;">let</span><span> value = row_object.</span><span style="color:#96b5b4;">get</span><span>(&amp;column.name).</span><span style="color:#96b5b4;">unwrap</span><span>();
+</span><span>
+</span><span>      </span><span style="color:#65737e;">// compare it to `value` 
+</span><span>      </span><span style="color:#b48ead;">match</span><span> op {
+</span><span>        Op::Equals =&gt; value == literal,
+</span><span>      }
+</span><span>    }
+</span><span>  }
+</span><span>}
+</span></code></pre>
+<p>Let's use it in our <code>run_query</code> function:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">pub fn </span><span style="color:#8fa1b3;">run_query</span><span>(</span><span style="color:#bf616a;">query</span><span>: &amp;Query) -&gt; Vec&lt;serde_json::Value&gt; {
+</span><span>  </span><span style="color:#b48ead;">match</span><span> query {
+</span><span>    Query::From(From { table_name }) =&gt; </span><span style="color:#96b5b4;">table_scan</span><span>(table_name),
+</span><span>    Query::Filter(Filter { from, filter }) =&gt; </span><span style="color:#96b5b4;">run_query</span><span>(from)
+</span><span>      .</span><span style="color:#96b5b4;">into_iter</span><span>()
+</span><span>      .</span><span style="color:#96b5b4;">filter</span><span>(|</span><span style="color:#bf616a;">row</span><span>| </span><span style="color:#96b5b4;">apply_predicate</span><span>(row, filter))
+</span><span>      .</span><span style="color:#96b5b4;">collect</span><span>(), 
+</span><span>      </span><span style="color:#65737e;">// ..
+</span></code></pre>
+<p>We'd test a query, but it'd still fail. But nearly!</p>
+<h2 id="query-project">Query::Project</h2>
+<p>So far we return every single field from our table scan, so every <code>select</code> is a <code>select * from ...</code>. We can do better than that, let's implement <code>Project</code>, which is how we extract fields from rows. Eventually, we'll allowing renaming things with aliases, but that's quite boring and fiddly, so for now we're just supporting stuff like <code>select Title, ArtistId from Album</code>.</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">project_fields</span><span>(</span><span style="color:#bf616a;">row</span><span>: serde_json::Value, </span><span style="color:#bf616a;">fields</span><span>: &amp;[Column]) -&gt; serde_json::Value {
+</span><span>  </span><span style="color:#65737e;">// make set of columns to keep
+</span><span>  </span><span style="color:#b48ead;">let</span><span> field_set: BTreeSet&lt;_&gt; = 
+</span><span>    fields
+</span><span>      .</span><span style="color:#96b5b4;">iter</span><span>()
+</span><span>      .</span><span style="color:#96b5b4;">map</span><span>(|</span><span style="color:#bf616a;">c</span><span>| c.name.</span><span style="color:#96b5b4;">clone</span><span>())
+</span><span>      .</span><span style="color:#96b5b4;">collect</span><span>();
+</span><span>
+</span><span>    
+</span><span>  </span><span style="color:#b48ead;">if let </span><span>serde_json::Value::Object(map) = row {
+</span><span>    </span><span style="color:#65737e;">// collect all the items we still want
+</span><span>    </span><span style="color:#b48ead;">let</span><span> new_map = map
+</span><span>      .</span><span style="color:#96b5b4;">into_iter</span><span>()
+</span><span>      .</span><span style="color:#96b5b4;">filter</span><span>(|(</span><span style="color:#bf616a;">k</span><span>, _)| field_set.</span><span style="color:#96b5b4;">contains</span><span>(k))
+</span><span>      .</span><span style="color:#96b5b4;">collect</span><span>();
+</span><span>
+</span><span>    </span><span style="color:#65737e;">// wrap it back up again
+</span><span>    serde_json::Value::Object(new_map)
+</span><span>  } </span><span style="color:#b48ead;">else </span><span>{
+</span><span>    panic!(&quot;</span><span style="color:#a3be8c;">expected Object</span><span>&quot;)
+</span><span>  }
+</span><span>}
+</span></code></pre>
+<p>Then we add it to <code>run_query</code>, completing it for now.</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">pub fn </span><span style="color:#8fa1b3;">run_query</span><span>(</span><span style="color:#bf616a;">query</span><span>: &amp;Query) -&gt; Vec&lt;serde_json::Value&gt; {
+</span><span>  </span><span style="color:#b48ead;">match</span><span> query {
+</span><span>    Query::From(From { table_name }) =&gt; </span><span style="color:#96b5b4;">table_scan</span><span>(table_name),
+</span><span>    Query::Filter(Filter { from, filter }) =&gt; </span><span style="color:#96b5b4;">run_query</span><span>(from)
+</span><span>      .</span><span style="color:#96b5b4;">into_iter</span><span>()
+</span><span>      .</span><span style="color:#96b5b4;">filter</span><span>(|</span><span style="color:#bf616a;">row</span><span>| </span><span style="color:#96b5b4;">apply_predicate</span><span>(row, filter))
+</span><span>      .</span><span style="color:#96b5b4;">collect</span><span>(),
+</span><span>    Query::Project(Project { from, fields }) =&gt; {
+</span><span>      </span><span style="color:#65737e;">// filter the columns in each row
+</span><span>      </span><span style="color:#96b5b4;">run_query</span><span>(from)
+</span><span>        .</span><span style="color:#96b5b4;">into_iter</span><span>()
+</span><span>        .</span><span style="color:#96b5b4;">map</span><span>(|</span><span style="color:#bf616a;">row</span><span>| </span><span style="color:#96b5b4;">project_fields</span><span>(row, fields))
+</span><span>        .</span><span style="color:#96b5b4;">collect</span><span>(),
+</span><span>    }
+</span><span>  }
+</span><span>}
+</span></code></pre>
+<h2 id="bringing-it-together">Bringing it together</h2>
+<p>We then add a basic CLI using <a href="https://docs.rs/clap/latest/clap/">clap</a>, that takes a single argument <code>--sql</code>. Nothing surprising or interesting here, sorry.</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">use </span><span>clap::Parser;
+</span><span style="color:#b48ead;">use </span><span>core::{parse, run_query};
+</span><span>
+</span><span>#[</span><span style="color:#bf616a;">derive</span><span>(Parser, Debug)]
+</span><span>#[</span><span style="color:#bf616a;">command</span><span>(version, about, long_about = None)]
+</span><span style="color:#b48ead;">struct </span><span>Args {
+</span><span>  </span><span style="color:#65737e;">/// SQL query to run
+</span><span>  #[</span><span style="color:#bf616a;">arg</span><span>(short, long)]
+</span><span>  </span><span style="color:#bf616a;">sql</span><span>: String,
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">main</span><span>() {
+</span><span>  </span><span style="color:#b48ead;">let</span><span> args = Args::parse();
+</span><span>
+</span><span>  </span><span style="color:#b48ead;">let</span><span> query = </span><span style="color:#96b5b4;">parse</span><span>(&amp;args.sql).</span><span style="color:#96b5b4;">unwrap</span><span>();
+</span><span>  </span><span style="color:#b48ead;">let</span><span> results = </span><span style="color:#96b5b4;">run_query</span><span>(&amp;query);
+</span><span>
+</span><span>  </span><span style="color:#b48ead;">for</span><span> result in results {
+</span><span>    println!(&quot;</span><span style="color:#d08770;">{result}</span><span>&quot;);
+</span><span>  }
+</span><span>}
+</span></code></pre>
+<p>This means we can run a query with <code>cargo run --bin cli -- --sql 'select Title from Album where AlbumId = 48' | jq </code> and look what we get:</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span>{
+</span><span>  &quot;</span><span style="color:#a3be8c;">AlbumId</span><span>&quot;</span><span style="color:#bf616a;">:</span><span> 48,
+</span><span>  &quot;</span><span style="color:#a3be8c;">Title</span><span>&quot;</span><span style="color:#bf616a;">: </span><span>&quot;</span><span style="color:#a3be8c;">The Essential Miles Davis (Disc 1)</span><span>&quot;,
+</span><span>  &quot;</span><span style="color:#a3be8c;">ArtistId</span><span>&quot;</span><span style="color:#bf616a;">:</span><span> 68
+</span><span>}
+</span></code></pre>
+<p>Not bad, not bad at all.</p>
+<h2 id="what-s-next">What's next?</h2>
+<p>If you've made it this far without being furious about my use of <code>unwrap()</code>, then in part two we're going to add some JOINS.</p>
+<p>Make sense? If not, <a href="/contact.html">get in touch</a>!</p>
+
+
+    </main>
+
+    <footer>
+      <p><a href="mailto:danieljamesharvey@gmail.com">Contact</a> |
+      <a href="https://github.com/danieljharvey">Github</a></p>
+      <p>Links for nerds:
+        <a href="/atom.xml">atom</a>
+        <a href="/rss.xml">rss</a></p>
+
+    </footer>
+</body>
+
+</html>

@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - What the hell is a content addressed language</title>
+    <link rel="stylesheet" href="https://danieljharvey.github.io/main.css">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="/">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="/">Posts</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        
+<h1 class="title">
+  What the hell is a content addressed language
+</h1>
+<p class="subtitle"><strong>2021-12-28</strong></p>
+<p>
+ <p class="blog-meta">
+        
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/plt/"
+          >#plt</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/mimsa/"
+          >#mimsa</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/testing/"
+          >#testing</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/unison/"
+          >#unison</a
+        >
+         
+      </p>
+
+<p>Over the last year and a half I haven't really written much stuff, because I
+have been working on a small content-addressed programming language called
+<a href="https://github.com/danieljharvey/mimsa">mimsa</a>. I'm not really sure why I am doing this, other than that I watched a
+<a href="https://www.youtube.com/watch?v=frM7GhBERAs">neat tutorial about how typecheckers worked</a>, and then got somewhat carried away.</p>
+<p>I has sat down to write about my recent implementation of property testing in said
+lang, then realised that before I can do that I should probably provide some
+context.</p>
+<h3 id="so-what-is-a-content-addressed-language">So, what IS a content-addressed language?</h3>
+<p>According to <a href="https://www.unisonweb.org/">Unison</a>, the language that pioneered
+this concept, this means "code is immutable and identified by its content".</p>
+<p>Let's take that apart a bit:</p>
+<p>Say I have a function for adding two numbers:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">add </span><span style="color:#b48ead;">:: Int -&gt; Int -&gt; Int
+</span><span>add a b = a + b
+</span></code></pre>
+<p>Instead of just dumping this in a text file, I would "save" this function. In
+the <code>mimsa</code> repl, I would do this:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span>:&gt; :bind add = \a -&gt; \b -&gt; a + b
+</span><span style="color:#d08770;">Bound</span><span> add.
+</span></code></pre>
+<p>This has saved the expression <code>\a -&gt; \b -&gt; a + b</code> in the project, and pointed <code>add</code>
+to refer to said expression.</p>
+<p>Let's use our new function:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span>:&gt; add </span><span style="color:#d08770;">1 3
+</span><span style="color:#d08770;">4 </span><span>:: </span><span style="color:#d08770;">Int
+</span><span>
+</span><span>:&gt; add </span><span style="color:#d08770;">2 2
+</span><span style="color:#d08770;">4 </span><span>:: </span><span style="color:#d08770;">Int
+</span></code></pre>
+<p>Hopefully, no surprises there.</p>
+<p>Let's make a new function that uses <code>add</code>:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span>:&gt; bind add3 = add </span><span style="color:#d08770;">3
+</span></code></pre>
+<p>This has saved the expression <code>add 3</code> in the DB, and pointed <code>add3</code> at it. More
+importantly, it has also remembered exactly which <code>add</code> function it used (more
+on this shortly).</p>
+<blockquote>
+<p>Like <code>haskell</code> or <code>elm</code>, <code>mimsa</code> functions only take one argument, so
+applying <code>3</code> to <code>add</code> (which has type <code>Int -&gt; Int -&gt; Int</code>) returns a new
+function with type <code>Int -&gt; Int</code>.</p>
+</blockquote>
+<p>Again, let's test it and check for surprises:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span>:&gt; add3 </span><span style="color:#d08770;">2
+</span><span style="color:#d08770;">5 </span><span>:: </span><span style="color:#d08770;">Int
+</span><span>
+</span><span>:&gt; add3 </span><span style="color:#d08770;">0
+</span><span style="color:#d08770;">3 </span><span>:: </span><span style="color:#d08770;">Int
+</span></code></pre>
+<p>All seems well.</p>
+<p>Now what if we decide to make <code>add</code> evil? We are allowed to rebind it, so let's
+do that:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span>:&gt; bind add = \a -&gt; \b -&gt; a + b + </span><span style="color:#d08770;">1
+</span><span style="color:#d08770;">Updated</span><span> binding </span><span style="color:#b48ead;">of</span><span> add.
+</span></code></pre>
+<p>Now when we use <code>add</code> we'll get wonky answers as expected.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span>:&gt; add </span><span style="color:#d08770;">2 2
+</span><span style="color:#d08770;">5 </span><span>:: </span><span style="color:#d08770;">Int
+</span><span>
+</span><span>:&gt; add </span><span style="color:#d08770;">0 0
+</span><span style="color:#d08770;">1 </span><span>:: </span><span style="color:#d08770;">Int
+</span></code></pre>
+<p>However, look what happens when we use <code>add3</code>:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span>:&gt; add3 </span><span style="color:#d08770;">1
+</span><span style="color:#d08770;">4 </span><span>:: </span><span style="color:#d08770;">Int
+</span></code></pre>
+<p>We still get the original correct result.</p>
+<h3 id="so-what-has-happened-here">So, what has happened here?</h3>
+<p>The answer is in how <code>mimsa</code> expressions are stored. When we stored <code>add</code>, we
+stored not only the expression <code>\a -&gt; \b -&gt; a + b</code> , but the fact that
+<code>add</code> has no dependencies. Internally, it would look a bit like this:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#65737e;">-- | Distinct type for our hashes, a wrapper around Text
+</span><span style="color:#b48ead;">newtype </span><span style="color:#d08770;">ExpressionHash
+</span><span>  = </span><span style="color:#d08770;">ExpressionHash Text
+</span><span>
+</span><span style="color:#65737e;">-- | Simplified version of our StoreExpression type
+</span><span style="color:#b48ead;">data </span><span style="color:#d08770;">StoreExpression </span><span>= 
+</span><span>  </span><span style="color:#d08770;">StoreExpression</span><span> {
+</span><span>    </span><span style="color:#65737e;">-- | the code for this expression
+</span><span>    </span><span style="color:#8fa1b3;">expression </span><span style="color:#b48ead;">:: Text</span><span>,
+</span><span>    </span><span style="color:#65737e;">-- | a map from the names of dependencies we&#39;ve used to their hashes
+</span><span>    </span><span style="color:#8fa1b3;">dependencies </span><span style="color:#b48ead;">:: Map Name ExpressionHash
+</span><span>  }
+</span><span>
+</span><span style="color:#65737e;">-- how our `add` expression is stored internally
+</span><span style="color:#8fa1b3;">addExpression </span><span style="color:#b48ead;">:: StoreExpression
+</span><span>addExpression = 
+</span><span>  </span><span style="color:#d08770;">StoreExpression
+</span><span>    { expression = &quot;</span><span style="color:#96b5b4;">\\</span><span style="color:#a3be8c;">a -&gt; </span><span style="color:#96b5b4;">\\</span><span style="color:#a3be8c;">b -&gt; a + b</span><span>&quot;,
+</span><span>      dependencies = mempty
+</span><span>    }
+</span></code></pre>
+<p>Once we've made the <code>addExpression</code>, we can create a hash of it, which
+we'll pretend looks like <code>"abc123"</code> in hexadecimal. Then when we <code>bind</code> the
+name <code>add</code> to it, we can store it in the project:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#65737e;">-- | Simplified version of our Project type
+</span><span style="color:#b48ead;">data </span><span style="color:#d08770;">Project
+</span><span>  = </span><span style="color:#d08770;">Project 
+</span><span>      { </span><span style="color:#65737e;">-- | map from names like `add` to hashes
+</span><span>        </span><span style="color:#8fa1b3;">bindings </span><span style="color:#b48ead;">:: Map Name ExpressionHash</span><span>,
+</span><span>        </span><span style="color:#65737e;">-- | map from hashes to expressions
+</span><span>        </span><span style="color:#8fa1b3;">store </span><span style="color:#b48ead;">:: Map ExpressionHash StoreExpression
+</span><span>      }
+</span><span>
+</span><span style="color:#8fa1b3;">projectWithAdd </span><span style="color:#b48ead;">:: Project
+</span><span>projectWithAdd = </span><span style="color:#d08770;">Project
+</span><span>  { bindings: fromList [(&quot;</span><span style="color:#a3be8c;">add</span><span>&quot;, &quot;</span><span style="color:#a3be8c;">abc123</span><span>&quot;)],
+</span><span>    store: fromList [(&quot;</span><span style="color:#a3be8c;">abc123</span><span>&quot;, addExpression)]
+</span><span>  }
+</span></code></pre>
+<p>Now when we create <code>add3</code>, the following happens:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">add3Expression </span><span style="color:#b48ead;">:: StoreExpression
+</span><span>add3Expression =
+</span><span>  </span><span style="color:#d08770;">StoreExpression
+</span><span>    { expression = &quot;</span><span style="color:#a3be8c;">add 3</span><span>&quot;,
+</span><span>      dependencies = fromList [(&quot;</span><span style="color:#a3be8c;">add</span><span>&quot;, &quot;</span><span style="color:#a3be8c;">abc123</span><span>&quot;)]
+</span><span>    }
+</span></code></pre>
+<p>When evaluating <code>add 3</code>, <code>mimsa</code> has looked in the project for something called
+<code>add</code>, found it, and then saved that it is needed in this expression. Because
+we refer to <code>add</code> by a hash of it's content, this is what makes it "content
+addressed".</p>
+<p>Assuming <code>add3</code> has a hash of <code>"def456"</code>, our project would look like this now:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">projectWithAddAndAdd3 </span><span style="color:#b48ead;">:: Project
+</span><span>projectWithAddAndAdd3 = </span><span style="color:#d08770;">Project
+</span><span>  { bindings: fromList [
+</span><span>      (&quot;</span><span style="color:#a3be8c;">add</span><span>&quot;, &quot;</span><span style="color:#a3be8c;">abc123</span><span>&quot;), 
+</span><span>      (&quot;</span><span style="color:#a3be8c;">add3</span><span>&quot;, &quot;</span><span style="color:#a3be8c;">def456</span><span>&quot;)
+</span><span>    ],
+</span><span>    store: fromList [
+</span><span>      (&quot;</span><span style="color:#a3be8c;">abc123</span><span>&quot;, addExpression),
+</span><span>      (&quot;</span><span style="color:#a3be8c;">def456</span><span>&quot;, add3Expression)
+</span><span>    ] 
+</span><span>  }
+</span></code></pre>
+<p>Now, when we come to update <code>add</code> and make it evil, we create the following:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">evilAddExpression </span><span style="color:#b48ead;">:: StoreExpression
+</span><span>evilAddExpression = 
+</span><span>  </span><span style="color:#d08770;">StoreExpression
+</span><span>    { expression =  &quot;</span><span style="color:#96b5b4;">\\</span><span style="color:#a3be8c;">a -&gt; </span><span style="color:#96b5b4;">\\</span><span style="color:#a3be8c;">b -&gt; a + b + 1</span><span>&quot;,
+</span><span>      dependencies = mempty
+</span><span>    }
+</span></code></pre>
+<p>Assuming it has a hash of <code>"ghi789"</code>, then the project looks like this:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">projectWithAddAndAdd3 </span><span style="color:#b48ead;">:: Project
+</span><span>projectWithAddAndAdd3 = </span><span style="color:#d08770;">Project
+</span><span>  { bindings: fromList [
+</span><span>      (&quot;</span><span style="color:#a3be8c;">add</span><span>&quot;, &quot;</span><span style="color:#a3be8c;">ghi789</span><span>&quot;), 
+</span><span>      (&quot;</span><span style="color:#a3be8c;">add3</span><span>&quot;, &quot;</span><span style="color:#a3be8c;">def456</span><span>&quot;)
+</span><span>    ],
+</span><span>    store: fromList [
+</span><span>      (&quot;</span><span style="color:#a3be8c;">abc123</span><span>&quot;, addExpression),
+</span><span>      (&quot;</span><span style="color:#a3be8c;">def456</span><span>&quot;, add3Expression),
+</span><span>      (&quot;</span><span style="color:#a3be8c;">ghi789</span><span>&quot;, evilAddExpression)
+</span><span>    ] 
+</span><span>  }
+</span></code></pre>
+<p>The project has been updated, but note we haven't deleted any items from the
+<code>store</code>. All that has been updated in the project is the binding for <code>add</code>.
+This means any new uses of <code>add</code> will use the new broken
+function, but <code>add3</code> is completely unaffected. If you did want <code>add3</code> to adopt
+the new terrible behaviour, it would be a case of binding it again, where it
+would use the broken <code>add</code> function from the project.</p>
+<h3 id="why-would-you-do-this">Why would you do this?</h3>
+<h4 id="maximum-cachability">Maximum cachability</h4>
+<p>Because any of the expressions we can created don't change once created, they
+don't need reparsing or typechecking (or transpiling to JS, etc) over and over. <code>add</code> will have the type
+<code>Int -&gt; Int -&gt; Int</code> forever, meaning that the idea of a slow build is kinda
+removed.</p>
+<h4 id="no-namespacing-issues">No namespacing issues</h4>
+<p>In many languages conflicting names of packages or imports can cause issues. We
+might want to use function A from package version 1.1 but function B from
+package version 1.3. Most package managers won't let you do this (or they let
+it sort of happens sometimes, but weird stuff happens with globals interacting, I'm looking at you React). Expressions
+in a content-addressed language refer to each other by hashes rather than names,
+so function A and function B will have no idea about one another unless they
+depend on one another somehow, and everything works great.</p>
+<h4 id="granular-code-sharing">Granular code sharing</h4>
+<p>Because of the above, the idea of the package as the unit of shared
+functionality is somewhat obselete. <a href="https://share.unison-lang.org/">Unison Share</a>
+demonstrates what it could be like if we shared smaller units instead.</p>
+<h4 id="tests-don-t-need-running-over-and-over">Tests don't need running over and over</h4>
+<p>If we test that <code>add 1 3 == 4</code>, and I know that <code>add</code> is not going to change,
+then I can keep this test result around and don't need to run it again. When
+<code>add</code> is rebound, we can make a copy of the test and run it on the new
+implementation to see if the same test still passes. Property tests, it turns
+out, aren't quite so simple, but I'll come to that in a later post.</p>
+<h3 id="doesn-t-this-mean-that-most-developer-tools-that-are-built-assuming-programming-means-text-files-and-diffs-to-said-files-are-all-unusable-here">Doesn't this mean that most developer tools that are built assuming programming means text files and diffs to said files are all unusable here?</h3>
+<p>Ahem.</p>
+<h3 id="that-s-all-the-words">That's all the words</h3>
+<p>That's some context of what content-addressed languages are, at least, my weird
+understanding of them anyway. The actual implementation in <code>mimsa</code> is more
+complicated than above (for instance, we store the raw AST rather than the
+text syntax so we can change the syntax without breaking the expressions, and
+store the history of name bindings rather than just the newest one) but
+hopefully it gives you a clue about what is going on under the hood.</p>
+<p>Make sense? If not, <a href="/contact.html">get in touch</a>!</p>
+<p>Further reading:</p>
+<p><a href="https://www.unisonweb.org/docs/tour">Unison - the big idea</a></p>
+<p><a href="https://github.com/danieljharvey/mimsa">mimsa</a></p>
+
+
+    </main>
+
+    <footer>
+      <p><a href="mailto:danieljamesharvey@gmail.com">Contact</a> |
+      <a href="https://github.com/danieljharvey">Github</a></p>
+      <p>Links for nerds:
+        <a href="/atom.xml">atom</a>
+        <a href="/rss.xml">rss</a></p>
+
+    </footer>
+</body>
+
+</html>

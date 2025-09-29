@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - Why The Hell Should I Care About Total Functions?</title>
+    <link rel="stylesheet" href="https://danieljharvey.github.io/main.css">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="/">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="/">Posts</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        
+<h1 class="title">
+  Why The Hell Should I Care About Total Functions?
+</h1>
+<p class="subtitle"><strong>2018-10-21</strong></p>
+<p>
+ <p class="blog-meta">
+        
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/haskell/"
+          >#haskell</a
+        >
+         
+      </p>
+
+<p>I recently read a piece of useful advice on Twitter about total functions which I enjoyed. The advice (which I will definitely accurately source at some point in the future, lol) goes something like this:</p>
+<h4 id="you-start-making-your-functions-total-by-adding-maybe-but-then-you-move-onto-removing-maybe">"You start making your functions total by adding Maybe, but then you move onto removing Maybe."</h4>
+<p>Like all my favourite advice this sounds like it doesn't make any sense, so I figured I'd try and get to the bottom of this.</p>
+<p>Firstly, to clarify, a total function is a function that:</p>
+<ol>
+<li>Always returns some valid data (rather than just when it feels like doing so) and</li>
+<li>Does not go into an infinite loop.</li>
+</ol>
+<p>Let's start with a non-total function. The canonical example is Head from the Haskell Prelude, which returns you the first item in a list, and looks something like this:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">head </span><span style="color:#b48ead;">::</span><span> [</span><span style="color:#bf616a;">a</span><span>] </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">a
+</span><span>head (x: xs) = x
+</span></code></pre>
+<p>If we pass along a list like <code>[1,2,3]</code>, we get <code>1</code> back, all great.</p>
+<p>But what if we pass it an empty list - <code>[]</code> ?</p>
+<p>If you guessed "giant heartbreaking error"- then correct! Exactly the type of thing we were told would never ever happen again once we submitted to a life of functional purity. So what's the deal here?</p>
+<p>Well, firstly, some history - this function was there when Haskell was still growing up and learning what to do in the world, and it's very difficult to go and change something that is used in a million libraries, so it's still there but should be left well alone.</p>
+<p>So what is the Proper Way To Do Things then?</p>
+<p>It's to use a total version of the function, of course! Perhaps something like this:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">safeHead </span><span style="color:#b48ead;">::</span><span> [</span><span style="color:#bf616a;">a</span><span>] </span><span style="color:#b48ead;">-&gt; Maybe </span><span style="color:#bf616a;">a
+</span><span>safeHead </span><span style="color:#d08770;">[] </span><span>= </span><span style="color:#d08770;">Nothing
+</span><span>safeHead (x: xs) = </span><span style="color:#d08770;">Just</span><span> x
+</span></code></pre>
+<p>Now what happens? If we pass it <code>[1,2,3]</code> we get 'Just 1` back (the first item wrapped in a Maybe type). Great!</p>
+<p>And what about if we use the empty list <code>[]</code> ? We get <code>Nothing</code>, which is certainly not an error.</p>
+<p>So far, so total, great stuff.</p>
+<p>However, our function is currently responsible for two things:</p>
+<ol>
+<li>Checking the inputs are even correct</li>
+<li>Getting the first value</li>
+</ol>
+<p>Ideally, we should be able to use types to make sure this doesn't happen, and make validating that data Somebody Else's Problem.</p>
+<p>Therefore, let's start by creating a new datatype...</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">NonEmpty</span><span> a = </span><span style="color:#d08770;">NonEmpty</span><span> a [a]
+</span></code></pre>
+<p>It contains a first value and a list, therefore ensuring there is always a first value. What does this to do to our head function then?</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">nonEmptyHead </span><span style="color:#b48ead;">:: NonEmpty </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">a
+</span><span>nonEmptyHead (</span><span style="color:#d08770;">NonEmpty</span><span> x _) = x
+</span></code></pre>
+<p>Because the data type cannot be empty, our head function is guaranteed to return a value and is thus total.</p>
+<p>But we've got a list! How do we get one of these new fangled data types? Let's make a helper function...</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">createNonEmpty </span><span style="color:#b48ead;">::</span><span> [</span><span style="color:#bf616a;">a</span><span>] </span><span style="color:#b48ead;">-&gt; Maybe</span><span> (</span><span style="color:#b48ead;">NonEmpty </span><span style="color:#bf616a;">a</span><span>)
+</span><span>createNonEmpty </span><span style="color:#d08770;">[] </span><span>= </span><span style="color:#d08770;">Nothing
+</span><span>createNonEmpty (x : xs) = </span><span style="color:#d08770;">Just</span><span> (</span><span style="color:#d08770;">NonEmpty</span><span> x xs)
+</span></code></pre>
+<p>A function like this allows us to turn a regular list into a NonEmpty list, by returning a <code>Just NonEmpty</code> for a list with one or more items, or a <code>Nothing</code> if the original List is empty. This still means we have a possibility of failure (expressed by the Maybe), however our <code>head</code> function expects that to be dealt with elsewhere before it gets involved with the data, and is thus total whilst always returning a value.</p>
+<p>Like all somewhat trivial examples, perhaps this seems like a lot of work for nothing (plus the overhead of dealing with a new datatype) - however this concept of doing a piece of validation once, capturing it in the type, and then having a much simpler time dealing with it onwards is very powerful indeed.</p>
+<p>(btw, Haskell actually has a NonEmpty list type, in <code>Data.List.NonEmpty</code>, but it's more fun to make our own)</p>
+<p>Anyway, that's quite enough for now I feel.</p>
+<p>Make sense? If not, <a href="/contact.html">get in touch</a>!</p>
+<p>Further reading:</p>
+<p><a href="https://adamdrake.com/are-your-functions-total.html">Are your functions total?</a></p>
+<p><a href="http://hackage.haskell.org/package/base-4.12.0.0/docs/Data-Maybe.html">Data.Maybe</a></p>
+<p><a href="https://hackage.haskell.org/package/semigroups-0.16.0.1/docs/Data-List-NonEmpty.html">Data.List.NonEmpty</a></p>
+
+
+    </main>
+
+    <footer>
+      <p><a href="mailto:danieljamesharvey@gmail.com">Contact</a> |
+      <a href="https://github.com/danieljharvey">Github</a></p>
+      <p>Links for nerds:
+        <a href="/atom.xml">atom</a>
+        <a href="/rss.xml">rss</a></p>
+
+    </footer>
+</body>
+
+</html>

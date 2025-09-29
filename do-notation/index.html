@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - Why The Hell Should I Care About Do Notation?</title>
+    <link rel="stylesheet" href="https://danieljharvey.github.io/main.css">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="/">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="/">Posts</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        
+<h1 class="title">
+  Why The Hell Should I Care About Do Notation?
+</h1>
+<p class="subtitle"><strong>2018-10-30</strong></p>
+<p>
+ <p class="blog-meta">
+        
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/haskell/"
+          >#haskell</a
+        >
+         
+      </p>
+
+<p>Do notation is a strange thing. You first see it in examples of <code>IO ()</code> with something like:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">main </span><span style="color:#b48ead;">:: IO </span><span>()
+</span><span>main = </span><span style="color:#b48ead;">do
+</span><span>    firstName &lt;- getLine
+</span><span>    surname &lt;- getLine
+</span><span>    print (&quot;</span><span style="color:#a3be8c;">Hello </span><span>&quot; ++ firstName ++ &quot; &quot; ++ surname)
+</span></code></pre>
+<p>And all seems well! This functional programming seems fine! But what's going on here?</p>
+<p>Actually what's really going on here is</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">main2 </span><span style="color:#b48ead;">:: IO </span><span>()
+</span><span>main2 = getLine
+</span><span>    &gt;&gt;= (\firstName -&gt; getLine
+</span><span>    &gt;&gt;= (\surname -&gt;
+</span><span>        print (&quot;</span><span style="color:#a3be8c;">Hello </span><span>&quot; ++ firstName ++ &quot; &quot; ++ surname)))
+</span></code></pre>
+<p>OK. That's a little scarier. Quite a lot of weird arrows and stuff. What's this mean then?</p>
+<p>So <code>getStrLn</code> is a function that returns an <code>IO String</code>, which means <code>a string wrapped in the IO monad</code>. With a bit of hand-waving, the <code>&gt;&gt;=</code> (bind) function runs it, unwraps the <code>String</code> inside and passes it into the anonymous function (the one starting with <code>(\firstName -&gt; ...)</code>). This function runs it AGAIN and passes the unwrapped result into the next function. As you can see, the layers could get quite deep, hence the do notation which aims to make everything clearer.</p>
+<p>So is do notation it just an <code>IO</code> thing?</p>
+<p>No!</p>
+<p>Here's an example with Maybe. <code>safeHead</code> is a function that returns the first item of a list wrapped in a <code>Just</code>, which means that if there isn't a first item, instead of crapping out and ruining everything we return a <code>Nothing</code> which is easier to cope with.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">safeHead </span><span style="color:#b48ead;">::</span><span> [</span><span style="color:#bf616a;">a</span><span>] </span><span style="color:#b48ead;">-&gt; Maybe </span><span style="color:#bf616a;">a
+</span><span>safeHead </span><span style="color:#d08770;">[]    </span><span>= </span><span style="color:#d08770;">Nothing
+</span><span>safeHead (a:_) = </span><span style="color:#d08770;">Just</span><span> a
+</span></code></pre>
+<p>And here is a function that does it twice with do notation. Note not an <code>IO ()</code> in sight!</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">safeHeadTwice </span><span style="color:#b48ead;">::</span><span> [[</span><span style="color:#bf616a;">a</span><span>]] </span><span style="color:#b48ead;">-&gt; Maybe </span><span style="color:#bf616a;">a
+</span><span>safeHeadTwice aas = </span><span style="color:#b48ead;">do
+</span><span>    as &lt;- safeHead aas
+</span><span>    a &lt;- safeHead as
+</span><span>    return a
+</span></code></pre>
+<p>What does this do? Well it takes a list of lists, and returns the first value of the first list inside. Therefore there are two potential points of failure, that being, the entire input being an empty list, or the first list inside the main input being an empty list. Let's desugar it!</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">safeHeadTwice2 </span><span style="color:#b48ead;">::</span><span> [[</span><span style="color:#bf616a;">a</span><span>]] </span><span style="color:#b48ead;">-&gt; Maybe </span><span style="color:#bf616a;">a
+</span><span>safeHeadTwice2 aas = safeHead aas
+</span><span>            &gt;&gt;= (\as -&gt; safeHead as
+</span><span>            &gt;&gt;= (\a -&gt; return a))
+</span></code></pre>
+<p>There is probably a shorter way to write this one to be fair.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">safeHeadTwiceShort </span><span style="color:#b48ead;">::</span><span> [[</span><span style="color:#bf616a;">a</span><span>]] </span><span style="color:#b48ead;">-&gt; Maybe </span><span style="color:#bf616a;">a
+</span><span>safeHeadTwiceShort a = safeHead a &gt;&gt;= safeHead
+</span></code></pre>
+<p>OK, so in this case, <code>do notation</code> doesn't look so great. Oh well. Remember: clever things are interesting but they're not always good.</p>
+<p>Make sense? If not, why not <a href="/contact.html">get in touch</a>?</p>
+<p>Further reading:</p>
+<p><a href="https://en.wikibooks.org/wiki/Haskell/do_notation">Do Notation in Wikibooks</a></p>
+<p><a href="http://learnyouahaskell.com/a-fistful-of-monads">A Fistful of Monads</a></p>
+
+
+    </main>
+
+    <footer>
+      <p><a href="mailto:danieljamesharvey@gmail.com">Contact</a> |
+      <a href="https://github.com/danieljharvey">Github</a></p>
+      <p>Links for nerds:
+        <a href="/atom.xml">atom</a>
+        <a href="/rss.xml">rss</a></p>
+
+    </footer>
+</body>
+
+</html>

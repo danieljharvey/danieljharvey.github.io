@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - Typeclasses - Semigroup</title>
+    <link rel="stylesheet" href="https://danieljharvey.github.io/main.css">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="/">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="/">Posts</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        
+<h1 class="title">
+  Typeclasses - Semigroup
+</h1>
+<p class="subtitle"><strong>2019-01-03</strong></p>
+<p>
+ <p class="blog-meta">
+        
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/haskell/"
+          >#haskell</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/typeclasses/"
+          >#typeclasses</a
+        >
+         
+      </p>
+
+<p>Let's think about things that can be put together.</p>
+<p>Here's two lists, combined into one big list.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">list </span><span style="color:#b48ead;">::</span><span> [</span><span style="color:#b48ead;">Int</span><span>]
+</span><span>list = [</span><span style="color:#d08770;">1</span><span>,</span><span style="color:#d08770;">2</span><span>,</span><span style="color:#d08770;">3</span><span>] ++ [</span><span style="color:#d08770;">4</span><span>,</span><span style="color:#d08770;">5</span><span>,</span><span style="color:#d08770;">6</span><span>]
+</span><span style="color:#65737e;">-- list == [1,2,3,4,5,6]
+</span></code></pre>
+<p>Great!</p>
+<p>What about two strings combined into one large excellent string?</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">string </span><span style="color:#b48ead;">:: String
+</span><span>string = &quot;</span><span style="color:#a3be8c;">Great</span><span>&quot; ++ &quot;</span><span style="color:#a3be8c;"> Stuff</span><span>&quot;
+</span><span style="color:#65737e;">-- string == &quot;Great Stuff&quot;
+</span></code></pre>
+<p>Sure! Seems great. <code>String</code> is actually a <code>List</code> of <code>Char</code> so really that's just the same thing happening twice there. So what's <code>Semigroup</code> got to do with this? <code>Semigroup</code> is the generalisation of combining things together. How is it defined?</p>
+<h3 id="definition">Definition</h3>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#d08770;">Prelude</span><span>&gt; :i </span><span style="color:#d08770;">Semigroup
+</span></code></pre>
+<p>...gets us...</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">class </span><span style="color:#a3be8c;">Semigroup </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">where
+</span><span>  </span><span style="color:#8fa1b3;">(&lt;&gt;) </span><span style="color:#b48ead;">:: </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">a
+</span><span>  {-# </span><span style="color:#b48ead;">MINIMAL</span><span> (&lt;&gt;) #-}
+</span></code></pre>
+<p>So by the looks we can just define it with the <code>&lt;&gt;</code> function.</p>
+<p>Therefore we could write our string concat function as <code>"Great" &lt;&gt; "Job"</code> or combine lists like <code>[1,2,3] &lt;&gt; [4,5,6]</code>.</p>
+<p>It doesn't just involve putting sets of things together.</p>
+<h3 id="maybe-semigroup">Maybe Semigroup</h3>
+<p>Let's define our own datatype <code>MyMaybe</code> which you may notice is very similar to <code>Maybe</code>. The <code>Semigroup</code> instance can be used to combine two of them.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">MyMaybe</span><span> a = </span><span style="color:#d08770;">Yeah</span><span> a | </span><span style="color:#d08770;">Nope
+</span></code></pre>
+<p>What's interesting about this one is that by insisting that the value inside is also a <code>Semigroup</code>, we can do some exciting multi-level combining.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">instance</span><span> (</span><span style="color:#b48ead;">Semigroup </span><span style="color:#bf616a;">a</span><span>) </span><span style="color:#b48ead;">=&gt; Semigroup</span><span> (</span><span style="color:#b48ead;">MyMaybe </span><span style="color:#bf616a;">a</span><span>) </span><span style="color:#b48ead;">where
+</span><span>  (</span><span style="color:#d08770;">Yeah</span><span> a) &lt;&gt; (</span><span style="color:#d08770;">Yeah</span><span> b) = </span><span style="color:#d08770;">Yeah</span><span> (a &lt;&gt; b)
+</span><span>  a        &lt;&gt; </span><span style="color:#d08770;">Nope     </span><span>= a
+</span><span>  </span><span style="color:#d08770;">Nope     </span><span>&lt;&gt; b        = b
+</span></code></pre>
+<p>Let's see it at work.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">nah </span><span style="color:#b48ead;">:: MyMaybe String
+</span><span>nah = </span><span style="color:#d08770;">Nope </span><span>&lt;&gt; </span><span style="color:#d08770;">Nope
+</span><span style="color:#65737e;">-- nah == Nope
+</span></code></pre>
+<p>Sure.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">first </span><span style="color:#b48ead;">:: MyMaybe String
+</span><span>first = </span><span style="color:#d08770;">Yeah </span><span>&quot;</span><span style="color:#a3be8c;">Totally</span><span>&quot; &lt;&gt; </span><span style="color:#d08770;">Nope
+</span><span style="color:#65737e;">-- first == Yeah &quot;Totally&quot;
+</span></code></pre>
+<p>Plausible.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">second </span><span style="color:#b48ead;">:: MyMaybe String
+</span><span>second = </span><span style="color:#d08770;">Nope </span><span>&lt;&gt; </span><span style="color:#d08770;">Yeah </span><span>&quot;</span><span style="color:#a3be8c;">Great</span><span>&quot;
+</span><span style="color:#65737e;">-- second == Yeah &quot;Great&quot;
+</span></code></pre>
+<p>OK.</p>
+<p>And the more interesting one...</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">both </span><span style="color:#b48ead;">:: MyMaybe String
+</span><span>both = </span><span style="color:#d08770;">Yeah </span><span>&quot;</span><span style="color:#a3be8c;">Totally</span><span>&quot; &lt;&gt; </span><span style="color:#d08770;">Yeah </span><span>&quot;</span><span style="color:#a3be8c;">Great</span><span>&quot;
+</span><span style="color:#65737e;">-- both = Yeah &quot;TotallyGreat&quot;
+</span></code></pre>
+<p>What happened here? We combined two <code>MyMaybe</code> values AND the <code>String</code> values inside them as well, without really putting much effort in whatsoever. Great job, <code>Semigroup</code>.</p>
+<h3 id="sum-semigroup">Sum Semigroup</h3>
+<p>We can also use this pattern to describe combining numbers. Integers, for instance, can form several Monoids. One is addition. Let's build a <a href="https://danieljharvey.github.io/typeclasses-semigroup/./posts/2018-12-19-new-types.markdown">newtype</a> so that we can make a <code>Semigroup</code> instance.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">newtype </span><span style="color:#d08770;">MySum</span><span> a = </span><span style="color:#d08770;">MySum</span><span> {
+</span><span>    </span><span style="color:#8fa1b3;">getMySum </span><span style="color:#b48ead;">:: </span><span style="color:#bf616a;">a
+</span><span>}
+</span></code></pre>
+<p>Here is a <code>Semigroup</code> instance, it uses pattern matching to take the original values out, adds them together, them wraps them in another <code>MySum</code> instance.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">instance</span><span> (</span><span style="color:#b48ead;">Num </span><span style="color:#bf616a;">a</span><span>) </span><span style="color:#b48ead;">=&gt; Semigroup</span><span> (</span><span style="color:#b48ead;">MySum </span><span style="color:#bf616a;">a</span><span>) </span><span style="color:#b48ead;">where
+</span><span>    </span><span style="color:#d08770;">MySum</span><span> a &lt;&gt; </span><span style="color:#d08770;">MySum</span><span> b = </span><span style="color:#d08770;">MySum</span><span> (a + b)
+</span></code></pre>
+<p>We can create several <code>MySum</code> instances, and then combine them together with <code>&lt;&gt;</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">ten </span><span style="color:#b48ead;">:: MySum Int
+</span><span>ten = </span><span style="color:#d08770;">MySum 1 </span><span>&lt;&gt; </span><span style="color:#d08770;">MySum 7 </span><span>&lt;&gt; </span><span style="color:#d08770;">MySum 2
+</span><span style="color:#65737e;">-- ten == MySum 10
+</span></code></pre>
+<p>Or we could use the <code>getMySum</code> function in the newtype to unwrap it.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">anotherTen </span><span style="color:#b48ead;">:: Int
+</span><span>anotherTen = getMySum $ </span><span style="color:#d08770;">MySum 1 </span><span>&lt;&gt; </span><span style="color:#d08770;">MySum 7 </span><span>&lt;&gt; </span><span style="color:#d08770;">MySum 2
+</span><span style="color:#65737e;">-- anotherTen == 10
+</span></code></pre>
+<p>(This is obviously quite an overwrought way to add 3 numbers together)</p>
+<h3 id="product-semigroup">Product Semigroup</h3>
+<p>We could also combine numbers by multiplying them together.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">newtype </span><span style="color:#d08770;">MyProd</span><span> a = </span><span style="color:#d08770;">MyProd</span><span> {
+</span><span>    </span><span style="color:#8fa1b3;">getMyProd </span><span style="color:#b48ead;">:: </span><span style="color:#bf616a;">a
+</span><span>}
+</span></code></pre>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">instance</span><span> (</span><span style="color:#b48ead;">Num </span><span style="color:#bf616a;">a</span><span>) </span><span style="color:#b48ead;">=&gt; Semigroup</span><span> (</span><span style="color:#b48ead;">MyProd </span><span style="color:#bf616a;">a</span><span>) </span><span style="color:#b48ead;">where
+</span><span>    </span><span style="color:#d08770;">MyProd</span><span> a &lt;&gt; </span><span style="color:#d08770;">MyProd</span><span> b = </span><span style="color:#d08770;">MyProd</span><span> (a * b)
+</span></code></pre>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">sixtySix </span><span style="color:#b48ead;">:: Prod Int
+</span><span>sixtySix = </span><span style="color:#d08770;">MyProd 11 </span><span>&lt;&gt; </span><span style="color:#d08770;">MyProd 2 </span><span>&lt;&gt; </span><span style="color:#d08770;">MyProd 3
+</span><span style="color:#65737e;">-- sixtySix = Prod 66
+</span></code></pre>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">anotherSixtySix </span><span style="color:#b48ead;">:: Int
+</span><span>anotherSixtySix = getMyProd $ </span><span style="color:#d08770;">MyProd 11 </span><span>&lt;&gt; </span><span style="color:#d08770;">MyProd 2 </span><span>&lt;&gt; </span><span style="color:#d08770;">MyProd 3
+</span><span style="color:#65737e;">-- anotherSixtySix = 66
+</span></code></pre>
+<h3 id="so-yes">So, yes.</h3>
+<p>Hopefully you get the idea of what's going on here. A <code>Semigroup</code> is a nice way of describing things we can smash together, and it becomes even better when we extend it into <code>Monoid</code>, that gets us a load of <code>Foldable</code> stuff for free. We'll come to that soon...</p>
+<p>Make sense? If not, why not <a href="/contact.html">get in touch</a>?</p>
+<p>Further reading:</p>
+<p><a href="http://hackage.haskell.org/package/base-4.12.0.0/docs/Data-Semigroup.html">Data.Semigroup</a></p>
+
+
+    </main>
+
+    <footer>
+      <p><a href="mailto:danieljamesharvey@gmail.com">Contact</a> |
+      <a href="https://github.com/danieljharvey">Github</a></p>
+      <p>Links for nerds:
+        <a href="/atom.xml">atom</a>
+        <a href="/rss.xml">rss</a></p>
+
+    </footer>
+</body>
+
+</html>

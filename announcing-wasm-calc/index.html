@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - llvm-calc is dead, long live wasm-calc</title>
+    <link rel="stylesheet" href="https://danieljharvey.github.io/main.css">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="/">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="/">Posts</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        
+<h1 class="title">
+  llvm-calc is dead, long live wasm-calc
+</h1>
+<p class="subtitle"><strong>2024-07-03</strong></p>
+<p>
+ <p class="blog-meta">
+        
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/plt/"
+          >#plt</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/mimsa/"
+          >#mimsa</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/typechecker/"
+          >#typechecker</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/llvm/"
+          >#llvm</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/wasm/"
+          >#wasm</a
+        >
+         
+      </p>
+
+<p>So last year I <a href="/tags/llvm.html">started writing a
+series</a> on compiling a functional language to
+LLVM, and I have to confess, I came <a href="https://github.com/danieljharvey/llvm-calc/pull/2">utterly unstuck</a>.</p>
+<p><img src="/images/failure.webp" alt="Failure" title="Failure" /></p>
+<p>Until recent versions, LLVM tried to be helpful by making you specify types
+for all pointers you pass around. This is really helpful in simple cases as you
+get basic typechecking at compile time. However, once you start implementing things like sum types (ie, reserve a slab of memory, and stuff it with one of several sets of data), it becomes super annoying.</p>
+<p>For example, compiling an <code>Either&lt;Int, Bool&gt;</code> type requires you to constantly cast between "arbitrary array type we've chosen
+that takes up the right amount of memory", "this thing if it turns out
+to be <code>Left&lt;Int&gt;</code>" and "this thing if it turns out to be <code>Right&lt;Bool&gt;</code>.</p>
+<p>This has been solved though! More recent versions of LLVM have the concept of an <a href="https://llvm.org/docs/OpaquePointers.html">Opaque
+pointer</a>, which allows us to pass
+pointers around without caring what type they are, and then think about the
+types when it comes to actually interacting with the underlying data. This is
+ideal!</p>
+<p>However, it's only available in LLVM 14 onwards, and getting a working
+version-matched set
+of LLVM Haskell libraries turns out to be precarious at best. I got <a href="https://github.com/danieljharvey/llvm-calc/tree/djh/llvm-15">reasonably
+close</a> using
+the <a href="https://github.com/llvm-hs/llvm-hs/tree/llvm-15">LLVM-15 branch</a> of <code>llvm-hs-pure</code>, but could not find an equivalent for <a href="https://github.com/llvm-hs/llvm-hs-pretty">llvm-hs-pretty</a>.</p>
+<p>Basically, it was all getting a bit fiddly and stupid, and writing a tutorial that is either a) already out of date or b) relies on a set of arbitrary commits from a
+bunch of forks doesn't feel like it will be particularly useful, so I have decided to change tack.</p>
+<h2 id="the-good-news">The good news?</h2>
+<p>I decided to port the project to compile to WebAssembly instead! Development of
+the thing itself has been going really well, see for yourself here: <a href="https://github.com/danieljharvey/wasm-calc">wasm-calc</a></p>
+<p>The language is fully featured enough that we can create a very simple
+<a href="https://wasm4.org/">wasm-4</a>
+game with it.</p>
+<p><img src="/images/wasm-4.png" alt="Some sort of graphics created from our language" title="Some sort of graphics created from our language" /></p>
+<p>Some thoughts so far:</p>
+<ul>
+<li>
+<p>The <a href="https://hackage.haskell.org/package/wasm">wasm</a> package for Haskell is lovely!</p>
+</li>
+<li>
+<p>Not being able to cheat by including a bunch of C in a runtime has forced me to learn how allocators work</p>
+</li>
+<li>
+<p>There's a bunch of useful resources, like
+<a href="https://github.com/EmNudge/watlings">watlings</a> and <a href="https://developer.mozilla.org/en-US/docs/WebAssembly/Understanding_the_text_format">Mozilla's
+docs</a>.</p>
+</li>
+</ul>
+<h2 id="what-s-next">What's next?</h2>
+<p>As well as serving as a big excuse, this blog is supposed to be a forcing
+function to write the tutorials to go with all the <code>wasm-calc</code> versions. I'll
+start by porting the <code>llvm-calc</code> blogs, and then move onto the new features
+we've got.</p>
+<p>Make sense? If not, <a href="/contact.html">get in touch</a>!</p>
+<p>Further reading:</p>
+<p><a href="https://github.com/danieljharvey/wasm-calc">wasm-calc</a></p>
+
+
+    </main>
+
+    <footer>
+      <p><a href="mailto:danieljamesharvey@gmail.com">Contact</a> |
+      <a href="https://github.com/danieljharvey">Github</a></p>
+      <p>Links for nerds:
+        <a href="/atom.xml">atom</a>
+        <a href="/rss.xml">rss</a></p>
+
+    </footer>
+</body>
+
+</html>

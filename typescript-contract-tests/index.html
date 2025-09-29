@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - Contract testing with Typescript</title>
+    <link rel="stylesheet" href="https://danieljharvey.github.io/main.css">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="/">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="/">Posts</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        
+<h1 class="title">
+  Contract testing with Typescript
+</h1>
+<p class="subtitle"><strong>2020-02-23</strong></p>
+<p>
+ <p class="blog-meta">
+        
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/fastcheck/"
+          >#fastcheck</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/typescript/"
+          >#typescript</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/io-ts/"
+          >#io-ts</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/testing/"
+          >#testing</a
+        >
+         
+      </p>
+
+<p>Hello. In our <a href="https://danieljharvey.github.io/posts/2020-02-23-contract-testing.html">last article</a> we described how to generate test cases for contract
+testing in Haskell. This time, we are going to look at generating the front end
+portion of these in <code>Typescript</code>. This will probably be a lot briefer because I
+am a very lazy person at heart.</p>
+<h3 id="first-some-rambling">First, some rambling</h3>
+<p>The main differences with the type system of <code>Haskell</code> or <code>Purescript</code> compared
+to that of <code>Typescript</code> is that typeclasses allow the types of things to affect
+the code that is generated or used. That's how a <code>newtype</code> like <code>Sum</code> or
+<code>Product</code> can change the <code>Monoid</code> function used to combine two values, even
+though both are just <code>Int</code> values underneath.</p>
+<p>The same thing applied to our <code>arbitrary</code> instances - we set a type, derived
+the necessary instances, and then all the code was generated for us.</p>
+<p><code>Typescript</code> is different. Because all the type info is destroyed at runtime,
+we have to create run-time (or <code>value level</code>) descriptions of our types, and
+then derive the <code>types</code> from those. Make sense? No? Doesn't really matter
+anyway.</p>
+<p><img src="/images/frisbee-1.png" alt="Whoa, great job!" title="Whoa, great job!" /></p>
+<h3 id="some-datatypes">Some datatypes</h3>
+<p>Fortunately, generating run-time validators and types for them is exactly what
+the excellent <a href="https://github.com/gcanti/io-ts">io-ts</a> is for. It allows to
+create validators for our datatypes using runtime functions, but then also
+derive types from that. Let's see an example:</p>
+<pre data-lang="typescript" style="background-color:#2b303b;color:#c0c5ce;" class="language-typescript "><code class="language-typescript" data-lang="typescript"><span style="color:#b48ead;">import </span><span style="color:#d08770;">* </span><span style="color:#b48ead;">as </span><span style="color:#bf616a;">t </span><span style="color:#b48ead;">from </span><span>&#39;</span><span style="color:#a3be8c;">io-ts</span><span>&#39;
+</span><span>
+</span><span style="color:#b48ead;">export const </span><span style="color:#bf616a;">PetShape </span><span>= </span><span style="color:#bf616a;">t</span><span>.</span><span style="color:#8fa1b3;">type</span><span>({
+</span><span>  petName: </span><span style="color:#bf616a;">t</span><span>.</span><span style="color:#bf616a;">string
+</span><span>})
+</span><span>
+</span><span style="color:#b48ead;">export const </span><span style="color:#bf616a;">UserShape </span><span>= </span><span style="color:#bf616a;">t</span><span>.</span><span style="color:#8fa1b3;">type</span><span>({
+</span><span>  userId: </span><span style="color:#bf616a;">t</span><span>.</span><span style="color:#bf616a;">number</span><span>,
+</span><span>  name: </span><span style="color:#bf616a;">t</span><span>.</span><span style="color:#bf616a;">string</span><span>,
+</span><span>  pets: </span><span style="color:#bf616a;">t</span><span>.</span><span style="color:#8fa1b3;">array</span><span>(</span><span style="color:#bf616a;">PetShape</span><span>)
+</span><span>})
+</span><span>
+</span><span style="color:#b48ead;">type </span><span>Pet = t.TypeOf&lt;typeof PetShape&gt;
+</span><span>
+</span><span style="color:#b48ead;">export type </span><span>User = t.TypeOf&lt;typeof UserShape&gt;
+</span></code></pre>
+<p>Here we have defined <code>Pet</code> and <code>User</code> and created validators for them both.
+What does this mean?</p>
+<pre data-lang="typescript" style="background-color:#2b303b;color:#c0c5ce;" class="language-typescript "><code class="language-typescript" data-lang="typescript"><span style="color:#b48ead;">const </span><span style="color:#bf616a;">userJson </span><span>= { userId: </span><span style="color:#d08770;">1</span><span>, name: &quot;</span><span style="color:#a3be8c;">Frank</span><span>&quot;, pets: [] }
+</span><span>
+</span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">ok </span><span>= </span><span style="color:#bf616a;">UserShape</span><span>.</span><span style="color:#8fa1b3;">decode</span><span>(</span><span style="color:#bf616a;">userJson</span><span>))
+</span><span style="color:#65737e;">// ok == Right with a User type inside
+</span><span>
+</span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">badUserJson </span><span>= { blah: &quot;</span><span style="color:#a3be8c;">dfgdfgdgf</span><span>&quot; }
+</span><span>
+</span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">no </span><span>= </span><span style="color:#bf616a;">UserShape</span><span>.</span><span style="color:#8fa1b3;">decode</span><span>(</span><span style="color:#bf616a;">badUserJson</span><span>)
+</span><span style="color:#65737e;">// no == Left with an error message
+</span></code></pre>
+<p>This means that we can validate JSON we receive into our application and ensure
+that when Typescript says we are talking about a <code>User</code>, we really are.</p>
+<p><img src="/images/frisbee-2.png" alt="Really nice!" title="Really nice!" /></p>
+<h3 id="reading-sample-json">Reading sample JSON</h3>
+<p>Therefore, hopefully you can work out how we're going to check our generated
+backend responses from earlier.</p>
+<pre data-lang="typescript" style="background-color:#2b303b;color:#c0c5ce;" class="language-typescript "><code class="language-typescript" data-lang="typescript"><span style="color:#b48ead;">import </span><span>{ </span><span style="color:#bf616a;">either </span><span>} </span><span style="color:#b48ead;">from </span><span>&#39;</span><span style="color:#a3be8c;">fp-ts</span><span>&#39;
+</span><span style="color:#b48ead;">import </span><span style="color:#d08770;">* </span><span style="color:#b48ead;">as </span><span style="color:#bf616a;">path </span><span style="color:#b48ead;">from </span><span>&#39;</span><span style="color:#a3be8c;">path</span><span>&#39;
+</span><span style="color:#b48ead;">import </span><span style="color:#d08770;">* </span><span style="color:#b48ead;">as </span><span style="color:#bf616a;">fs </span><span style="color:#b48ead;">from </span><span>&#39;</span><span style="color:#a3be8c;">fs</span><span>&#39;
+</span><span>
+</span><span style="color:#65737e;">// get array of nums 0...99
+</span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">rangeArr </span><span>= [...</span><span style="color:#ebcb8b;">Array</span><span>(</span><span style="color:#d08770;">100</span><span>).</span><span style="color:#96b5b4;">keys</span><span>()];
+</span><span>
+</span><span style="color:#65737e;">// path to wherever our responses are saved
+</span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">outputPath </span><span>= &#39;</span><span style="color:#a3be8c;">./responses/user/</span><span>&#39;
+</span><span>
+</span><span style="color:#8fa1b3;">describe</span><span>(&#39;</span><span style="color:#a3be8c;">Read contract tests</span><span>&#39;, () </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>  </span><span style="color:#8fa1b3;">test</span><span>(&#39;</span><span style="color:#a3be8c;">Write sample responses from files</span><span>&#39;, () </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>    </span><span style="color:#bf616a;">rangeArr</span><span>.</span><span style="color:#96b5b4;">forEach</span><span>(</span><span style="color:#bf616a;">index </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>      </span><span style="color:#65737e;">// construct the path
+</span><span>      </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">filename </span><span>= </span><span style="color:#bf616a;">path</span><span>.</span><span style="color:#96b5b4;">resolve</span><span>(`</span><span style="color:#a3be8c;">${</span><span style="color:#bf616a;">outputPath</span><span style="color:#a3be8c;">}${</span><span style="color:#bf616a;">index</span><span style="color:#a3be8c;">}.json</span><span>`)
+</span><span>      </span><span style="color:#65737e;">// read the file and turn it into a JS object
+</span><span>      </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">file </span><span>= JSON.</span><span style="color:#96b5b4;">parse</span><span>(</span><span style="color:#bf616a;">fs</span><span>.</span><span style="color:#8fa1b3;">readFileSync</span><span>(</span><span style="color:#bf616a;">filename</span><span>, &quot;</span><span style="color:#a3be8c;">utf8</span><span>&quot;))
+</span><span>      </span><span style="color:#65737e;">// assert whether it validates properly
+</span><span>      </span><span style="color:#8fa1b3;">expect</span><span>(</span><span style="color:#bf616a;">either</span><span>.</span><span style="color:#8fa1b3;">isRight</span><span>(</span><span style="color:#bf616a;">UserShape</span><span>.</span><span style="color:#8fa1b3;">decode</span><span>(</span><span style="color:#bf616a;">file</span><span>))).</span><span style="color:#8fa1b3;">toBeTruthy</span><span>()
+</span><span>    })
+</span><span>  })
+</span><span>})
+</span></code></pre>
+<p>This <code>Jest</code> test loads each <code>.json</code> file from a given folder and checks that it
+decodes correctly with our <code>UserShape</code> validator. If they do, then we know, at
+least for this particular endpoint, that our frontend and backend agree with
+one another.</p>
+<p><img src="/images/frisbee-3.png" alt="You&#39;ve done this before!" title="You&#39;ve done this before!" /></p>
+<h3 id="generating-sample-json">Generating sample JSON</h3>
+<p>What has traditionally been a bit harder in <code>Typescript</code> in generating
+<code>arbitrary</code> responses. Since we can't use out types to inform which values are
+made, we have to be a bit creative.</p>
+<p>But that's hard work. What if somebody else had already solved this and we
+could just piggyback off their great work?</p>
+<p>Enter <a href="https://github.com/dubzzz/fast-check">fast-check</a> and
+<a href="https://github.com/giogonzo/fast-check-io-ts">io-ts-fast-check</a>.</p>
+<p><code>fast-check</code> is a property testing tool for <code>Typescript</code>. Essentially, for our
+purposes, it's <code>QuickCheck</code>. <code>io-ts-fast-check</code> is the secret sauce that says
+"if you can give me a validator, I can generate you random values that satisfy
+it."</p>
+<p>Therefore, we can use it to create our random front end requests, ready for our
+backend to decode and validate. Great!</p>
+<pre data-lang="typescript" style="background-color:#2b303b;color:#c0c5ce;" class="language-typescript "><code class="language-typescript" data-lang="typescript"><span style="color:#b48ead;">import </span><span style="color:#d08770;">* </span><span style="color:#b48ead;">as </span><span style="color:#bf616a;">fc </span><span style="color:#b48ead;">from </span><span>&#39;</span><span style="color:#a3be8c;">fast-check</span><span>&#39;
+</span><span style="color:#b48ead;">import </span><span style="color:#d08770;">* </span><span style="color:#b48ead;">as </span><span style="color:#bf616a;">fs </span><span style="color:#b48ead;">from </span><span>&#39;</span><span style="color:#a3be8c;">fs</span><span>&#39;
+</span><span style="color:#b48ead;">import </span><span style="color:#d08770;">* </span><span style="color:#b48ead;">as </span><span style="color:#bf616a;">path </span><span style="color:#b48ead;">from </span><span>&#39;</span><span style="color:#a3be8c;">path</span><span>&#39;
+</span><span style="color:#b48ead;">import </span><span>{ </span><span style="color:#bf616a;">getArbitrary </span><span>} </span><span style="color:#b48ead;">from </span><span>&#39;</span><span style="color:#a3be8c;">fast-check-io-ts</span><span>&#39;;
+</span><span style="color:#b48ead;">import </span><span>{ </span><span style="color:#bf616a;">either </span><span>} </span><span style="color:#b48ead;">from </span><span>&#39;</span><span style="color:#a3be8c;">fp-ts</span><span>&#39;
+</span><span>
+</span><span style="color:#65737e;">// this creates a fast-check `Arbitrary` from our `User` validator
+</span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">userArbitrary </span><span>= </span><span style="color:#8fa1b3;">getArbitrary</span><span>(</span><span style="color:#bf616a;">UserShape</span><span>)
+</span><span>
+</span><span style="color:#65737e;">// this takes an output folder and an Arbitrary, and fills the folder with 100
+</span><span style="color:#65737e;">// json example files 
+</span><span style="color:#b48ead;">export const </span><span style="color:#8fa1b3;">generate </span><span>= &lt;A&gt;(</span><span style="color:#bf616a;">outputPath</span><span>: string, </span><span style="color:#bf616a;">arb</span><span>: fc.Arbitrary&lt;A&gt;) </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>  </span><span style="color:#bf616a;">fc</span><span>.</span><span style="color:#8fa1b3;">sample</span><span>(</span><span style="color:#bf616a;">arb</span><span>, </span><span style="color:#d08770;">100</span><span>).</span><span style="color:#8fa1b3;">map</span><span>(</span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">=&gt; </span><span>JSON.</span><span style="color:#96b5b4;">stringify</span><span>(</span><span style="color:#bf616a;">a</span><span>)).</span><span style="color:#8fa1b3;">map</span><span>((</span><span style="color:#bf616a;">json</span><span>, </span><span style="color:#bf616a;">index</span><span>) </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>    </span><span style="color:#65737e;">// construct file path for saving the file
+</span><span>    </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">filename </span><span>= </span><span style="color:#bf616a;">path</span><span>.</span><span style="color:#96b5b4;">resolve</span><span>(`</span><span style="color:#a3be8c;">${</span><span style="color:#bf616a;">outputPath</span><span style="color:#a3be8c;">}${</span><span style="color:#bf616a;">index</span><span style="color:#a3be8c;">}.json</span><span>`)
+</span><span>    </span><span style="color:#65737e;">// save that goddamn file
+</span><span>    </span><span style="color:#bf616a;">fs</span><span>.</span><span style="color:#8fa1b3;">writeFileSync</span><span>(</span><span style="color:#bf616a;">filename</span><span>, </span><span style="color:#bf616a;">json</span><span>)
+</span><span>  })
+</span><span>}
+</span><span>
+</span><span style="color:#65737e;">// example of use
+</span><span style="color:#8fa1b3;">generate</span><span>(&#39;</span><span style="color:#a3be8c;">./requests/users</span><span>&#39;, </span><span style="color:#bf616a;">userArbitrary</span><span>)
+</span></code></pre>
+<p><img src="/images/frisbee-4.png" alt="Feels good, yeah?" title="Feels good, yeah?" /></p>
+<h3 id="great-stuff">Great stuff!</h3>
+<p>Now we can read our sample requests into the backend and see that everything is
+fine. Running tests like this before each deploy of either front or back end
+service is a great way to make sure nothing will explode. Source code is
+available <a href="https://github.com/danieljharvey/ts-contract-tests">here</a> if you
+can't get it to do what you want for some reason.</p>
+<p>Make sense? No? Yes? <a href="/contact.html">Let me know!</a></p>
+
+
+    </main>
+
+    <footer>
+      <p><a href="mailto:danieljamesharvey@gmail.com">Contact</a> |
+      <a href="https://github.com/danieljharvey">Github</a></p>
+      <p>Links for nerds:
+        <a href="/atom.xml">atom</a>
+        <a href="/rss.xml">rss</a></p>
+
+    </footer>
+</body>
+
+</html>

@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - Newtypes for Cheap</title>
+    <link rel="stylesheet" href="https://danieljharvey.github.io/main.css">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="/">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="/">Posts</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        
+<h1 class="title">
+  Newtypes for Cheap
+</h1>
+<p class="subtitle"><strong>2020-03-28</strong></p>
+<p>
+ <p class="blog-meta">
+        
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/typescript/"
+          >#typescript</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/newtype/"
+          >#newtype</a
+        >
+         
+      </p>
+
+<p>So previously we've spoken about the idea of a <code>newtype</code> in Haskell. A
+<code>newtype</code> is a wrapper you can put around a value to distinguish it from other
+items. It's common to give value that has it's own domain meaning it's own
+<code>newtype</code>, for instance:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">newtype </span><span style="color:#d08770;">Firstname </span><span>= </span><span style="color:#d08770;">Firstname</span><span> { getFirstname :: </span><span style="color:#d08770;">String</span><span> }
+</span><span>  </span><span style="color:#b48ead;">deriving</span><span> (</span><span style="color:#a3be8c;">Eq</span><span>, </span><span style="color:#a3be8c;">Ord</span><span>, </span><span style="color:#a3be8c;">Show</span><span>)
+</span><span>
+</span><span style="color:#b48ead;">newtype </span><span style="color:#d08770;">Surname </span><span>= </span><span style="color:#d08770;">Surname</span><span> { getSurname :: </span><span style="color:#d08770;">String</span><span> }
+</span><span>  </span><span style="color:#b48ead;">deriving</span><span> (</span><span style="color:#a3be8c;">Eq</span><span>, </span><span style="color:#a3be8c;">Ord</span><span>, </span><span style="color:#a3be8c;">Show</span><span>)
+</span></code></pre>
+<p>We create values as such:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">first </span><span style="color:#b48ead;">:: Firstname
+</span><span>first = </span><span style="color:#d08770;">Firstname </span><span>&quot;</span><span style="color:#a3be8c;">Bobby</span><span>&quot;
+</span><span>
+</span><span style="color:#8fa1b3;">last </span><span style="color:#b48ead;">:: Surname
+</span><span>last = </span><span style="color:#d08770;">Surname </span><span>&quot;</span><span style="color:#a3be8c;">Davehead</span><span>&quot;
+</span></code></pre>
+<p>And unwrap them to use like this:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">fullName </span><span style="color:#b48ead;">:: Firstname -&gt; Surname -&gt; String
+</span><span>fullName first&#39; last&#39; = getFirstname first&#39; &lt;&gt; &quot; &quot; &lt;&gt; getSurname last&#39;
+</span><span style="color:#65737e;">-- fullName first last == &quot;Bobby Davehead&quot;
+</span></code></pre>
+<p>This would stop different bits of names, that would usually be stored as
+strings, getting mixed up. It's neat. What's really nice about it though, as although
+these look like records with a single item inside, and in code we treat them as
+such, as runtime that shit gets erased and really it's just a <code>String</code> being
+passed around for <code>#performance</code>.</p>
+<p>They have two benefits:</p>
+<ul>
+<li>
+<p>Firstly, if you are a goof like me, you get this wrong all the time and put
+arguments in the wrong order and generally make a mess of things from
+10x-ing all the time, and this makes such terrible errors a little trickier to
+make.</p>
+</li>
+<li>
+<p>Secondly, and much more usefully, it allows us to practice Alexis King's
+<a href="https://lexi-lambda.github.io/blog/2019/11/05/parse-don-t-validate/">Parse, don't
+validate</a>
+pattern. It's well worth reading in full, but the very tl;dr is - if I check a
+<code>String</code> to see if it's a valid name, I should return a type that tells me
+that fact, so I a) don't have to check again and b) don't mix it up with the
+unchecked version.</p>
+</li>
+</ul>
+<p>Anyway. It all sounds like good stuff, and I have been thinking about the same
+patterns in Typescript as that's a place I often find myself these days.</p>
+<h3 id="prior-art">Prior art</h3>
+<p>Now a good place to start when trying to reproduce any Haskell / Purescript
+concept in Typescript is to crack open <a href="https://github.com/gcanti">gcanti's
+Github</a> where, as usual, he does not disappoint:
+<a href="https://github.com/gcanti/newtype-ts">newtype-ts</a> is a pretty full featured
+library for this built on top of his <code>monocle-ts</code> lens library.</p>
+<p>Now this is all very well, but does sort of require everybody working on your
+codebase to buy in (especially as it requires you to use <code>modify</code> from
+<code>monocle-ts</code> to change the values inside, and to explicitly <code>wrap</code> and <code>unwrap</code>
+them). If everybody is into this, go for it, I am a big fan of the <code>fp-ts</code>
+stack and swear by <code>io-ts</code> at the moment. However, I often need something cheap and hacky, that doesn't leak complexity throughout the codebase.</p>
+<p>Fortunately, good man and Habito colleague Mateusz (who I cannot find any links to on
+the internet, somebody please help me remedy this), came up with a neat way of
+tagging types for cheap, which I'd like to share today.</p>
+<h3 id="the-10x-solution">The 10x solution</h3>
+<p>Here is the whole library:</p>
+<pre data-lang="typescript" style="background-color:#2b303b;color:#c0c5ce;" class="language-typescript "><code class="language-typescript" data-lang="typescript"><span style="color:#b48ead;">type </span><span>Nominal&lt;T&gt; = {
+</span><span>    </span><span style="color:#b48ead;">readonly </span><span style="color:#bf616a;">symbol</span><span>: T
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">export type </span><span>Tagged&lt;Tag </span><span style="color:#b48ead;">extends </span><span>string, A&gt; = A &amp; Nominal&lt;Tag&gt;
+</span></code></pre>
+<p>This means we can make unique tagged versions of regular datatypes like so:</p>
+<pre data-lang="typescript" style="background-color:#2b303b;color:#c0c5ce;" class="language-typescript "><code class="language-typescript" data-lang="typescript"><span style="color:#b48ead;">type </span><span>Firstname = Tagged&lt;&quot;</span><span style="color:#a3be8c;">Firstname</span><span>&quot;, string&gt;
+</span><span>
+</span><span style="color:#b48ead;">type </span><span>Surname = Tagged&lt;&quot;</span><span style="color:#a3be8c;">Surname</span><span>&quot;, string&gt;
+</span><span>
+</span><span style="color:#b48ead;">type </span><span>Age = Tagged&lt;&quot;</span><span style="color:#a3be8c;">Age</span><span>&quot;, number&gt;
+</span></code></pre>
+<p>The great thing is that when the Javascript is generated from this, we just
+end up with plain <code>string</code> and <code>number</code> values.</p>
+<p>Now, let's see what these buy us:</p>
+<h3 id="stopping-idiots-like-me-mixing-stuff-up">Stopping idiots like me mixing stuff up</h3>
+<p>The most basic use is just tagging our types with <code>as</code>:</p>
+<pre data-lang="typescript" style="background-color:#2b303b;color:#c0c5ce;" class="language-typescript "><code class="language-typescript" data-lang="typescript"><span style="color:#b48ead;">const </span><span style="color:#bf616a;">first </span><span>= &quot;</span><span style="color:#a3be8c;">Bobby</span><span>&quot; </span><span style="color:#b48ead;">as </span><span>Firstname
+</span><span>
+</span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">surname </span><span>= &quot;</span><span style="color:#a3be8c;">Davehead</span><span>&quot; </span><span style="color:#b48ead;">as </span><span>Surname
+</span><span>
+</span><span style="color:#b48ead;">const </span><span style="color:#8fa1b3;">functionThatNeedsSpecificallyFirstname </span><span>= (</span><span style="color:#bf616a;">firstname</span><span>: Firstname): string </span><span style="color:#b48ead;">=&gt;
+</span><span>    `</span><span style="color:#a3be8c;">Hello, person whose first name is very much ${</span><span style="color:#bf616a;">firstname</span><span style="color:#a3be8c;">}</span><span>`
+</span></code></pre>
+<p>Now, we can make sure only the right tagged value:</p>
+<pre data-lang="typescript" style="background-color:#2b303b;color:#c0c5ce;" class="language-typescript "><code class="language-typescript" data-lang="typescript"><span style="color:#8fa1b3;">functionThatNeedsSpecificallyFirstname</span><span>(</span><span style="color:#bf616a;">first</span><span>) </span><span style="color:#65737e;">// ok!
+</span><span>
+</span><span style="color:#8fa1b3;">functionThatNeedsSpecificallyFirstname</span><span>(</span><span style="color:#bf616a;">surname</span><span>) </span><span style="color:#65737e;">// type error!
+</span></code></pre>
+<p>When you have a function like <code>apiCall(url: string, token: string, accountId: string) =&gt; ...</code> this really helps to stop you messing stupid things up.</p>
+<p>Now, how about that parsing stuff mentioned earlier?</p>
+<h3 id="parse-don-t-validate">Parse, don't validate</h3>
+<p>So, we can also use this tactic to tag data that we have validated, so that we
+know certain properties about it have been validated.</p>
+<p>Say we have a <code>Person</code> type, because I lack imagination:</p>
+<pre data-lang="typescript" style="background-color:#2b303b;color:#c0c5ce;" class="language-typescript "><code class="language-typescript" data-lang="typescript"><span style="color:#b48ead;">interface </span><span>Person {
+</span><span>  </span><span style="color:#bf616a;">firstname</span><span>: string
+</span><span>  </span><span style="color:#bf616a;">surname</span><span>: string
+</span><span>  </span><span style="color:#bf616a;">age</span><span>: number
+</span><span>}
+</span></code></pre>
+<p>Now, we want to check a few properties about these things to make sure they're
+not terrible.</p>
+<p>The naive version of this looks something like:</p>
+<pre data-lang="typescript" style="background-color:#2b303b;color:#c0c5ce;" class="language-typescript "><code class="language-typescript" data-lang="typescript"><span style="color:#b48ead;">const </span><span style="color:#8fa1b3;">isValidPerson </span><span>= (</span><span style="color:#bf616a;">person</span><span>: Person): boolean </span><span style="color:#b48ead;">=&gt; 
+</span><span>  (</span><span style="color:#bf616a;">person</span><span>.</span><span style="color:#bf616a;">firstname</span><span>.length &gt; </span><span style="color:#d08770;">0 </span><span>&amp;&amp; </span><span style="color:#bf616a;">person</span><span>.</span><span style="color:#bf616a;">firstname</span><span>.length &lt; </span><span style="color:#d08770;">100</span><span>)
+</span><span>  &amp;&amp; (</span><span style="color:#bf616a;">person</span><span>.</span><span style="color:#bf616a;">surname</span><span>.length &gt; </span><span style="color:#d08770;">0 </span><span>&amp;&amp; </span><span style="color:#bf616a;">person</span><span>.</span><span style="color:#bf616a;">surname</span><span>.length &lt; </span><span style="color:#d08770;">50</span><span>)
+</span><span>  &amp;&amp; (</span><span style="color:#bf616a;">person</span><span>.</span><span style="color:#bf616a;">age </span><span>&gt;= </span><span style="color:#d08770;">0 </span><span>&amp;&amp; </span><span style="color:#bf616a;">person</span><span>.</span><span style="color:#bf616a;">age </span><span>&lt; </span><span style="color:#d08770;">120</span><span>)
+</span></code></pre>
+<p>Before using <code>Person</code> anywhere, you could check it made sense:</p>
+<pre data-lang="typescript" style="background-color:#2b303b;color:#c0c5ce;" class="language-typescript "><code class="language-typescript" data-lang="typescript"><span style="color:#b48ead;">if </span><span>(</span><span style="color:#8fa1b3;">isValidPerson</span><span>(</span><span style="color:#bf616a;">person</span><span>)) {
+</span><span>  </span><span style="color:#8fa1b3;">doThingWithPerson</span><span>(</span><span style="color:#bf616a;">person</span><span>)
+</span><span>} </span><span style="color:#b48ead;">else </span><span>{
+</span><span>  </span><span style="color:#b48ead;">throw </span><span>&quot;</span><span style="color:#a3be8c;">Person is not valid</span><span>&quot;
+</span><span>}
+</span></code></pre>
+<p>...and throw an error if it isn't. The thing is, it's nicer to do validation on the boundaries of
+our app and then know afterwards that things are OK. What if we could use our <code>Tagged</code> type
+to help us?</p>
+<p>Let's rewrite our validation functions:</p>
+<pre data-lang="typescript" style="background-color:#2b303b;color:#c0c5ce;" class="language-typescript "><code class="language-typescript" data-lang="typescript"><span style="color:#b48ead;">const </span><span style="color:#8fa1b3;">validateFirstname </span><span>= (</span><span style="color:#bf616a;">rawString</span><span>: string): Firstname | null </span><span style="color:#b48ead;">=&gt; 
+</span><span>    (</span><span style="color:#bf616a;">rawString</span><span>.length &gt; </span><span style="color:#d08770;">0 </span><span>&amp;&amp; </span><span style="color:#bf616a;">rawString</span><span>.length &lt; </span><span style="color:#d08770;">100</span><span>) 
+</span><span>       ? </span><span style="color:#bf616a;">rawString </span><span style="color:#b48ead;">as </span><span>Firstname : </span><span style="color:#d08770;">null
+</span><span>
+</span><span style="color:#b48ead;">const </span><span style="color:#8fa1b3;">validateSurname </span><span>= (</span><span style="color:#bf616a;">rawString</span><span>: string): Surname | null </span><span style="color:#b48ead;">=&gt; 
+</span><span>    (</span><span style="color:#bf616a;">rawString</span><span>.length &gt; </span><span style="color:#d08770;">0 </span><span>&amp;&amp; </span><span style="color:#bf616a;">rawString</span><span>.length &lt; </span><span style="color:#d08770;">50</span><span>) 
+</span><span>       ? </span><span style="color:#bf616a;">rawString </span><span style="color:#b48ead;">as </span><span>Surname : </span><span style="color:#d08770;">null
+</span><span>
+</span><span style="color:#b48ead;">const </span><span style="color:#8fa1b3;">validateAge </span><span>= (</span><span style="color:#bf616a;">rawAge</span><span>: number): Age | null </span><span style="color:#b48ead;">=&gt; 
+</span><span>    (</span><span style="color:#bf616a;">rawAge </span><span>&gt;=</span><span style="color:#d08770;">0 </span><span>&amp;&amp; </span><span style="color:#bf616a;">rawAge </span><span>&lt; </span><span style="color:#d08770;">120</span><span>) ? </span><span style="color:#bf616a;">rawAge </span><span style="color:#b48ead;">as </span><span>Age : </span><span style="color:#d08770;">null
+</span><span>
+</span><span style="color:#b48ead;">interface </span><span>ValidPerson {
+</span><span>    </span><span style="color:#bf616a;">firstname</span><span>: Firstname
+</span><span>    </span><span style="color:#bf616a;">surname</span><span>: Surname
+</span><span>    </span><span style="color:#bf616a;">age</span><span>: Age
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">const </span><span style="color:#8fa1b3;">validatePerson </span><span>= (</span><span style="color:#bf616a;">person</span><span>: Person): ValidPerson | null </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>    </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">firstname </span><span>= </span><span style="color:#8fa1b3;">validateFirstname</span><span>(</span><span style="color:#bf616a;">person</span><span>.</span><span style="color:#bf616a;">firstname</span><span>)
+</span><span>    </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">surname </span><span>= </span><span style="color:#8fa1b3;">validateSurname</span><span>(</span><span style="color:#bf616a;">person</span><span>.</span><span style="color:#bf616a;">surname</span><span>)
+</span><span>    </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">age </span><span>= </span><span style="color:#8fa1b3;">validateAge</span><span>(</span><span style="color:#bf616a;">person</span><span>.</span><span style="color:#bf616a;">age</span><span>)
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">return </span><span>(</span><span style="color:#bf616a;">firstname </span><span>&amp;&amp; </span><span style="color:#bf616a;">surname </span><span>&amp;&amp; </span><span style="color:#bf616a;">age</span><span>) ?  {
+</span><span>        </span><span style="color:#bf616a;">firstname</span><span>, </span><span style="color:#bf616a;">surname</span><span>, </span><span style="color:#bf616a;">age
+</span><span>    } : </span><span style="color:#d08770;">null
+</span><span>}
+</span></code></pre>
+<p>It looks a bit more verbose, but that's mostly because I've broken each
+validation function out. What it means is that we can take our raw <code>Person</code>
+data, run the validator and get a <code>ValidPerson</code> (because it's valid) or <code>null</code>
+(it wasn't valid).</p>
+<pre data-lang="typescript" style="background-color:#2b303b;color:#c0c5ce;" class="language-typescript "><code class="language-typescript" data-lang="typescript"><span style="color:#b48ead;">const </span><span style="color:#bf616a;">badPerson </span><span>= </span><span style="color:#8fa1b3;">validatePerson</span><span>({ firstname: &quot;&quot;, surname: &quot;&quot;, age: -</span><span style="color:#d08770;">1 </span><span>})
+</span><span style="color:#65737e;">// null
+</span><span>
+</span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">goodPerson </span><span>= </span><span style="color:#8fa1b3;">validatePerson</span><span>({ firstname: &quot;</span><span style="color:#a3be8c;">Tom</span><span>&quot;, surname: &quot;</span><span style="color:#a3be8c;">Hanks</span><span>&quot;, age: </span><span style="color:#d08770;">50 </span><span>})
+</span><span style="color:#65737e;">// { firstname: &quot;Tom&quot;, surname: &quot;Hanks&quot;, age: 50 }
+</span></code></pre>
+<p>We can then pass <code>ValidPerson</code> around the rest of the codebase, knowing that
+the values are Good and Valid and not needing to check them again.</p>
+<h3 id="disclaimer">Disclaimer</h3>
+<p>Now, the disadvantage with such a technique is that there's nothing stopping me
+just using <code>as</code> to change, say a <code>Firstname</code> into a <code>Surname</code> and cheating the
+whole thing.</p>
+<pre data-lang="typescript" style="background-color:#2b303b;color:#c0c5ce;" class="language-typescript "><code class="language-typescript" data-lang="typescript"><span>
+</span><span style="color:#b48ead;">const </span><span style="color:#8fa1b3;">giveMeFirstName </span><span>= (</span><span style="color:#bf616a;">thanks</span><span>: Firstname): Firstname </span><span style="color:#b48ead;">=&gt; </span><span style="color:#bf616a;">thanks
+</span><span>
+</span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">surname</span><span>: &quot;</span><span style="color:#a3be8c;">whoa</span><span>&quot; as Surname
+</span><span>
+</span><span style="color:#8fa1b3;">giveMeFirstName</span><span>(</span><span style="color:#bf616a;">surname </span><span style="color:#b48ead;">as </span><span>Firstname) </span><span style="color:#65737e;">// cheating!
+</span></code></pre>
+<p>However, if that's really a problem in your codebase (and I would
+delicately suggest that what you have there is more a social and not a coding
+problem) - then perhaps it's time to go all in on <code>newtype-ts</code> or similar.</p>
+<p>Make sense? No? Don't care? <a href="/contact.html">Let me know!</a></p>
+
+
+    </main>
+
+    <footer>
+      <p><a href="mailto:danieljamesharvey@gmail.com">Contact</a> |
+      <a href="https://github.com/danieljharvey">Github</a></p>
+      <p>Links for nerds:
+        <a href="/atom.xml">atom</a>
+        <a href="/rss.xml">rss</a></p>
+
+    </footer>
+</body>
+
+</html>

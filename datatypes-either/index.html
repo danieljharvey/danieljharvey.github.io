@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - Datatypes - Either</title>
+    <link rel="stylesheet" href="https://danieljharvey.github.io/main.css">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="/">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="/">Posts</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        
+<h1 class="title">
+  Datatypes - Either
+</h1>
+<p class="subtitle"><strong>2019-03-17</strong></p>
+<p>
+ <p class="blog-meta">
+        
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/haskell/"
+          >#haskell</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/datatype/"
+          >#datatype</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/either/"
+          >#either</a
+        >
+         
+      </p>
+
+<p>It's one thing to understand typeclasses individually, but another to see them in context. This is the second in a series looking at some common datatypes and see how their instances of the main typeclasses act. We started with one of the simplest, <code>Maybe</code>, and now we move onto it's slightly more powerful cousin <code>Either</code>.</p>
+<h3 id="one-thing-or-the-other-thing">One thing or the other thing</h3>
+<p>Here is the data definition for <code>Either</code>. We have used <code>deriving</code> to auto-generate instances of the <code>Eq</code>, <code>Ord</code> and <code>Show</code> typeclasses as we don't need anything special going on with them.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">Either</span><span> a b
+</span><span>  = </span><span style="color:#d08770;">Left</span><span> a
+</span><span>  | </span><span style="color:#d08770;">Right</span><span> b
+</span><span>  </span><span style="color:#b48ead;">deriving</span><span> (</span><span style="color:#a3be8c;">Eq</span><span>, </span><span style="color:#a3be8c;">Ord</span><span>, </span><span style="color:#a3be8c;">Show</span><span>)
+</span></code></pre>
+<p>Whilst <code>Maybe</code> only had one type parameter, <code>a</code>, <code>Either</code> has both <code>a</code> and <code>b</code>. If we use the <code>Left</code> constructor, it holds an <code>a</code>, or the <code>Right</code> constructor holds a <code>b</code>.</p>
+<p>Here, we are returning either a <code>Left String</code> with some harsh words, or a <code>Right Int</code> with a nice answer to an easy sum.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">incrementOrTellMeOff </span><span style="color:#b48ead;">:: Int -&gt; Either String Int
+</span><span>incrementOrTellMeOff i
+</span><span>  = </span><span style="color:#b48ead;">if</span><span> i == </span><span style="color:#d08770;">6
+</span><span>    </span><span style="color:#b48ead;">then</span><span> (</span><span style="color:#d08770;">Left </span><span>&quot;</span><span style="color:#a3be8c;">I hate the number six, why have you done this?</span><span>&quot;)
+</span><span>    </span><span style="color:#b48ead;">else</span><span> (</span><span style="color:#d08770;">Right</span><span> (i + </span><span style="color:#d08770;">1</span><span>))
+</span><span>
+</span><span>incrementOrTellMeOff </span><span style="color:#d08770;">1 </span><span style="color:#65737e;">-- Right 2
+</span><span>incrementOrTellMeOff </span><span style="color:#d08770;">6 </span><span style="color:#65737e;">-- Left &quot;I hate the number six, why have you done this?&quot;
+</span></code></pre>
+<h3 id="functor">Functor</h3>
+<p>Next we'll define a <code>functor</code> instance for <code>Either</code>. The important intuition here is that the function <code>f</code> that is provided will only be run on a value inside <code>Right</code>. Anything held in a <code>Left</code> will be returned untouched.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">instance Functor</span><span> (</span><span style="color:#b48ead;">Either </span><span style="color:#bf616a;">a</span><span>) </span><span style="color:#b48ead;">where
+</span><span>  fmap f (</span><span style="color:#d08770;">Right</span><span> b) = </span><span style="color:#d08770;">Right</span><span> (f b) </span><span style="color:#65737e;">-- run the function over Right
+</span><span>  fmap _ (</span><span style="color:#d08770;">Left</span><span> a)  = </span><span style="color:#d08770;">Left</span><span> a      </span><span style="color:#65737e;">-- ignore the function for Left
+</span><span>
+</span><span>fmap (+</span><span style="color:#d08770;">1</span><span>) (</span><span style="color:#d08770;">Right 1</span><span>) </span><span style="color:#65737e;">-- Right 2
+</span><span>fmap (+</span><span style="color:#d08770;">1</span><span>) (</span><span style="color:#d08770;">Left 1</span><span>)  </span><span style="color:#65737e;">-- Left 1
+</span></code></pre>
+<p>The <code>Functor</code> typeclass is only allowed to affect one type parameter, so anything held in a <code>Left</code> will be returned untouched, so if we want to run functions over that, we'll need...</p>
+<h3 id="bifunctor">Bifunctor</h3>
+<p>This instance allows us to map over the left, right or indeed both sides of a datatype. We define it with the <code>bimap</code> function which takes a function for each side.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">instance Bifunctor Either where
+</span><span>  bimap f _ (</span><span style="color:#d08770;">Left</span><span> a)  = </span><span style="color:#d08770;">Left</span><span> (f a)
+</span><span>  bimap _ g (</span><span style="color:#d08770;">Right</span><span> b) = </span><span style="color:#d08770;">Right</span><span> (g b)
+</span><span>
+</span><span>bimap (+</span><span style="color:#d08770;">1</span><span>) (+</span><span style="color:#d08770;">100</span><span>) (</span><span style="color:#d08770;">Left 1</span><span>)   </span><span style="color:#65737e;">-- Left 2
+</span><span>bimap (+</span><span style="color:#d08770;">1000</span><span>) (+</span><span style="color:#d08770;">1</span><span>) (</span><span style="color:#d08770;">Right 1</span><span>) </span><span style="color:#65737e;">-- Right 2
+</span><span>first (+</span><span style="color:#d08770;">1</span><span>) (</span><span style="color:#d08770;">Right 1</span><span>)         </span><span style="color:#65737e;">-- Right 1
+</span><span>first (+</span><span style="color:#d08770;">1</span><span>) (</span><span style="color:#d08770;">Left 1</span><span>)          </span><span style="color:#65737e;">-- Left 2
+</span><span>second (+</span><span style="color:#d08770;">1</span><span>) (</span><span style="color:#d08770;">Left 1</span><span>)         </span><span style="color:#65737e;">-- Left 1
+</span></code></pre>
+<p>Just defining <code>bimap</code> also means we get the <code>first</code> function which just maps over the <code>Left</code> side, and the <code>second</code> function which just maps over the <code>Right</code> (so it's basically <code>fmap</code> with another name).</p>
+<h3 id="applicative">Applicative</h3>
+<p>The <code>applicative</code> instance for <code>Either</code> has two functions, <code>pure</code> and <code>&lt;*&gt;</code> (also called <code>ap</code>). We use <code>pure</code> to define a default instance of the datatype, so we just take the value and wrap it in <code>Right</code>. The <code>&lt;*&gt;</code> function is used to apply a function inside a <code>Right</code> to a value wrapped in another <code>Right</code>. However, if we hit a <code>Left</code> we return the first one immediately and stop computing.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">instance Applicative</span><span> (</span><span style="color:#b48ead;">Either </span><span style="color:#bf616a;">a</span><span>) </span><span style="color:#b48ead;">where
+</span><span>  pure a = </span><span style="color:#d08770;">Right</span><span> a
+</span><span>  (</span><span style="color:#d08770;">Right</span><span> f) &lt;*&gt; (</span><span style="color:#d08770;">Right</span><span> a) = </span><span style="color:#d08770;">Right</span><span> (f a)
+</span><span>  (</span><span style="color:#d08770;">Right</span><span> f) &lt;*&gt; (</span><span style="color:#d08770;">Left</span><span> a)  = </span><span style="color:#d08770;">Left</span><span> a
+</span><span>  (</span><span style="color:#d08770;">Left</span><span> a)  &lt;*&gt; \_        = </span><span style="color:#d08770;">Left</span><span> a
+</span><span>
+</span><span style="color:#d08770;">Right</span><span> (+</span><span style="color:#d08770;">1</span><span>) &lt;*&gt; </span><span style="color:#d08770;">Right 1 </span><span style="color:#65737e;">-- Right 2
+</span><span style="color:#d08770;">Right</span><span> (+</span><span style="color:#d08770;">1</span><span>) &lt;*&gt; </span><span style="color:#d08770;">Left 1  </span><span style="color:#65737e;">-- Left 1
+</span><span style="color:#d08770;">Left 10    </span><span>&lt;*&gt; </span><span style="color:#d08770;">Right 1 </span><span style="color:#65737e;">-- Left 10
+</span><span style="color:#d08770;">Left 2     </span><span>&lt;*&gt; </span><span style="color:#d08770;">Left 3  </span><span style="color:#65737e;">-- Left 2
+</span></code></pre>
+<p>Sometimes, this behaviour is not what we want as we might want to collect together all of the <code>Left</code> values rather than just the first one found. For this there is a variation on <code>Either</code> called <code>Validation</code>, which we'll look at in future.</p>
+<h3 id="monad">Monad</h3>
+<p>The <code>monad</code> instance for <code>Either</code> provides us with <code>&gt;&gt;=</code> (or <code>bind</code>). The behaviour is much like the <code>Applicative</code> above or indeed the <code>Monad</code> instance for <code>Maybe</code> - as soon as an error is found (ie, a <code>Left</code>) we return that error value and shortcircuit the computation, as such.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">instance Monad</span><span> (</span><span style="color:#b48ead;">Either </span><span style="color:#bf616a;">a</span><span>) </span><span style="color:#b48ead;">where
+</span><span>  </span><span style="color:#d08770;">Right</span><span> a &gt;&gt;= k = k a
+</span><span>  </span><span style="color:#d08770;">Left</span><span> e &gt;&gt;= \_ = </span><span style="color:#d08770;">Left</span><span> e
+</span><span>
+</span><span style="color:#d08770;">Right 10 </span><span>&gt;&gt;= \a -&gt; </span><span style="color:#d08770;">Right</span><span> (a + </span><span style="color:#d08770;">1</span><span>))      </span><span style="color:#65737e;">-- Right 11
+</span><span style="color:#d08770;">Left </span><span>&quot;</span><span style="color:#a3be8c;">oh no</span><span>&quot; &gt;&gt;= \a -&gt; </span><span style="color:#d08770;">Right</span><span> (a + </span><span style="color:#d08770;">1</span><span>))  </span><span style="color:#65737e;">-- Left &quot;oh no&quot;
+</span></code></pre>
+<h3 id="semigroup">Semigroup</h3>
+<p>This <code>semigroup</code> instance for <code>Either</code> differs from the standard one in <code>Data.Either</code> as, like our <code>Semigroup</code> instance for <code>Maybe</code> it has a constraint allowing us to combine <code>Semigroup</code> values inside. I like this better, having nested <code>Semigroup</code> values all magically combining is very enjoyable to my mind.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">instance</span><span> (</span><span style="color:#b48ead;">Semigroup </span><span style="color:#bf616a;">a</span><span>) </span><span style="color:#b48ead;">=&gt; Semigroup</span><span> (</span><span style="color:#b48ead;">Either </span><span style="color:#bf616a;">e a</span><span>) </span><span style="color:#b48ead;">where
+</span><span>  (</span><span style="color:#d08770;">Right</span><span> a) &lt;&gt; (</span><span style="color:#d08770;">Right</span><span> b) = </span><span style="color:#d08770;">Right</span><span> (a &lt;&gt; b)
+</span><span>  (</span><span style="color:#d08770;">Left</span><span> a)  &lt;&gt; (</span><span style="color:#d08770;">Left</span><span> b)  = </span><span style="color:#d08770;">Left</span><span> a
+</span><span>  (</span><span style="color:#d08770;">Left</span><span> a)  &lt;&gt; b         = b
+</span><span>  a         &lt;&gt; (</span><span style="color:#d08770;">Left</span><span> b)  = a
+</span><span>
+</span><span style="color:#d08770;">Right</span><span> [</span><span style="color:#d08770;">1</span><span>,</span><span style="color:#d08770;">2</span><span>,</span><span style="color:#d08770;">3</span><span>] &lt;&gt; </span><span style="color:#d08770;">Right</span><span> [</span><span style="color:#d08770;">4</span><span>,</span><span style="color:#d08770;">5</span><span>,</span><span style="color:#d08770;">6</span><span>] </span><span style="color:#65737e;">-- Right [1,2,3,4,5,6]
+</span><span style="color:#d08770;">Right</span><span> [</span><span style="color:#d08770;">1</span><span>,</span><span style="color:#d08770;">2</span><span>,</span><span style="color:#d08770;">3</span><span>] &lt;&gt; </span><span style="color:#d08770;">Left 1        </span><span style="color:#65737e;">-- Right [1,2,3]
+</span><span style="color:#d08770;">Left 1 </span><span>&lt;&gt; </span><span style="color:#d08770;">Right</span><span> [</span><span style="color:#d08770;">4</span><span>,</span><span style="color:#d08770;">5</span><span>,</span><span style="color:#d08770;">6</span><span>]        </span><span style="color:#65737e;">-- Right [4,5,6]
+</span><span style="color:#d08770;">Left 1 </span><span>&lt;&gt; </span><span style="color:#d08770;">Left 2               </span><span style="color:#65737e;">-- Left 1
+</span></code></pre>
+<h3 id="monoid">Monoid</h3>
+<p>Sadly, because <code>Either</code> has two type parameters rather than <code>Maybe</code>'s one, we can't have a <code>Monoid</code> instance as we won't know which value to put in <code>Left</code> to represent nothingness. Oh well.</p>
+<h3 id="foldable">Foldable</h3>
+<p>If we'd like to extract our value out of this <code>Either</code> context at some point we can use <code>foldable</code>. Note that we still provide a default <code>a</code> in the <code>Left</code> version of the function - the <code>Left</code> values might be a different type to the <code>Right</code> ones so there's no guarantee they'll be helpful in our fold, hence we still provide a default value.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">instance Foldable</span><span> (</span><span style="color:#b48ead;">Either </span><span style="color:#bf616a;">e</span><span>) </span><span style="color:#b48ead;">where
+</span><span>  foldr \_ a (</span><span style="color:#d08770;">Left</span><span> e) = a
+</span><span>  foldr f a (</span><span style="color:#d08770;">Right</span><span> b) = f b a
+</span><span>
+</span><span>foldr </span><span style="color:#8fa1b3;">(+) </span><span style="color:#d08770;">1</span><span> (</span><span style="color:#d08770;">Left 10</span><span>)  </span><span style="color:#65737e;">-- 1
+</span><span>foldr </span><span style="color:#8fa1b3;">(+) </span><span style="color:#d08770;">1</span><span> (</span><span style="color:#d08770;">Right 10</span><span>) </span><span style="color:#65737e;">-- 11
+</span></code></pre>
+<h3 id="alternative">Alternative</h3>
+<p>For the same reasons that defining <code>mempty</code> is impossible for <code>Monoid</code>, we can't define <code>Alternative</code> for <code>Either</code> because it's just too messy. I'm sorry.</p>
+<h3 id="monadplus">MonadPlus</h3>
+<p>As I'm sure we all remember, <code>MonadPlus</code> is just <code>Alternative</code> with a more dynamic sounding name, so we don't get this one either.</p>
+<h3 id="traversable">Traversable</h3>
+<p>The <code>traversable</code> instance for <code>Either</code> is very similar to <code>Maybe</code>. If <code>traverse</code> is run on a <code>Left</code> it wraps said <code>Left</code> and it's value inside whichever <code>Applicative</code> it is used with (the <code>pure</code> function coming from the other type rather than from <code>Either</code>). If we <code>traverse</code> a <code>Right</code> value then the provided function <code>f</code> is run on the <code>Right</code> values the same way in which they worked on <code>Just</code>. Note if we have several <code>Left</code> values, the shortcircuiting behaviour means we only get the first one back, shown here by using the <code>sequence</code> function (which is just <code>traverse id</code>, fact fans).</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">instance Traversable</span><span> (</span><span style="color:#b48ead;">Either </span><span style="color:#bf616a;">e</span><span>) </span><span style="color:#b48ead;">where
+</span><span>  traverse \_ (</span><span style="color:#d08770;">Left</span><span> e) = pure (</span><span style="color:#d08770;">Left</span><span> e)
+</span><span>  traverse f (</span><span style="color:#d08770;">Right</span><span> a) = fmap </span><span style="color:#d08770;">Right</span><span> (f a)
+</span><span>
+</span><span>sequence [</span><span style="color:#d08770;">Right 1</span><span>, </span><span style="color:#d08770;">Right 2</span><span>] </span><span style="color:#65737e;">-- Right [1,2]
+</span><span>sequence [</span><span style="color:#d08770;">Left 1</span><span>, </span><span style="color:#d08770;">Right 1</span><span>]  </span><span style="color:#65737e;">-- Left 1
+</span></code></pre>
+<p>If you are ever trying to turn a <code>List</code> of <code>Maybe</code> values into a <code>Maybe List</code>, or indeed turn any pair of <code>Applicatives</code> inside out, then <code>sequence</code> is probably what you are looking for. It's magic, honestly.</p>
+<h3 id="monadfail">MonadFail</h3>
+<p>It turns out <code>MonadFail</code> is quite fussy about things, and so because the <code>e</code> in <code>Either e a</code> can be a <code>String</code>, but might not be, we can't define it. What a pain in the arse, all told.</p>
+<h3 id="right-right-right-right">Right, right, right, right.</h3>
+<p>Anyway, that's some things. Tldr; <code>Either</code> isn't too dissimilar to <code>Maybe</code> when everything is going well, and a bit different when errors start happening. Also, <code>Either</code> has way less instances than I thought, which was somewhat a relief I have to admit. I can't decide whether to do <code>List</code> or something jazzier like <code>Reader</code> next, but it'll be something like that. Please note these aren't the same definitions as you'll find in the Haskell Prelude, as I have tried to write them with an emphasis on clarity/simplicity (or indeed go completely off-piste with <code>Semigroup</code>.) By all means check out the originals on <a href="http://hackage.haskell.org/package/base-4.12.0.0/docs/src/Data.Either.html#Either">Hackage</a>.</p>
+<p>If having skim-read this post you find yourself with strong feelings about it (positive or otherwise) I'd appreciate you shouting them at my face via the <a href="/contact.html">usual channels</a>. It's lonely down here in the soupy bottom of this old council bin.</p>
+<p>That's all.</p>
+<p>Further reading:</p>
+<p><a href="http://hackage.haskell.org/package/base-4.12.0.0/docs/Data-Either.html">Data.Either</a></p>
+
+
+    </main>
+
+    <footer>
+      <p><a href="mailto:danieljamesharvey@gmail.com">Contact</a> |
+      <a href="https://github.com/danieljharvey">Github</a></p>
+      <p>Links for nerds:
+        <a href="/atom.xml">atom</a>
+        <a href="/rss.xml">rss</a></p>
+
+    </footer>
+</body>
+
+</html>

@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - Typeclasses - Functor</title>
+    <link rel="stylesheet" href="https://danieljharvey.github.io/main.css">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="/">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="/">Posts</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        
+<h1 class="title">
+  Typeclasses - Functor
+</h1>
+<p class="subtitle"><strong>2018-11-16</strong></p>
+<p>
+ <p class="blog-meta">
+        
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/haskell/"
+          >#haskell</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/typeclasses/"
+          >#typeclasses</a
+        >
+         
+      </p>
+
+<p>Let's think about things that might or might not happen.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">Perhaps</span><span> a = </span><span style="color:#d08770;">Yeah</span><span> a | </span><span style="color:#d08770;">Nah
+</span></code></pre>
+<p>Perhaps is a datatype that we can also use as a container for other data (by holding it inside a nice <code>Yeah</code>), or to show that we have no data with <code>Nah</code>.</p>
+<p>Let's put things in it.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">john </span><span style="color:#b48ead;">:: Perhaps String
+</span><span>john = </span><span style="color:#d08770;">Yeah </span><span>&quot;</span><span style="color:#a3be8c;">John</span><span>&quot;
+</span></code></pre>
+<p>Great job. John is having a nice time there. How might we express an absence of John?</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">nope </span><span style="color:#b48ead;">:: Perhaps String
+</span><span>nope = </span><span style="color:#d08770;">Nah
+</span></code></pre>
+<p>OK. No Johns here.</p>
+<p>So what if we have a function that receives something wrapped in a <code>Perhaps</code> and wants to do stuff with it.</p>
+<p>I guess we have pattern matching, so we can use this to pull stuff out and do things with it. Let's add some question marks to this name, because that is always a valuable thing to do.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">questionAdd </span><span style="color:#b48ead;">:: Perhaps String -&gt; Perhaps String
+</span><span>questionAdd </span><span style="color:#d08770;">Nah         </span><span>= </span><span style="color:#d08770;">Nah
+</span><span>questionAdd (</span><span style="color:#d08770;">Yeah</span><span> name) = </span><span style="color:#d08770;">Yeah</span><span> (name ++ &quot;</span><span style="color:#a3be8c;">???</span><span>&quot;)
+</span><span style="color:#65737e;">-- questionAdd Nah  = Nah
+</span><span style="color:#65737e;">-- questionAdd john = Yeah &quot;John???&quot;
+</span></code></pre>
+<p>Ok. Seems good. What about adding a simple exclaimation point instead? (Remembering of course that anybody more than one at any point is a sure sign of insanity.)</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">exclaimAdd </span><span style="color:#b48ead;">:: Perhaps String -&gt; Perhaps String
+</span><span>exclaimAdd </span><span style="color:#d08770;">Nah         </span><span>= </span><span style="color:#d08770;">Nah
+</span><span>exclaimAdd (</span><span style="color:#d08770;">Yeah</span><span> name) = </span><span style="color:#d08770;">Yeah</span><span> (name ++ &quot;</span><span style="color:#a3be8c;">!</span><span>&quot;)
+</span><span style="color:#65737e;">-- exclaimAdd Nah  = Nah
+</span><span style="color:#65737e;">-- exclaimAdd john = Yeah &quot;John!&quot;
+</span></code></pre>
+<p>Ok. Sure. So far, so functional. Feels like we're repeating ourselves though. What if we could abstract out away the unwrapping-and-then-wrapping-again and the function itself? Well sure we can! That typeclass is called <code>Functor</code>. Let's open ghci and take a look.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#d08770;">Prelude</span><span>&gt; :i </span><span style="color:#d08770;">Functor
+</span></code></pre>
+<p>Here's the definition:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">class </span><span style="color:#ebcb8b;">Functor</span><span> (</span><span style="color:#bf616a;">f</span><span> :: * -&gt; *) </span><span style="color:#b48ead;">where
+</span><span>  </span><span style="color:#8fa1b3;">fmap </span><span style="color:#b48ead;">::</span><span> (</span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">b</span><span>) </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">f a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">f b
+</span><span>  </span><span style="color:#8fa1b3;">(&lt;$) </span><span style="color:#b48ead;">:: </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">f b </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">f a
+</span><span>  {-# </span><span style="color:#b48ead;">MINIMAL</span><span> fmap #-}
+</span></code></pre>
+<p>Looks like we can implement it by just using <code>fmap</code>. And that type signature kind of looks like what we want (if we squint very hard indeed). It's saying take a function of any <code>a</code> to any <code>b</code> (ie, <code>(a -&gt; b)</code>) and then pass me a functor with an <code>a</code> in it (ie, <code>f a</code>) and I will return the same functor but with the <code>b</code> from your function in it (ie, <code>f b</code>). So basically <code>fmap</code> is the "unwrapping-and-then-wrapping-again" we talked about earlier. Sounds good. Let's implement it.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">instance Functor Perhaps where
+</span><span>  fmap _ </span><span style="color:#d08770;">Nah      </span><span>= </span><span style="color:#d08770;">Nah
+</span><span>  fmap f (</span><span style="color:#d08770;">Yeah</span><span> a) = </span><span style="color:#d08770;">Yeah</span><span> (f a)
+</span></code></pre>
+<p>Looks great. The first thing you'll notice is that the <code>fmap</code> for <code>Nah</code> doesn't do anything. That's because although our <code>Yeah</code> can contains some <code>a</code>, our <code>Nah</code> contains nothing at all so cares very little for our <code>a -&gt; b</code> function. However, look! The second line is unwrapping the <code>a</code> from the <code>Yeah</code>, and then making a new <code>Yeah b</code> (because we make a <code>b</code> by running <code>f</code>, which is our <code>a -&gt; b</code> function). Therefore we can throw any old function at this and we should have a Nice Time.</p>
+<p>This function for instance, is used on a <code>String</code> to make the caller look somewhat unhinged.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">exclaim </span><span style="color:#b48ead;">:: String -&gt; String
+</span><span>exclaim str = str ++ &quot;</span><span style="color:#a3be8c;">!!!!!!!!!!!!</span><span>&quot;
+</span><span style="color:#65737e;">-- exclaim &quot;Horse&quot; == &quot;Horse!!!!!!!!!!!!&quot;
+</span></code></pre>
+<p>But using our new <code>Functor</code> instance means we can run it on our poor friend <code>john</code> from earlier, even though he is wrapped up in all that <code>Yeah</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">veryJohn </span><span style="color:#b48ead;">:: Perhaps String
+</span><span>veryJohn = fmap exclaim john
+</span><span style="color:#65737e;">-- veryJohn == Yeah &quot;John!!!!!!!!!!!!&quot;
+</span></code></pre>
+<p>Sorry John.</p>
+<p>What if we run the same function over a <code>Nah</code>? Does everything explode?</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">stillNope </span><span style="color:#b48ead;">:: Perhaps String
+</span><span>stillNope = fmap exclaim nope
+</span><span style="color:#65737e;">-- stillNope = Nah
+</span></code></pre>
+<p>Nah. Seems fine. <code>Nah</code> ignores the function altogether, as it has no <code>a</code> in it, so no interest.</p>
+<p>Ok. So this seems pretty great. There is one thing to know about <code>Functor</code> however that can be a little bit brain bending at first, and that's the idea that they can be "lawful". That is to say, that when you <code>fmap</code> over something, it doesn't also break that thing, and that it unwraps and wraps in the right way. Haskell's type system can help you make sure your <code>fmap</code> has the right types, but it can't enforce that your <code>Functor</code> makes sense I'm afraid. That's up to you.</p>
+<p>The first law is called Identity. It means that if you <code>fmap</code> using an Identity function, nothing will change. This is a trick I suppose - the Identity function looks like this:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">identity </span><span style="color:#b48ead;">:: </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">a
+</span><span>identity a = a
+</span><span style="color:#65737e;">-- this is also called id in the Prelude
+</span></code></pre>
+<p>So running it on anything does nothing - the Identity law is basically checking the <code>Functor</code> is up to no funny business. Our Perhaps functor is OK, but what about this chancer?</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">Poohoops</span><span> a = </span><span style="color:#d08770;">Yerp</span><span> a | </span><span style="color:#d08770;">Nerp </span><span style="color:#b48ead;">deriving</span><span> (</span><span style="color:#a3be8c;">Eq</span><span>, </span><span style="color:#a3be8c;">Show</span><span>)
+</span><span>
+</span><span style="color:#b48ead;">instance Functor Poohoops where
+</span><span>    fmap _ </span><span style="color:#d08770;">Nerp     </span><span>= </span><span style="color:#d08770;">Nerp
+</span><span>    fmap f (</span><span style="color:#d08770;">Yeah</span><span> a) = </span><span style="color:#d08770;">Nerp
+</span></code></pre>
+<p>If we <code>fmap identity Nerp</code> we get <code>Nerp</code>, so that all seems fine. However, if we <code>fmap identity Yeah "Detroit"</code> then we also get <code>Nerp</code> which is an absolute bloody disaster. This functor is broken. Put it straight in the bin, and set the bin on fire.</p>
+<p>The second law is called Composition. It means that if we <code>fmap</code> one function over our <code>Functor</code> and then <code>fmap</code> a second function over the result, it would be the same as combining the two functions and doing a single <code>fmap</code>.</p>
+<p>I'm sorry. What?</p>
+<p>OK, let's have an example of that.</p>
+<p>Therefore, if as well as our rather worrying "exclaim" function, we have one for shouting as well (don't be distracted by the <code>&lt;$&gt;</code> for now, we'll come to it in future...)</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">capitalise </span><span style="color:#b48ead;">:: String -&gt; String
+</span><span>capitalise str = toUpper &lt;$&gt; str
+</span><span style="color:#65737e;">-- capitalise &quot;Horse&quot; == &quot;HORSE&quot;
+</span></code></pre>
+<p>...we can combine it to make one terrifying function...</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">shouting </span><span style="color:#b48ead;">:: Perhaps String -&gt; PerhapsString
+</span><span>shouting p = fmap (capitalise . exclaim) p
+</span><span style="color:#65737e;">-- shouting (Yeah &quot;Bruce&quot;) == Yeah &quot;BRUCE!!!!!!!!!!!!&quot;
+</span></code></pre>
+<p>...which is exactly the same as this:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">shouting2 </span><span style="color:#b48ead;">:: Perhaps String -&gt; PerhapsString
+</span><span>shouting2 p = fmap capitalise (fmap exclaim p)
+</span><span style="color:#65737e;">-- shouting2 (Yeah &quot;Bruce&quot;) == Yeah &quot;BRUCE!!!!!!!!!!!!&quot;
+</span></code></pre>
+<p>The Composition law just makes sure these are the same thing, so again, no funny business can take place.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">compositionLaw </span><span style="color:#b48ead;">:: Bool
+</span><span>compositionLaw = fmap (capitalise . exclaim) (</span><span style="color:#d08770;">Yeah </span><span>&quot;</span><span style="color:#a3be8c;">Bruce</span><span>&quot;)
+</span><span>              == fmap capitalise (fmap exclaim (</span><span style="color:#d08770;">Yeah </span><span>&quot;</span><span style="color:#a3be8c;">Bruce</span><span>&quot;))
+</span><span style="color:#65737e;">-- compositionLaw == True
+</span><span style="color:#65737e;">-- ie, either way of doing this ends up the same
+</span></code></pre>
+<p>Anyway. This is just one introduction to a kind of <code>functor</code>. In short, hand-wavey terms:</p>
+<h4 id="a-functor-is-a-thing-that-lets-you-safely-crap-around-with-the-values-inside-it-without-breaking-the-thing-itself">"A functor is a thing that lets you safely crap around with the values inside it without breaking the thing itself"</h4>
+<p>A few important notes and disclaimers:</p>
+<ol>
+<li>
+<p>There doesn't have to be just one <code>a</code> in the functor for this pattern to work. Another goto example for this is <code>List</code>, which can have absolutely loads in. In that case, the <code>fmap</code> runs the <code>(a -&gt; b)</code> function on every item in the list, like <code>array.map</code> from Javascript, so it takes <code>[a]</code> and turns it into <code>[b]</code>.</p>
+</li>
+<li>
+<p>There are functor instances for many datatypes such as <code>IO</code> where the <code>a</code> inside might represents a value that isn't there yet (like perhaps it will come from some user input etc). Therefore doing <code>fmap</code> on such a datatype is just saying "change the <code>a</code> inside to <code>b</code> whenever it happens to turn up", like "when the user types their name, change the string to have lots of exclamation marks so they look like a weirdo when we later print it back for them" or similar. This kind of idea can get a bit brain bending but once it settles it's sort of magical to know you can crap around with the future just like you're working with an array.</p>
+</li>
+</ol>
+<ol start="3">
+<li>The <code>Perhaps</code> data type we have invented is really called <code>Maybe</code> and it's all over the place. More on that another time, perhaps.</li>
+</ol>
+<p>That's quite enough for now.</p>
+<p>Make sense? If not, why not <a href="/contact.html">get in touch</a>?</p>
+<p>Further reading:</p>
+<p><a href="http://adit.io/posts/2013-04-17-functors,_applicatives,_and_monads_in_pictures.html">Functors, Applicative and Monads in Pictures</a></p>
+
+
+    </main>
+
+    <footer>
+      <p><a href="mailto:danieljamesharvey@gmail.com">Contact</a> |
+      <a href="https://github.com/danieljharvey">Github</a></p>
+      <p>Links for nerds:
+        <a href="/atom.xml">atom</a>
+        <a href="/rss.xml">rss</a></p>
+
+    </footer>
+</body>
+
+</html>

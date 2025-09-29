@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - Typeclasses - Alternative</title>
+    <link rel="stylesheet" href="https://danieljharvey.github.io/main.css">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="/">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="/">Posts</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        
+<h1 class="title">
+  Typeclasses - Alternative
+</h1>
+<p class="subtitle"><strong>2019-01-06</strong></p>
+<p>
+ <p class="blog-meta">
+        
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/haskell/"
+          >#haskell</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/typeclasses/"
+          >#typeclasses</a
+        >
+         
+      </p>
+
+<p>Let's think about things that may or may not happen (again, I know, I'm sorry).</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">Perhaps</span><span> a = </span><span style="color:#d08770;">Yeah</span><span> a | </span><span style="color:#d08770;">Nope </span><span style="color:#b48ead;">deriving</span><span> (</span><span style="color:#a3be8c;">Eq</span><span>)
+</span></code></pre>
+<p>A classic datatype, that we can use for expressing either <em>Some Sort Of Value</em> or <em>The Entire Concept Of Failure</em>. We can use it when getting the first item of a list, which may or may not actually exist.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">first </span><span style="color:#b48ead;">::</span><span> [</span><span style="color:#bf616a;">a</span><span>] </span><span style="color:#b48ead;">-&gt; Perhaps </span><span style="color:#bf616a;">a
+</span><span>first (a:_) = </span><span style="color:#d08770;">Yeah</span><span> a
+</span><span>first _     = </span><span style="color:#d08770;">Nope
+</span></code></pre>
+<p>If there IS a first item in the list we get the item wrapped in a <code>Yeah</code>, if not we get <code>Nope</code>.</p>
+<p>We can make another very similar function for getting the second item as well...</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">second </span><span style="color:#b48ead;">::</span><span> [</span><span style="color:#bf616a;">a</span><span>] </span><span style="color:#b48ead;">-&gt; Perhaps </span><span style="color:#bf616a;">a
+</span><span>second (_:b:_) = </span><span style="color:#d08770;">Yeah</span><span> b
+</span><span>second _       = </span><span style="color:#d08770;">Nope
+</span></code></pre>
+<p>Now let's say that for some entirely incomprehensible reason, we'd like the second item in the list, if not, the first item. What would that function look like?</p>
+<h3 id="first-solution">First solution</h3>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">naiveImplementation </span><span style="color:#b48ead;">::</span><span> [</span><span style="color:#bf616a;">a</span><span>] </span><span style="color:#b48ead;">-&gt; Perhaps </span><span style="color:#bf616a;">a
+</span><span>naiveImplementation as = </span><span style="color:#b48ead;">case</span><span> second as </span><span style="color:#b48ead;">of
+</span><span>  </span><span style="color:#d08770;">Yeah</span><span> s -&gt; </span><span style="color:#d08770;">Yeah</span><span> s
+</span><span>  </span><span style="color:#d08770;">Nope   </span><span>-&gt; first as
+</span></code></pre>
+<p>Does it work?</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">emptyList </span><span style="color:#b48ead;">:: Perhaps Int
+</span><span>emptyList = naiveImplementation </span><span style="color:#d08770;">[]
+</span><span style="color:#65737e;">-- emptyList == Nope
+</span><span>
+</span><span style="color:#8fa1b3;">oneItemList </span><span style="color:#b48ead;">:: Perhaps Int
+</span><span>oneItemList = naiveImplementation [</span><span style="color:#d08770;">1</span><span>]
+</span><span style="color:#65737e;">-- oneItemList == Yeah 1
+</span><span>
+</span><span style="color:#8fa1b3;">twoItemList </span><span style="color:#b48ead;">:: Perhaps Int
+</span><span>twoItemList = naiveImplementation [</span><span style="color:#d08770;">1</span><span>,</span><span style="color:#d08770;">2</span><span>]
+</span><span style="color:#65737e;">-- oneItemList == Yeah 2
+</span></code></pre>
+<p>It bloody does! Lovely stuff. Let's all go home and put our feet up, we've nailed it.</p>
+<p>OK. But hang on, that <code>naiveImplementation</code> function does seem a bit much though, especially if we start adding more cases to it. Plus that name kinda suggests, well, that the function might not represent the best way to go about this.</p>
+<p>What if there was a typeclass that was designed to make things like this easier to deal with?</p>
+<p>Let's meet <code>Alternative</code>!</p>
+<h3 id="definition">Definition</h3>
+<p>What does <code>ghci</code> have to say about this so-called <code>Alternative</code>?</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#d08770;">Prelude</span><span>&gt; </span><span style="color:#b48ead;">import </span><span>Control.Applicative
+</span><span style="color:#d08770;">Prelude</span><span>&gt; :i </span><span style="color:#d08770;">Alternative
+</span></code></pre>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">class </span><span style="color:#ebcb8b;">Applicative </span><span style="color:#bf616a;">f</span><span> =&gt; </span><span style="color:#a3be8c;">Alternative</span><span> (</span><span style="color:#bf616a;">f</span><span> :: * -&gt; *) </span><span style="color:#b48ead;">where
+</span><span>  </span><span style="color:#8fa1b3;">empty </span><span style="color:#b48ead;">:: </span><span style="color:#bf616a;">f a
+</span><span>  </span><span style="color:#8fa1b3;">(&lt;|&gt;) </span><span style="color:#b48ead;">:: </span><span style="color:#bf616a;">f a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">f a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">f a
+</span><span>  {-# </span><span style="color:#b48ead;">MINIMAL</span><span> empty, (&lt;|&gt;) #-}
+</span></code></pre>
+<p>OK. So the most interesting thing is that any <code>Alternative</code> first needs to be a valid instance of <a href="/posts/2018-11-17-typeclasses-applicative.markdown">Applicative</a> first.</p>
+<p>Secondly, we can get one just by defining <code>empty</code> and <code>&lt;|&gt;</code>. What are those then?</p>
+<ol>
+<li>
+<p><code>empty</code> is the <em>identity</em> element. This is a bit like the <code>mempty</code> in <a href="/posts/2019-01-04-typeclasses-monoid.markdown">Monoid</a> - it is a value that when added to the datatype, does nothing to it.</p>
+</li>
+<li>
+<p><code>&lt;|&gt;</code> is sort of an <code>or</code> for data types. Given two values, it returns the first <em>valid</em> one, as such. What <em>valid</em> means depends on the datatype, but usually that value won't be the same as <code>empty</code>.</p>
+</li>
+</ol>
+<p>If you're looking at this and thinking "This Seems Very Similar To A Monoid" then, yes, it sort of does, consisting as it does of one <em>Smash Things Together</em> function and one <em>Sort Of Nothingy</em> value.</p>
+<p>Let's define it for our exciting <code>Perhaps</code> type.</p>
+<h3 id="instances">Instances</h3>
+<p>Before we can have an <code>Applicative</code> we'll need a <a href="/posts/2018-11-16-typeclasses-functor.markdown">Functor</a> instance. This one runs the function over the value if it's there, if not, it does nothing at all.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">instance Functor Perhaps where
+</span><span>  fmap f (</span><span style="color:#d08770;">Yeah</span><span> a) = </span><span style="color:#d08770;">Yeah</span><span> (f a)
+</span><span>  fmap _ _        = </span><span style="color:#d08770;">Nope
+</span></code></pre>
+<p>OK. Great stuff. Let's make an <code>Applicative</code> instance next. The <code>pure</code> instance just wraps whatever it's passed in a <code>Yeah</code>. The <code>&lt;*&gt;</code> (or <code>apply</code>) function is written so that if we have a function inside <code>f</code> and a value in <code>a</code> then we'll get the function <code>f</code> applied to <code>a</code> and wrapped in <code>Yeah</code>, if not we'll get a <code>Nope</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">instance Applicative Perhaps where
+</span><span>  pure a = </span><span style="color:#d08770;">Yeah</span><span> a
+</span><span>  (</span><span style="color:#d08770;">Yeah</span><span> f) &lt;*&gt; (</span><span style="color:#d08770;">Yeah</span><span> a) = </span><span style="color:#d08770;">Yeah</span><span> (f a)
+</span><span>  _        &lt;*&gt; _        = </span><span style="color:#d08770;">Nope
+</span></code></pre>
+<p>Yeah? Yeah.</p>
+<p>OK. Here is the exciting part:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">instance Alternative Perhaps where
+</span><span>    empty             = </span><span style="color:#d08770;">Nope
+</span><span>    </span><span style="color:#d08770;">Yeah</span><span> x  &lt;|&gt; _     = </span><span style="color:#d08770;">Yeah</span><span> x
+</span><span>    _       &lt;|&gt; y     = y
+</span></code></pre>
+<p>Look at that! An exciting <code>Alternative</code> instance. <code>Nope</code> is our <code>empty</code> (or <em>identity</em>) value, and our <code>&lt;|&gt;</code> function returns the first value if it's a <code>Yeah</code> (which represents <em>valid</em> data in the context of our <code>Perhaps</code> datatype), if not it returns whatever the second value is.</p>
+<p>Let's use it to make some contrived code ever so slightly smaller and more difficult to understand.</p>
+<h3 id="better-solution">Better Solution</h3>
+<p>Here is our <em>Get The Second Item, Or If That Doesn't Work Out Then Let's Settle For The First Item</em> function.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">getPreferred </span><span style="color:#b48ead;">::</span><span> [</span><span style="color:#bf616a;">a</span><span>] </span><span style="color:#b48ead;">-&gt; Perhaps </span><span style="color:#bf616a;">a
+</span><span>getPreferred as = second as &lt;|&gt; first as
+</span></code></pre>
+<p>Much easier to understand! It almost looks like <code>second || first</code>, which I like a lot.</p>
+<p>Don't trust me?</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">notFound </span><span style="color:#b48ead;">:: Perhaps Int
+</span><span>notFound = getPreferred </span><span style="color:#d08770;">[]
+</span><span style="color:#65737e;">-- notFound == Nope
+</span><span>
+</span><span style="color:#8fa1b3;">found1 </span><span style="color:#b48ead;">:: Perhaps Int
+</span><span>found1 = getPreferred [</span><span style="color:#d08770;">1</span><span>]
+</span><span style="color:#65737e;">-- found1 == Yeah 1
+</span><span>
+</span><span style="color:#8fa1b3;">found2 </span><span style="color:#b48ead;">:: Perhaps Int
+</span><span>found2 = getPreferred [</span><span style="color:#d08770;">1</span><span>,</span><span style="color:#d08770;">2</span><span>]
+</span><span style="color:#65737e;">-- found2 = Yeah 2
+</span></code></pre>
+<p>See! And you doubted me!</p>
+<p>Now, that seems like a lot of instance writing for not much, but often the place you'll find <code>Alternative</code> is in stuff like routing for front end applications. Let's have a look at something like that:</p>
+<h3 id="routing-example">Routing Example</h3>
+<p>Here's a datatype to describe all the pages in a completely fictional and somewhat limited website...</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">Route </span><span>= </span><span style="color:#d08770;">Index
+</span><span>           | </span><span style="color:#d08770;">Gallery
+</span><span>           | </span><span style="color:#d08770;">Contact
+</span><span>           | </span><span style="color:#d08770;">Complaints
+</span><span>           | </span><span style="color:#d08770;">Help </span><span style="color:#b48ead;">deriving</span><span> (</span><span style="color:#a3be8c;">Eq</span><span>, </span><span style="color:#a3be8c;">Show</span><span>)
+</span></code></pre>
+<p>...some type aliases to make the type signatures we're about to write easier to understand...</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">type </span><span style="color:#d08770;">Url </span><span>= </span><span style="color:#d08770;">String
+</span><span style="color:#b48ead;">type </span><span style="color:#d08770;">Match </span><span>= </span><span style="color:#d08770;">String
+</span></code></pre>
+<p>...and a (rather basic) function for taking the passed <code>url</code> and matching it to the page we want to be looking at:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">matches </span><span style="color:#b48ead;">:: Match -&gt; Route -&gt; Url -&gt; Perhaps Route
+</span><span>matches match route url = </span><span style="color:#b48ead;">if</span><span> isInfixOf match&#39; url&#39;
+</span><span>                        </span><span style="color:#b48ead;">then </span><span style="color:#d08770;">Yeah</span><span> route
+</span><span>                        </span><span style="color:#b48ead;">else </span><span style="color:#d08770;">Nope </span><span style="color:#b48ead;">where
+</span><span>                          match&#39; = toLower &lt;$&gt; match
+</span><span>                          url&#39;   = toLower &lt;$&gt; url
+</span></code></pre>
+<p>What's going on here?</p>
+<ol>
+<li>
+<p>First, it converts our <code>match</code> and <code>url</code> strings to lowercase by mapping <code>toLower</code> from <code>Data.Char</code> over.</p>
+</li>
+<li>
+<p>Then, it uses <code>isInfixOf</code> from <code>Data.List</code> which returns a <code>Boolean</code> telling us whether the <code>match</code> string can be found inside the <code>url</code> string.</p>
+</li>
+<li>
+<p>If so, return the passed <code>Route</code> wrapped in a <code>Yeah</code>, if not, return <code>Nope</code>.</p>
+</li>
+</ol>
+<p>Good stuff!</p>
+<p>And now here is our actual logic, that uses the <code>matches</code> function to find out where we should navigate to in our excellent website.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">matchRoute </span><span style="color:#b48ead;">:: Url -&gt; Perhaps Route
+</span><span>matchRoute url = matches &quot;</span><span style="color:#a3be8c;">gallery</span><span>&quot; </span><span style="color:#d08770;">Gallery</span><span> url
+</span><span>             &lt;|&gt; matches &quot;</span><span style="color:#a3be8c;">contact</span><span>&quot; </span><span style="color:#d08770;">Contact</span><span> url
+</span><span>             &lt;|&gt; matches &quot;</span><span style="color:#a3be8c;">complaints</span><span>&quot; </span><span style="color:#d08770;">Complaints</span><span> url
+</span><span>             &lt;|&gt; matches &quot;</span><span style="color:#a3be8c;">help</span><span>&quot; </span><span style="color:#d08770;">Help</span><span> url
+</span></code></pre>
+<p>Assuming we always want to navigate somewhere, we can also make a wrapper function that returns a default <code>Route</code> if we do not find a valid one.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">matchRouteDefault </span><span style="color:#b48ead;">:: Url -&gt; Route
+</span><span>matchRouteDefault url =
+</span><span>  </span><span style="color:#b48ead;">case</span><span> matchRoute url </span><span style="color:#b48ead;">of
+</span><span>    </span><span style="color:#d08770;">Yeah</span><span> route -&gt; route
+</span><span>    _          -&gt; </span><span style="color:#d08770;">Index
+</span></code></pre>
+<p>Let's use it to navigate to the <code>Gallery</code>, which I have no doubt is a very good example of the genre.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">findGallery </span><span style="color:#b48ead;">:: Route
+</span><span>findGallery = matchRouteDefault &quot;</span><span style="color:#a3be8c;">http://internet.com/gallery</span><span>&quot;
+</span><span style="color:#65737e;">-- findGallery == Gallery
+</span></code></pre>
+<p>Or default to the <code>Index</code> when we're passed a load of old rubbish.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">findDefault </span><span style="color:#b48ead;">:: Route
+</span><span>findDefault = matchRouteDefault &quot;</span><span style="color:#a3be8c;">http://internet.com/rubbish</span><span>&quot;
+</span><span style="color:#65737e;">-- findDefault == Index
+</span></code></pre>
+<p>We're basically front end development experts now. Great stuff.</p>
+<h3 id="wrapping-up">Wrapping Up</h3>
+<p>The <code>Control.Applicative</code> documentation describes <code>Alternative</code> as a <em>"a Monoid on applicative functors"</em>, and perhaps I could have just led with that and saved us all a bunch of trouble. This kind of typeclass mainly gives us a nicer syntax so that we can bend our code to closer match the domain we are working in, which is generally a Good Thing in my book.</p>
+<p>(You may notice we've done a lot of work here defining <code>Perhaps</code> when we could have just used <code>Maybe</code> and saved ourselves writing a lot of instances but it's my blog and I can do what I want.)</p>
+<p>Make sense? If not, why not <a href="/contact.html">get in touch</a>?</p>
+<p>Further reading:</p>
+<p><a href="http://hackage.haskell.org/package/base-4.12.0.0/docs/Control-Applicative.html">Control.Applicative</a></p>
+<p><a href="https://en.wikibooks.org/wiki/Haskell/Alternative_and_MonadPlus">Alternative and MonadPlus</a></p>
+
+
+    </main>
+
+    <footer>
+      <p><a href="mailto:danieljamesharvey@gmail.com">Contact</a> |
+      <a href="https://github.com/danieljharvey">Github</a></p>
+      <p>Links for nerds:
+        <a href="/atom.xml">atom</a>
+        <a href="/rss.xml">rss</a></p>
+
+    </footer>
+</body>
+
+</html>

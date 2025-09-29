@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - Let's write a database (part 4)</title>
+    <link rel="stylesheet" href="https://danieljharvey.github.io/main.css">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="/">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="/">Posts</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        
+<h1 class="title">
+  Let&#x27;s write a database (part 4)
+</h1>
+<p class="subtitle"><strong>2025-09-07</strong></p>
+<p>
+ <p class="blog-meta">
+        
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/database/"
+          >#database</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/query-engine/"
+          >#query-engine</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/rust/"
+          >#rust</a
+        >
+         
+      </p>
+
+<p>Hello, hello, hello. Welcome to part four of this adventure where we're making a database by hand. In part three we did some joins, and today we're doing to do some limiting.</p>
+<p>If you'd like to look at the code, it's <a href="https://github.com/danieljharvey/lets-build-a-database">right here</a>.</p>
+<h2 id="no-no-no-no-no-no-no-no-no-no-no-no-there-s-no-limits">No no, no no no no, no no no no, no no, there's no limits</h2>
+<p>Limit is very straightforward, it's used to control the amount of data we get back from a query.</p>
+<pre data-lang="sql" style="background-color:#2b303b;color:#c0c5ce;" class="language-sql "><code class="language-sql" data-lang="sql"><span style="color:#b48ead;">select </span><span style="color:#bf616a;">* </span><span style="color:#b48ead;">from</span><span> albums </span><span style="color:#b48ead;">limit </span><span style="color:#d08770;">10
+</span></code></pre>
+<p>...will get 10 items from the albums table. To help decide how we choose <em>which</em> 10, we'll need ordering which will come next.</p>
+<p>We add a new <code>Limit</code> to the <code>Query</code> type, containing the following:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">pub struct </span><span>Limit {
+</span><span>    </span><span style="color:#b48ead;">pub </span><span style="color:#bf616a;">from</span><span>: Box&lt;Query&gt;,
+</span><span>    </span><span style="color:#b48ead;">pub </span><span style="color:#bf616a;">limit</span><span>: </span><span style="color:#b48ead;">u64</span><span>,
+</span><span>}
+</span></code></pre>
+<p>Then we add this to our <code>run_query</code> function:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span>Query::Limit(Limit { limit, from }) =&gt; {
+</span><span>    </span><span style="color:#b48ead;">let</span><span> QueryStep {
+</span><span>        schema,
+</span><span>        </span><span style="color:#b48ead;">mut</span><span> rows,
+</span><span>    } = </span><span style="color:#96b5b4;">run_query</span><span>(from)?;
+</span><span>
+</span><span style="color:#b48ead;">let</span><span> size: </span><span style="color:#b48ead;">usize </span><span>= (*limit).</span><span style="color:#96b5b4;">try_into</span><span>().</span><span style="color:#96b5b4;">unwrap</span><span>();
+</span><span>
+</span><span>    rows.</span><span style="color:#96b5b4;">truncate</span><span>(size);
+</span><span>
+</span><span>    Ok(QueryStep { schema, rows })
+</span><span>}
+</span></code></pre>
+<p>That's the whole thing. What a disappointing blog post.</p>
+<h2 id="what-s-next">What's next?</h2>
+<p>Next time we're doing ordering, which is marginally more exciting, but not that exciting tbh.</p>
+<p>Make sense? If not, <a href="/contact.html">get in touch</a>!</p>
+
+
+    </main>
+
+    <footer>
+      <p><a href="mailto:danieljamesharvey@gmail.com">Contact</a> |
+      <a href="https://github.com/danieljharvey">Github</a></p>
+      <p>Links for nerds:
+        <a href="/atom.xml">atom</a>
+        <a href="/rss.xml">rss</a></p>
+
+    </footer>
+</body>
+
+</html>

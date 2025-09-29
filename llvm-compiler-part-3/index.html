@@ -1,0 +1,533 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - Compiling a functional language to LLVM, part 3</title>
+    <link rel="stylesheet" href="https://danieljharvey.github.io/main.css">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="/">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="/">Posts</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        
+<h1 class="title">
+  Compiling a functional language to LLVM, part 3
+</h1>
+<p class="subtitle"><strong>2023-04-11</strong></p>
+<p>
+ <p class="blog-meta">
+        
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/plt/"
+          >#plt</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/mimsa/"
+          >#mimsa</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/typechecker/"
+          >#typechecker</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/llvm/"
+          >#llvm</a
+        >
+         
+      </p>
+
+<p>Welcome to part 3 of this series in compiling functional languages to LLVM. In
+<a href="/posts/2023-02-23-llvm-compiler-part-2.html">part 2</a> we added basic control
+flow to our langauge with an <code>if / then / else</code> construct.</p>
+<p>Today we're going to get one important step towards a functional programming
+language by adding functions and variables.</p>
+<p>By the end of today we'll be able to make small modules such as:</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#b48ead;">function </span><span style="color:#8fa1b3;">add</span><span>(</span><span style="color:#bf616a;">a:</span><span> integer, b: integer) {
+</span><span>  </span><span style="color:#bf616a;">a</span><span> + b
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">function </span><span style="color:#8fa1b3;">increment</span><span>(</span><span style="color:#bf616a;">a:</span><span> integer) {
+</span><span>  </span><span style="color:#bf616a;">a</span><span> + 1
+</span><span>}
+</span><span>
+</span><span style="color:#bf616a;">add</span><span>(increment(1)</span><span style="color:#bf616a;">,</span><span> add(2, 3))
+</span></code></pre>
+<p>However, there are quite a few things our functions <em>won't</em> do.</p>
+<ul>
+<li>They can't call themselves recursively (ie, <code>function factorial(a: Integer) { if a == 0 then 1 else a * factorial(a - 1) }</code>. This is to simplify the typechecker
+implementation for the time being rather than any limitation in LLVM - we'll come back round to making this
+possible.</li>
+<li>We must define all function arguments up front (ie, <code>a: Integer, b: Boolean</code>). It is possible to infer these, but let's keep things simple for
+now.</li>
+<li>Functions can only call functions defined before them. This can be solved by
+doing some dependency analysis before typechecking (ie, move things around to
+typecheck them in a sensible order). We avoid this for now, but will come
+back to it.</li>
+<li>Functions can't return other functions, they can only be defined at the top
+level. This is a limitation of LLVM, however in future chapters we'll work around this by
+implementing closures.</li>
+</ul>
+<h2 id="ok-lets-get-concrete">OK, lets get concrete</h2>
+<p>We're going to need some new datatypes to express all the new things we want to
+do.</p>
+<h3 id="function">Function</h3>
+<p>Firstly, we have a <code>Function</code> type.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">Function</span><span> ann = </span><span style="color:#d08770;">Function
+</span><span>  { fnAnn :: ann,
+</span><span>    </span><span style="color:#8fa1b3;">fnArgs </span><span style="color:#b48ead;">::</span><span> [(</span><span style="color:#b48ead;">ArgumentName</span><span>, </span><span style="color:#b48ead;">Type </span><span style="color:#bf616a;">ann</span><span>)],
+</span><span>    </span><span style="color:#8fa1b3;">fnFunctionName </span><span style="color:#b48ead;">:: FunctionName</span><span>,
+</span><span>    </span><span style="color:#8fa1b3;">fnBody </span><span style="color:#b48ead;">:: Expr </span><span style="color:#bf616a;">ann
+</span><span>  }
+</span><span>  </span><span style="color:#b48ead;">deriving</span><span> stock (</span><span style="color:#d08770;">Eq</span><span>, </span><span style="color:#d08770;">Ord</span><span>, </span><span style="color:#d08770;">Show</span><span>, </span><span style="color:#d08770;">Functor</span><span>)
+</span></code></pre>
+<p>This lets us describe something like:</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#b48ead;">function </span><span style="color:#8fa1b3;">add</span><span>(</span><span style="color:#bf616a;">a:</span><span> Integer, b: Integer) { 
+</span><span>  </span><span style="color:#bf616a;">a</span><span> + b 
+</span><span>}
+</span></code></pre>
+<p>Note that the function body is a single <code>Expr</code>, and that it can use variables
+<code>a</code> and <code>b</code> introduced as function arguments.</p>
+<p>The <code>ann</code> type will contain file location information
+after parsing, and then will contain the type of the function after
+typechecking.</p>
+<p>Our function implementation is very limited - we can only
+use variables passed into the function as arguments, and must explicitly
+annotate each function argument with it's type.</p>
+<h3 id="module">Module</h3>
+<p>A <code>Module</code> lets us combine multiple functions and a <code>main</code> expression.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">Module</span><span> ann = </span><span style="color:#d08770;">Module
+</span><span>  { mdFunctions :: [</span><span style="color:#d08770;">Function</span><span> ann],
+</span><span>    </span><span style="color:#8fa1b3;">mdExpr </span><span style="color:#b48ead;">:: Expr </span><span style="color:#bf616a;">ann
+</span><span>  }
+</span><span>  </span><span style="color:#b48ead;">deriving</span><span> stock (</span><span style="color:#d08770;">Eq</span><span>, </span><span style="color:#d08770;">Ord</span><span>, </span><span style="color:#d08770;">Show</span><span>, </span><span style="color:#d08770;">Functor</span><span>)
+</span></code></pre>
+<p>This lets us write code like:</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#b48ead;">function </span><span style="color:#8fa1b3;">increment</span><span>(</span><span style="color:#bf616a;">a:</span><span> Integer) {
+</span><span>  </span><span style="color:#bf616a;">a</span><span> + 1
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">function </span><span style="color:#8fa1b3;">decrement</span><span>(</span><span style="color:#bf616a;">a:</span><span> Integer) {
+</span><span>  </span><span style="color:#bf616a;">a</span><span> - 1
+</span><span>}
+</span><span>
+</span><span style="color:#bf616a;">increment</span><span>(decrement(1)) =</span><span style="color:#a3be8c;">= </span><span style="color:#bf616a;">1
+</span></code></pre>
+<p>As mentioned earlier, functions can only be used in the order
+they are defined. Therefore <code>decrement</code> could call <code>increment</code>, but not the
+other way round. We can improve this in future with some basic dependency
+analysis.</p>
+<h3 id="expr">Expr</h3>
+<p>Our <code>Expr</code> needs a couple of new constructors.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">Expr</span><span> ann
+</span><span>  = </span><span style="color:#d08770;">EPrim</span><span> ann </span><span style="color:#d08770;">Prim
+</span><span>  | </span><span style="color:#d08770;">EInfix</span><span> ann </span><span style="color:#d08770;">Op</span><span> (</span><span style="color:#d08770;">Expr</span><span> ann) (</span><span style="color:#d08770;">Expr</span><span> ann)
+</span><span>  | </span><span style="color:#d08770;">EIf</span><span> ann (</span><span style="color:#d08770;">Expr</span><span> ann) (</span><span style="color:#d08770;">Expr</span><span> ann) (</span><span style="color:#d08770;">Expr</span><span> ann)
+</span><span>  | </span><span style="color:#d08770;">EVar</span><span> ann </span><span style="color:#d08770;">Identifier </span><span style="color:#65737e;">-- new!
+</span><span>  | </span><span style="color:#d08770;">EApply</span><span> ann </span><span style="color:#d08770;">FunctionName</span><span> [</span><span style="color:#d08770;">Expr</span><span> ann] </span><span style="color:#65737e;">-- new!
+</span><span>  </span><span style="color:#b48ead;">deriving</span><span> stock (</span><span style="color:#d08770;">Eq</span><span>, </span><span style="color:#d08770;">Ord</span><span>, </span><span style="color:#d08770;">Show</span><span>, </span><span style="color:#d08770;">Functor</span><span>, </span><span style="color:#d08770;">Foldable</span><span>, </span><span style="color:#d08770;">Traversable</span><span>)
+</span></code></pre>
+<p><code>EVar</code> represents a variable such as <code>a</code>, and <code>EApply</code> represents function application (<code>add(1,2)</code>).</p>
+<p><img src="/images/horse3.jpg" alt="Horse break" title="Horse break" /></p>
+<h2 id="typechecker-changes">Typechecker changes</h2>
+<p>After a rather sizable swerve into bidirectional typechecking in the previous
+part, we are going to focus less on the changes here.</p>
+<h3 id="adding-state">Adding state</h3>
+<p>The most important part is that it's become stateful, as we will be learning
+about both functions and variables as we typecheck. We have created a
+<code>TypecheckM</code> newtype that we use, that contains both a <code>ReaderT</code> and a
+<code>StateT</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">newtype </span><span style="color:#d08770;">TypecheckEnv</span><span> ann = </span><span style="color:#d08770;">TypecheckEnv
+</span><span>  { tceVars :: </span><span style="color:#d08770;">HashMap Identifier</span><span> (</span><span style="color:#d08770;">Type</span><span> ann)
+</span><span>  }
+</span><span>  </span><span style="color:#b48ead;">deriving</span><span> stock (</span><span style="color:#d08770;">Eq</span><span>, </span><span style="color:#d08770;">Ord</span><span>, </span><span style="color:#d08770;">Show</span><span>)
+</span><span>
+</span><span style="color:#b48ead;">newtype </span><span style="color:#d08770;">TypecheckState</span><span> ann = </span><span style="color:#d08770;">TypecheckState
+</span><span>  {tcsFunctions :: </span><span style="color:#d08770;">HashMap FunctionName</span><span> (</span><span style="color:#d08770;">Type</span><span> ann)}
+</span><span>  </span><span style="color:#b48ead;">deriving</span><span> stock (</span><span style="color:#d08770;">Eq</span><span>, </span><span style="color:#d08770;">Ord</span><span>, </span><span style="color:#d08770;">Show</span><span>)
+</span><span>
+</span><span style="color:#b48ead;">newtype </span><span style="color:#d08770;">TypecheckM</span><span> ann a = </span><span style="color:#d08770;">TypecheckM
+</span><span>  { getTypecheckM ::
+</span><span>      </span><span style="color:#d08770;">ReaderT</span><span> (</span><span style="color:#d08770;">TypecheckEnv</span><span> ann)
+</span><span>          (</span><span style="color:#d08770;">StateT</span><span> (</span><span style="color:#d08770;">TypecheckState</span><span> ann) 
+</span><span>            (</span><span style="color:#d08770;">Either</span><span> (</span><span style="color:#d08770;">TypeError</span><span> ann))) a
+</span><span>  }
+</span><span>  </span><span style="color:#b48ead;">deriving newtype
+</span><span>    ( </span><span style="color:#d08770;">Functor</span><span>,
+</span><span>      </span><span style="color:#d08770;">Applicative</span><span>,
+</span><span>      </span><span style="color:#d08770;">Monad</span><span>,
+</span><span>      </span><span style="color:#d08770;">MonadReader</span><span> (</span><span style="color:#d08770;">TypecheckEnv</span><span> ann),
+</span><span>      </span><span style="color:#d08770;">MonadError</span><span> (</span><span style="color:#d08770;">TypeError</span><span> ann),
+</span><span>      </span><span style="color:#d08770;">MonadState</span><span> (</span><span style="color:#d08770;">TypecheckState</span><span> ann)
+</span><span>    )
+</span></code></pre>
+<p>The reasons for separate <code>Reader</code> and <code>State</code> are the nature of the state in
+them. Variables only live for the life of a function that are defined in, so
+they live in the <code>TypecheckEnv</code> used by <code>Reader</code>, and disappear after the
+function definition is typechecked (<a href="https://blog.cofree.coffee/2021-08-13-that-one-cool-reader-trick/">more information on this technique
+here</a>).</p>
+<p>The trick is using the <code>local</code> function from <code>Control.Monad.Reader</code>:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">withFunctionArgs </span><span style="color:#b48ead;">::</span><span> [(</span><span style="color:#b48ead;">Identifier</span><span>, </span><span style="color:#b48ead;">Type </span><span style="color:#bf616a;">ann</span><span>)] </span><span style="color:#b48ead;">-&gt; TypecheckM </span><span style="color:#bf616a;">ann a </span><span style="color:#b48ead;">-&gt; TypecheckM </span><span style="color:#bf616a;">ann a
+</span><span>withFunctionArgs args computation =
+</span><span>  local
+</span><span>    ( \tce -&gt;
+</span><span>        tce
+</span><span>          { tceVars = tceVars tce &lt;&gt; </span><span style="color:#d08770;">HM</span><span>.fromList args
+</span><span>          }
+</span><span>    )
+</span><span>    computation
+</span></code></pre>
+<p>We pass in some <code>args</code>, which are the function arguments and their types, and
+<code>computation</code>, which is whatever typechecking we'd like do. Then throughout
+running <code>computation</code>, we'll have extra variables in scope, and then they'll
+disappear again. This is helpful for typechecking functions, where the vars
+only exist inside.</p>
+<h3 id="inference-changes">Inference changes</h3>
+<p>We have two new <code>infer</code> cases, <code>EVar</code> and <code>EApply</code>. <code>EVar</code> is pretty
+straightforward:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span>infer (</span><span style="color:#d08770;">EVar</span><span> ann var) = </span><span style="color:#b48ead;">do
+</span><span>  ty &lt;- lookupVar ann var
+</span><span>  pure (</span><span style="color:#d08770;">EVar</span><span> ty var)
+</span></code></pre>
+<p>We lookup the type for <code>var</code>, and decorate the type with it. If <code>lookupVar</code>
+fails, it "throws" a <code>TypeError ann</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#65737e;">-- | look up a saved identifier &quot;in the environment&quot;
+</span><span style="color:#8fa1b3;">lookupVar </span><span style="color:#b48ead;">:: </span><span style="color:#bf616a;">ann </span><span style="color:#b48ead;">-&gt; Identifier -&gt; TypecheckM </span><span style="color:#bf616a;">ann</span><span> (</span><span style="color:#b48ead;">Type </span><span style="color:#bf616a;">ann</span><span>)
+</span><span>lookupVar ann identifier = </span><span style="color:#b48ead;">do
+</span><span>  maybeType &lt;- asks (</span><span style="color:#d08770;">HM</span><span>.lookup identifier . tceVars)
+</span><span>  </span><span style="color:#b48ead;">case</span><span> maybeType </span><span style="color:#b48ead;">of
+</span><span>    </span><span style="color:#d08770;">Just</span><span> found -&gt; pure found
+</span><span>    </span><span style="color:#d08770;">Nothing </span><span>-&gt; </span><span style="color:#b48ead;">do
+</span><span>      allIdentifiers &lt;- asks (</span><span style="color:#d08770;">HM</span><span>.keysSet . tceVars)
+</span><span>      throwError (</span><span style="color:#d08770;">VarNotFound</span><span> ann identifier allIdentifiers)
+</span></code></pre>
+<p>The other new <code>infer</code> case is <code>EApply</code>. This is used to get the type of an
+applied function.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span>infer (</span><span style="color:#d08770;">EApply</span><span> ann fnName args) = </span><span style="color:#b48ead;">do
+</span><span>  </span><span style="color:#65737e;">-- lookup function by name in State
+</span><span>  fn &lt;- lookupFunction ann fnName
+</span><span>  (ty, elabArgs) &lt;- </span><span style="color:#b48ead;">case</span><span> fn </span><span style="color:#b48ead;">of
+</span><span>    </span><span style="color:#d08770;">TFunction</span><span> _ tArgs tReturn -&gt; </span><span style="color:#b48ead;">do
+</span><span>      </span><span style="color:#65737e;">-- check the arguments length match the function 
+</span><span>      when
+</span><span>        (length args /= length tArgs)
+</span><span>        (throwError $ 
+</span><span>            </span><span style="color:#d08770;">FunctionArgumentLengthMismatch</span><span> ann 
+</span><span>              (length tArgs) 
+</span><span>              (length args)
+</span><span>        )
+</span><span>      </span><span style="color:#65737e;">-- check each arg against type
+</span><span>      elabArgs &lt;- zipWithM check tArgs args      
+</span><span>      </span><span style="color:#65737e;">-- return type and elaborated arguments
+</span><span>      pure (tReturn, elabArgs)
+</span><span>    _ -&gt; throwError $ </span><span style="color:#d08770;">NonFunctionTypeFound</span><span> ann fn
+</span><span>  pure (</span><span style="color:#d08770;">EApply</span><span> (ty $&gt; ann) fnName elabArgs)
+</span></code></pre>
+<p>Note how we use <code>check</code> here to check each argument against the expected type in the
+function. This is where the bidirectional type checking approach really starts
+to shine, as any problems become immediately apparent.</p>
+<p>The <code>lookupFunction</code> helper is very similar to <code>lookupVar</code>, except it looks in
+the <code>State</code> instead of <code>Reader</code>:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#65737e;">-- | look up a saved identifier &quot;in the environment&quot;
+</span><span style="color:#8fa1b3;">lookupFunction </span><span style="color:#b48ead;">:: </span><span style="color:#bf616a;">ann </span><span style="color:#b48ead;">-&gt; FunctionName -&gt; TypecheckM </span><span style="color:#bf616a;">ann</span><span> (</span><span style="color:#b48ead;">Type </span><span style="color:#bf616a;">ann</span><span>)
+</span><span>lookupFunction ann fnName = </span><span style="color:#b48ead;">do
+</span><span>  maybeType &lt;- gets (</span><span style="color:#d08770;">HM</span><span>.lookup fnName . tcsFunctions)
+</span><span>  </span><span style="color:#b48ead;">case</span><span> maybeType </span><span style="color:#b48ead;">of
+</span><span>    </span><span style="color:#d08770;">Just</span><span> found -&gt; pure found
+</span><span>    </span><span style="color:#d08770;">Nothing </span><span>-&gt; </span><span style="color:#b48ead;">do
+</span><span>      allFunctions &lt;- gets (</span><span style="color:#d08770;">HM</span><span>.keysSet . tcsFunctions)
+</span><span>      throwError (</span><span style="color:#d08770;">FunctionNotFound</span><span> ann fnName allFunctions)
+</span></code></pre>
+<p>These types, and the functions used to store / fetch variables and functions
+are defined
+<a href="https://github.com/danieljharvey/llvm-calc/blob/trunk/llvm-calc3/src/Calc/Typecheck/Types.hs">here</a>.</p>
+<h3 id="elaborating-a-function">Elaborating a function</h3>
+<p>Our functions have types for the arguments, so we push them into the <code>Reader</code>
+environment, and then elaborate the expression inside.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">elaborateFunction </span><span style="color:#b48ead;">::
+</span><span>  </span><span style="color:#b48ead;">Function </span><span style="color:#bf616a;">ann </span><span style="color:#b48ead;">-&gt;
+</span><span>  </span><span style="color:#b48ead;">TypecheckM </span><span style="color:#bf616a;">ann</span><span> (</span><span style="color:#b48ead;">Function</span><span> (</span><span style="color:#b48ead;">Type </span><span style="color:#bf616a;">ann</span><span>))
+</span><span>elaborateFunction (</span><span style="color:#d08770;">Function</span><span> ann args name expr) = </span><span style="color:#b48ead;">do
+</span><span>  </span><span style="color:#65737e;">-- with the `args` added to the Reader, infer the type of `expr`
+</span><span>  exprA &lt;- withFunctionArgs args (infer expr)
+</span><span>  </span><span style="color:#65737e;">-- adjust the types of the arguments
+</span><span>  </span><span style="color:#b48ead;">let</span><span> argsA :: [(</span><span style="color:#d08770;">ArgumentName</span><span>, </span><span style="color:#d08770;">Type</span><span> (</span><span style="color:#d08770;">Type</span><span> ann))]
+</span><span>      argsA = fmap (second (\ty -&gt; fmap (const ty) ty)) args
+</span><span>  </span><span style="color:#65737e;">-- create type of function
+</span><span>  </span><span style="color:#b48ead;">let</span><span> tyFn = </span><span style="color:#d08770;">TFunction</span><span> ann (snd &lt;$&gt; args) (getOuterAnnotation exprA)
+</span><span>  </span><span style="color:#65737e;">-- wrap it all back up again
+</span><span>  pure (</span><span style="color:#d08770;">Function</span><span> tyFn argsA name exprA)
+</span></code></pre>
+<p>We've extended the <code>Type</code> datatype to add a <code>TFunction</code> constructor, which
+contains the types of all the arguments, and the return type. All functions
+will have a <code>TFunction</code> type.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">Type</span><span> ann
+</span><span>  = </span><span style="color:#d08770;">TPrim</span><span> ann </span><span style="color:#d08770;">TypePrim
+</span><span>  | </span><span style="color:#d08770;">TFunction</span><span> ann [</span><span style="color:#d08770;">Type</span><span> ann] (</span><span style="color:#d08770;">Type</span><span> ann) </span><span style="color:#65737e;">-- new!
+</span><span>  </span><span style="color:#b48ead;">deriving</span><span> stock (</span><span style="color:#d08770;">Eq</span><span>, </span><span style="color:#d08770;">Ord</span><span>, </span><span style="color:#d08770;">Show</span><span>, </span><span style="color:#d08770;">Functor</span><span>)
+</span></code></pre>
+<h3 id="elaborating-a-module">Elaborating a module</h3>
+<p>Elaborating a module involves:</p>
+<ul>
+<li>Elaborate each function</li>
+<li>Push it's type into the <code>State</code></li>
+<li>Elaborate the <code>main</code> expression</li>
+</ul>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">elaborateModule </span><span style="color:#b48ead;">::
+</span><span>  </span><span style="color:#bf616a;">forall ann</span><span>.
+</span><span>  </span><span style="color:#b48ead;">Module </span><span style="color:#bf616a;">ann </span><span style="color:#b48ead;">-&gt;
+</span><span>  </span><span style="color:#b48ead;">Either</span><span> (</span><span style="color:#b48ead;">TypeError </span><span style="color:#bf616a;">ann</span><span>) (</span><span style="color:#b48ead;">Module</span><span> (</span><span style="color:#b48ead;">Type </span><span style="color:#bf616a;">ann</span><span>))
+</span><span>elaborateModule (</span><span style="color:#d08770;">Module</span><span> {mdFunctions, mdExpr}) = runTypecheckM (</span><span style="color:#d08770;">TypecheckEnv</span><span> mempty) $ </span><span style="color:#b48ead;">do
+</span><span>  </span><span style="color:#65737e;">-- typecheck all functions...
+</span><span>  fns &lt;-
+</span><span>    traverse
+</span><span>      ( \fn -&gt; </span><span style="color:#b48ead;">do
+</span><span>          </span><span style="color:#65737e;">-- typecheck function
+</span><span>          elabFn &lt;- elaborateFunction fn
+</span><span>          </span><span style="color:#65737e;">-- add it to State
+</span><span>          storeFunction (fnFunctionName elabFn) (fnAnn elabFn)
+</span><span>          </span><span style="color:#65737e;">-- return it
+</span><span>          pure elabFn
+</span><span>      )
+</span><span>      mdFunctions
+</span><span>  
+</span><span>  </span><span style="color:#65737e;">-- typecheck `expr`, and wrap everything back together
+</span><span>  </span><span style="color:#d08770;">Module</span><span> fns &lt;$&gt; infer mdExpr
+</span></code></pre>
+<p><img src="/images/horse1.jpg" alt="Horse break" title="Horse break" /></p>
+<h2 id="updating-the-interpreter">Updating the interpreter</h2>
+<p>We won't go into the interpreter changes today, they work in the same way as
+the typechecker,
+storing variables in the <code>Reader</code> env and functions in the <code>State</code>. <a href="https://github.com/danieljharvey/llvm-calc/blob/trunk/llvm-calc3/src/Calc/Interpreter.hs">The code
+lives
+here</a>.</p>
+<h2 id="to-the-ir">To the IR!</h2>
+<p>Here is an expression:</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#b48ead;">function </span><span style="color:#8fa1b3;">sum</span><span>(</span><span style="color:#bf616a;">a:</span><span> Integer, b: Integer) {
+</span><span>  </span><span style="color:#bf616a;">a</span><span> + b
+</span><span>}
+</span><span>
+</span><span style="color:#bf616a;">sum</span><span>(20, 22)
+</span></code></pre>
+<p>Here is the LLVN output for it. Hopefully it's not too brutal.</p>
+<pre data-lang="llvm" style="background-color:#2b303b;color:#c0c5ce;" class="language-llvm "><code class="language-llvm" data-lang="llvm"><span>; ModuleID = &#39;example&#39;
+</span><span>
+</span><span>declare external ccc  void @printint(i32)
+</span><span>
+</span><span>define external ccc  i32 @sum(i32  %a_0, i32  %b_0)    {
+</span><span>  %1 = add   i32 %a_0, %b_0
+</span><span>  ret i32 %1
+</span><span>}
+</span><span>
+</span><span>define external ccc  i32 @main()    {
+</span><span>  %1 =  call ccc  i32  @sum(i32  20, i32  22)
+</span><span>  call ccc  void  @printint(i32  %1)
+</span><span>  ret i32 0
+</span><span>}
+</span></code></pre>
+<pre data-lang="llvm" style="background-color:#2b303b;color:#c0c5ce;" class="language-llvm "><code class="language-llvm" data-lang="llvm"><span>; ModuleID = &#39;example&#39;
+</span></code></pre>
+<p>A comment, lol.</p>
+<hr />
+<pre data-lang="llvm" style="background-color:#2b303b;color:#c0c5ce;" class="language-llvm "><code class="language-llvm" data-lang="llvm"><span>declare external ccc  void @printint(i32)
+</span></code></pre>
+<p>We define our output function from our standard library.</p>
+<hr />
+<pre data-lang="llvm" style="background-color:#2b303b;color:#c0c5ce;" class="language-llvm "><code class="language-llvm" data-lang="llvm"><span>define external ccc  i32 @sum(i32  %a_0, i32  %b_0)    {
+</span></code></pre>
+<p>Define the function. The first <code>i32</code> is the return type. <code>%a_0</code> is the first
+argument with type <code>i32</code>, and <code>%b_0</code> is the second argument, with type <code>i32</code>.</p>
+<hr />
+<pre data-lang="llvm" style="background-color:#2b303b;color:#c0c5ce;" class="language-llvm "><code class="language-llvm" data-lang="llvm"><span>  %1 = add   i32 %a_0, %b_0
+</span></code></pre>
+<p>Body of the <code>sum</code> function, add <code>%a_0</code> and <code>%b_0</code> and assign the result to
+<code>%1</code>.</p>
+<hr />
+<pre data-lang="llvm" style="background-color:#2b303b;color:#c0c5ce;" class="language-llvm "><code class="language-llvm" data-lang="llvm"><span>  ret i32 %1
+</span></code></pre>
+<p>Return <code>%1</code> from the function.</p>
+<pre data-lang="llvm" style="background-color:#2b303b;color:#c0c5ce;" class="language-llvm "><code class="language-llvm" data-lang="llvm"><span>}
+</span></code></pre>
+<p>End of <code>sum</code> function.</p>
+<hr />
+<pre data-lang="llvm" style="background-color:#2b303b;color:#c0c5ce;" class="language-llvm "><code class="language-llvm" data-lang="llvm"><span>define external ccc  i32 @main()    {
+</span></code></pre>
+<p>This defines the <code>main</code> function, the entry point to our application.</p>
+<hr />
+<pre data-lang="llvm" style="background-color:#2b303b;color:#c0c5ce;" class="language-llvm "><code class="language-llvm" data-lang="llvm"><span>%1 =  call ccc  i32  @sum(i32  20, i32  22)
+</span></code></pre>
+<p>Body of the <code>main</code> function - this calls the <code>sum</code> function, passing it <code>20</code>
+amd <code>22</code> as args. The result is stored in <code>%1</code>.</p>
+<hr />
+<pre data-lang="llvm" style="background-color:#2b303b;color:#c0c5ce;" class="language-llvm "><code class="language-llvm" data-lang="llvm"><span>call ccc  void  @printint(i32  %1)
+</span></code></pre>
+<p>Pass the result (<code>%1</code>) to the <code>printint</code> function in our standard library.</p>
+<hr />
+<pre data-lang="llvm" style="background-color:#2b303b;color:#c0c5ce;" class="language-llvm "><code class="language-llvm" data-lang="llvm"><span>ret i32 0
+</span></code></pre>
+<p>Return the value <code>0</code> to show the program successfully completed.</p>
+<hr />
+<pre data-lang="llvm" style="background-color:#2b303b;color:#c0c5ce;" class="language-llvm "><code class="language-llvm" data-lang="llvm"><span>}
+</span></code></pre>
+<p>Nice closing bracket. Time for a rest.</p>
+<hr />
+<p><img src="/images/horse2.jpg" alt="Horse break" title="Horse break" /></p>
+<h2 id="generating-ir-from-haskell">Generating IR from Haskell</h2>
+<p>Adding functions and variables means that our IR generation also becomes
+stateful. We're going to define a couple more types:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">OutputState </span><span>= </span><span style="color:#d08770;">OutputState
+</span><span>  { osFunctions :: </span><span style="color:#d08770;">Map FunctionName LLVM</span><span>.</span><span style="color:#d08770;">Operand</span><span>,
+</span><span>    </span><span style="color:#8fa1b3;">osVars </span><span style="color:#b48ead;">:: Map Identifier LLVM</span><span>.</span><span style="color:#b48ead;">Operand
+</span><span>  }
+</span></code></pre>
+<p>It also means something can go wrong:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">OutputError
+</span><span>  = </span><span style="color:#d08770;">CantFindVar Identifier
+</span><span>  | </span><span style="color:#d08770;">CantFindFunction FunctionName
+</span><span>  | </span><span style="color:#d08770;">NonFunctionType</span><span> (</span><span style="color:#d08770;">Type ()</span><span>)
+</span><span>  </span><span style="color:#b48ead;">deriving</span><span> stock (</span><span style="color:#d08770;">Eq</span><span>, </span><span style="color:#d08770;">Ord</span><span>, </span><span style="color:#d08770;">Show</span><span>)
+</span></code></pre>
+<p>Both these errors <em>shouldn't</em> happen if the typechecking is working, however
+it's nice to capture them properly rather than just throwing with <code>error</code>.</p>
+<p>It means we also need a similar set of functions for adding and looking up
+functions and variables, which can be found
+<a href="https://github.com/danieljharvey/llvm-calc/blob/trunk/llvm-calc3/src/Calc/Compile/ToLLVM.hs#L38">here</a> and are hopefully unsurprising.</p>
+<p>A lot of our implementation are various "turn things into LLVM" functions:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">typeToLLVM </span><span style="color:#b48ead;">:: Type </span><span style="color:#bf616a;">ann </span><span style="color:#b48ead;">-&gt; LLVM</span><span>.</span><span style="color:#b48ead;">Type
+</span><span>typeToLLVM (</span><span style="color:#d08770;">TPrim</span><span> _ </span><span style="color:#d08770;">TBool</span><span>) = </span><span style="color:#d08770;">LLVM</span><span>.i1
+</span><span>typeToLLVM (</span><span style="color:#d08770;">TPrim</span><span> _ </span><span style="color:#d08770;">TInt</span><span>) = </span><span style="color:#d08770;">LLVM</span><span>.i32
+</span><span>typeToLLVM (</span><span style="color:#d08770;">TFunction</span><span> _ tyArgs tyRet) =
+</span><span>  </span><span style="color:#d08770;">LLVM</span><span>.</span><span style="color:#d08770;">FunctionType</span><span> (typeToLLVM tyRet) (typeToLLVM &lt;$&gt; tyArgs) </span><span style="color:#d08770;">False
+</span></code></pre>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">functionNameToLLVM </span><span style="color:#b48ead;">:: FunctionName -&gt; LLVM</span><span>.</span><span style="color:#b48ead;">Name
+</span><span>functionNameToLLVM (</span><span style="color:#d08770;">FunctionName</span><span> fnName) =
+</span><span>  </span><span style="color:#d08770;">LLVM</span><span>.</span><span style="color:#d08770;">Name</span><span> (fromString (</span><span style="color:#d08770;">T</span><span>.unpack fnName))
+</span></code></pre>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">functionArgToLLVM </span><span style="color:#b48ead;">::
+</span><span>  (</span><span style="color:#b48ead;">ArgumentName</span><span>, </span><span style="color:#b48ead;">Type</span><span> (</span><span style="color:#b48ead;">Type </span><span style="color:#bf616a;">ann</span><span>)) </span><span style="color:#b48ead;">-&gt;
+</span><span>  (</span><span style="color:#b48ead;">LLVM</span><span>.</span><span style="color:#b48ead;">Type</span><span>, </span><span style="color:#b48ead;">LLVM</span><span>.</span><span style="color:#b48ead;">ParameterName</span><span>)
+</span><span>functionArgToLLVM (</span><span style="color:#d08770;">ArgumentName</span><span> argName, ty) =
+</span><span>  </span><span style="color:#b48ead;">let</span><span> llvmType = typeToLLVM (getOuterTypeAnnotation ty)
+</span><span>      paramName = </span><span style="color:#d08770;">LLVM</span><span>.</span><span style="color:#d08770;">ParameterName</span><span> (fromString (</span><span style="color:#d08770;">T</span><span>.unpack argName))
+</span><span>   </span><span style="color:#b48ead;">in</span><span> (llvmType, paramName)
+</span></code></pre>
+<p>Now we can create IR for each function in our module. We put each function
+variable in <code>State</code> so that we can look them up when generating expressions:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">functionToLLVM </span><span style="color:#b48ead;">::
+</span><span>  ( </span><span style="color:#b48ead;">LLVM</span><span>.</span><span style="color:#b48ead;">MonadModuleBuilder </span><span style="color:#bf616a;">m</span><span>,
+</span><span>    </span><span style="color:#b48ead;">MonadFix </span><span style="color:#bf616a;">m</span><span>,
+</span><span>    </span><span style="color:#b48ead;">MonadState OutputState </span><span style="color:#bf616a;">m</span><span>,
+</span><span>    </span><span style="color:#b48ead;">MonadError OutputError </span><span style="color:#bf616a;">m
+</span><span>  ) </span><span style="color:#b48ead;">=&gt;
+</span><span>  </span><span style="color:#b48ead;">Function</span><span> (</span><span style="color:#b48ead;">Type </span><span style="color:#bf616a;">ann</span><span>) </span><span style="color:#b48ead;">-&gt;
+</span><span>  </span><span style="color:#bf616a;">m </span><span>()
+</span><span>functionToLLVM (</span><span style="color:#d08770;">Function</span><span> {fnAnn, fnFunctionName, fnBody, fnArgs}) = </span><span style="color:#b48ead;">do
+</span><span>  </span><span style="color:#65737e;">-- get llvm type of function
+</span><span>  retType &lt;- </span><span style="color:#b48ead;">case</span><span> fnAnn </span><span style="color:#b48ead;">of
+</span><span>    </span><span style="color:#d08770;">TFunction</span><span> _ _ tyRet -&gt; pure $ typeToLLVM tyRet
+</span><span>    _ -&gt; throwError (</span><span style="color:#d08770;">NonFunctionType</span><span> (fnAnn $&gt; </span><span style="color:#d08770;">()</span><span>))
+</span><span>
+</span><span>  </span><span style="color:#b48ead;">let</span><span> argTypes = functionArgToLLVM &lt;$&gt; fnArgs
+</span><span>      functionName = functionNameToLLVM fnFunctionName
+</span><span>
+</span><span>  </span><span style="color:#65737e;">-- create the LLVM function
+</span><span>  llvmFunction &lt;- </span><span style="color:#d08770;">LLVM</span><span>.function functionName argTypes retType $ \args -&gt; </span><span style="color:#b48ead;">do
+</span><span>    </span><span style="color:#65737e;">-- save the args in the environment
+</span><span>    saveArgs
+</span><span>      ( </span><span style="color:#d08770;">M</span><span>.fromList $
+</span><span>          zipWith
+</span><span>            ( \(</span><span style="color:#d08770;">ArgumentName</span><span> argName, _) arg -&gt;
+</span><span>                (</span><span style="color:#d08770;">Identifier</span><span> argName, arg)
+</span><span>            )
+</span><span>            fnArgs
+</span><span>            args
+</span><span>      )
+</span><span>
+</span><span>    </span><span style="color:#65737e;">-- build the LLVM AST for our expression
+</span><span>    ourExpression &lt;- exprToLLVM fnBody
+</span><span>
+</span><span>    </span><span style="color:#65737e;">-- return result
+</span><span>    </span><span style="color:#d08770;">LLVM</span><span>.ret ourExpression
+</span><span>  
+</span><span>  </span><span style="color:#65737e;">-- save reference to this function in our State to lookup in other
+</span><span>  </span><span style="color:#65737e;">-- expressions
+</span><span>  saveFunction fnFunctionName llvmFunction
+</span></code></pre>
+<p>We have two new cases in <code>exprToLLVM</code>, for <code>EVar</code> and <code>EApply</code>. These somewhat
+echo the implementation in the typechecker above. For <code>EVar</code>, we lookup the
+LLVM IR in our <code>State</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span>exprToLLVM (</span><span style="color:#d08770;">EVar</span><span> _ var) =
+</span><span>  lookupArg var
+</span></code></pre>
+<p>And for <code>EApply</code>, we lookup the function in <code>State</code>, then use LLVM's <code>call</code> to
+pass all the arguments to it.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span>exprToLLVM (</span><span style="color:#d08770;">EApply</span><span> _ fnName args) = </span><span style="color:#b48ead;">do
+</span><span>  irFunc &lt;- lookupFunction fnName
+</span><span>  irArgs &lt;- traverse exprToLLVM args
+</span><span>  </span><span style="color:#d08770;">LLVM</span><span>.call irFunc ((,</span><span style="color:#d08770;">[]</span><span>) &lt;$&gt; irArgs)
+</span></code></pre>
+<p>Finally, we bring it all together in the top level <code>moduleToLLVM</code> function,
+which takes our typechecked <code>Module</code> and creates an LLVM module.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#65737e;">-- | given our `Module` type, turn it into an LLVM module
+</span><span style="color:#8fa1b3;">moduleToLLVM </span><span style="color:#b48ead;">:: Module</span><span> (</span><span style="color:#b48ead;">Type </span><span style="color:#bf616a;">ann</span><span>) </span><span style="color:#b48ead;">-&gt; Either OutputError LLVM</span><span>.</span><span style="color:#b48ead;">Module
+</span><span>moduleToLLVM (</span><span style="color:#d08770;">Module</span><span> {mdExpr = expr, mdFunctions}) =
+</span><span>  flip evalStateT (</span><span style="color:#d08770;">OutputState</span><span> mempty mempty) $ </span><span style="color:#d08770;">LLVM</span><span>.buildModuleT &quot;</span><span style="color:#a3be8c;">example</span><span>&quot; $ </span><span style="color:#b48ead;">do
+</span><span>    </span><span style="color:#65737e;">-- get the printing function for our `expr`&#39;s return type
+</span><span>    printFn &lt;- printFunction (getOuterAnnotation expr)
+</span><span>
+</span><span>    </span><span style="color:#65737e;">-- create all our functions
+</span><span>    traverse_ functionToLLVM mdFunctions
+</span><span>
+</span><span>    </span><span style="color:#65737e;">-- create a function called `main` that will be the entry point to our
+</span><span>    </span><span style="color:#65737e;">-- program
+</span><span>    </span><span style="color:#d08770;">LLVM</span><span>.function &quot;</span><span style="color:#a3be8c;">main</span><span>&quot; </span><span style="color:#d08770;">[] LLVM</span><span>.i32 $ \_ -&gt; </span><span style="color:#b48ead;">do
+</span><span>      </span><span style="color:#65737e;">-- build the LLVM AST for our expression
+</span><span>      ourExpression &lt;- exprToLLVM expr
+</span><span>
+</span><span>      </span><span style="color:#65737e;">-- print our result to stdout
+</span><span>      _ &lt;- </span><span style="color:#d08770;">LLVM</span><span>.call printFn [(ourExpression, </span><span style="color:#d08770;">[]</span><span>)]
+</span><span>
+</span><span>      </span><span style="color:#65737e;">-- return success exit code of `0`
+</span><span>      </span><span style="color:#d08770;">LLVM</span><span>.ret (</span><span style="color:#d08770;">LLVM</span><span>.int32 </span><span style="color:#d08770;">0</span><span>)
+</span></code></pre>
+<p>You can see all of the LLVM generation code
+<a href="https://github.com/danieljharvey/llvm-calc/blob/trunk/llvm-calc3/src/Calc/Compile/ToLLVM.hs">here</a>.</p>
+<hr />
+<h3 id="well-well-well-if-it-s-not-the-end-of-the-article">Well, well, well, if it's not the end of the article</h3>
+<p>Congratulations, you are all functional programming language implementation experts now. Hopefully you found that somewhat interesting and/or useful.
+Next time we'll be adding basic product types and pattern matching. Great!</p>
+<p>Make sense? If not, <a href="/contact.html">get in touch</a>!</p>
+<p>Further reading:</p>
+<p><a href="https://llvm.org/docs/LangRef.html">llvm reference</a></p>
+<p><a href="https://github.com/danieljharvey/llvm-calc">llvm-calc</a></p>
+
+
+    </main>
+
+    <footer>
+      <p><a href="mailto:danieljamesharvey@gmail.com">Contact</a> |
+      <a href="https://github.com/danieljharvey">Github</a></p>
+      <p>Links for nerds:
+        <a href="/atom.xml">atom</a>
+        <a href="/rss.xml">rss</a></p>
+
+    </footer>
+</body>
+
+</html>

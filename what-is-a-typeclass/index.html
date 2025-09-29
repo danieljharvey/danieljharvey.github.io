@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - Why The Hell Should I Care About Typeclasses?</title>
+    <link rel="stylesheet" href="https://danieljharvey.github.io/main.css">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="/">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="/">Posts</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        
+<h1 class="title">
+  Why The Hell Should I Care About Typeclasses?
+</h1>
+<p class="subtitle"><strong>2019-01-05</strong></p>
+<p>
+ <p class="blog-meta">
+        
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/haskell/"
+          >#haskell</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/typeclasses/"
+          >#typeclasses</a
+        >
+         
+      </p>
+
+<p>So recently I have become one of those jerks that has sailed through <em>Read A Couple Of Chapters Of A Book About Haskell</em>, by way of <em>Snuck Maybe Types Into My Work Project</em> to arrive at full-blown <em>Good Morning Sir/Madam, Have You Got A Spare Moment To Talk About Monads™?</em>. That is to say, by selfishly forcing these concepts upon my colleagues I have ended up spending a lot of my working life explaining them and why I think they are good to stop everybody hating me for making their lives unnecessary complicated. In doing so, I think I have come across one of the main conceptual stumbling blocks, which I hope to make less-stumble-able.</p>
+<p>So the problem, as I see it, isn't grasping what a <code>Monad</code> is (it's a burrito, it's a poster tube, it's a snobby waste of time, easy!), or even what a <code>Functor</code> is (it's mappable, right?), but whether they are even "things" at all. It's one thing to see words like <code>Monad</code>, <code>Functor</code>, <code>Monoid</code> or <code>Traversable</code> around the place but it's a little unclear how to make, or god forbid, actually use one in something approaching real life code. Are they objects? Do I make a new <code>Monad</code> object just like I'd make a new <code>Promise</code>?</p>
+<pre data-lang="javascript" style="background-color:#2b303b;color:#c0c5ce;" class="language-javascript "><code class="language-javascript" data-lang="javascript"><span style="color:#b48ead;">const </span><span style="color:#bf616a;">response </span><span>= new Monad(</span><span style="color:#bf616a;">ajaxUrl</span><span>)
+</span></code></pre>
+<p>Is is a <code>Functor</code> a method I can run on something to increase the amount of maths?</p>
+<pre data-lang="javascript" style="background-color:#2b303b;color:#c0c5ce;" class="language-javascript "><code class="language-javascript" data-lang="javascript"><span style="color:#b48ead;">const </span><span style="color:#bf616a;">makeProgramFaster </span><span>= </span><span style="color:#bf616a;">response</span><span>.</span><span style="color:#8fa1b3;">Functor</span><span>(&quot;</span><span style="color:#a3be8c;">MAXIMISE DATA</span><span>&quot;)
+</span></code></pre>
+<p>The short answer is "no", and the long answer, well, that's also "no", followed by "ok, let me tell you what typeclasses are and hopefully the other stuff will sort of get cleared up along the way."</p>
+<h3 id="maths-is-sadness">Maths is sadness</h3>
+<p>Reading about type theory, particularly materials written from a very mathematical perspective, can often make it feel even worse, with explanations that feel so broad and simple that they feel either a) meaningless or b) like they must contain some unseen trap we mere mortals do not understand.</p>
+<p><img src="/images/typeclass1.png" alt="Perhaps, yes." title="Are monads a waste of time?" /></p>
+<p>Anyhow, I thought perhaps a better approach here is to explain what these things are not and work from there. Because the aim here is to end up with some real life knowledge we can use to write real code, instead of using examples from the world of computers, let's use them from the world of crime dramas, because I have been watching a lot of those recently.</p>
+<h3 id="time-for-a-tenuous-analogy">Time for a tenuous analogy</h3>
+<p>So we have a police officer. In this case, it's Detective Sergeant Kate Fleming from Jed Mercurio's surprisingly gripping Line Of Duty series (I too struggled with the series title's almost Clancy-ian levels of Really Must We Spell This Out, do persevere with it though, it really is OK, you probably only need to watch the first couple of seasons to follow this article)</p>
+<p><img src="/images/typeclass3.png" alt="DS Kate Fleming, a human woman" title="DS Kate Fleming" /></p>
+<p><strong>DS Kate Fleming</strong> is a <code>Police Officer</code> in AC-12, a unit in the police force somewhere in London that investigates <code>Bent Coppers</code> and makes sure there is no <em>Dodgy Dealings</em> or <em>Underhand Business</em>. <strong>DS Kate Fleming</strong> was not born a police officer, but certainly displays all the characteristics of one - she <em>Catches Criminals</em>, <em>Likes A Pint</em>, and <em>Her Marriage Is In Tatters</em> because of course she is <em>Married To The Job</em>.</p>
+<p>![DC Nigel "Nige" Morton, a human man](/images/typeclass4.png "DC Nigel "Nige" Morton, a human man")</p>
+<p>Here is another <code>Police Officer</code> - in this case <strong>Detective Constable Nigel "Nige" Morton</strong>, played by 90s lad hero and renowned bounding frown Neil Morrissey. <strong>"Nige"</strong> was also not born a copper, but he is certainly one now as he <em>Likes A Pint</em> and also, to some extent, <em>Catches Criminals</em>. <strong>"Nige"</strong>, however, is a bit of a sneaky prick, and has been known from time to time to take a few backhanders in exchange for leaking information to the press and to other criminals. Therefore, to some extent, as well being a <code>Police Officer</code>, <strong>"Nige"</strong> is a <code>Bent Copper</code> because of his <em>Underhand Business</em> and <em>Dodgy Dealings</em>.</p>
+<h3 id="how-does-this-relate-to-typeclasses-then">How does this relate to typeclasses then?</h3>
+<p><strong>DS Kate Fleming</strong> is not a typeclass.</p>
+<p><strong>DC Nigel "Nige" Morton</strong> is also not a typeclass.</p>
+<p><em>Liking A Pint</em> is not a typeclass.</p>
+<p>Neither is <em>Underhand Business</em>.</p>
+<h3 id="typeclass-examples">Typeclass examples</h3>
+<p>So what are?</p>
+<ul>
+<li><code>Human Person</code></li>
+</ul>
+<p>Both <strong>DS Kate Fleming</strong> and <strong>DC Nigel "Nige" Morton</strong> can have instances of the typeclass <code>Human Person</code>, because they <em>Breath</em>, <em>Eat</em> and <em>Poo</em>. They are 'lawful' instances of <code>Human Person</code> because I am too lazy to think of a reason that they are not.</p>
+<ul>
+<li><code>Police Officer</code></li>
+</ul>
+<p><strong>DS Kate Fleming</strong> can be an instance of the typeclass of <code>Police Officer</code> because she <em>Catches Criminals</em> and <em>Likes A Pint</em>. She is also a 'lawful' instance, we can say, because as well as this, she does no <em>Underhand Business</em> or <em>Dodgy Dealings</em>.</p>
+<p><strong>DC Nigel "Nige" Morton</strong> is, to the innocent eye, an instance of the typeclass <code>Police Officer</code>. He also <em>Likes A Pint</em>, <em>Catches Criminals</em>, and although he is seen to have a marriage earlier in the show, later he is seen to be mowing his lawn in a solitary fashion shot through a lens tinged with regret. However, he is not a 'lawful' instance of the typeclass <code>Police Officer</code>, because of his <em>Underhand Business</em> or <em>Dodgy Dealings</em>.</p>
+<ul>
+<li><code>Bent Copper</code></li>
+</ul>
+<p><strong>DS Kate Fleming</strong> is not in the typeclass <code>Bent Copper</code>, because (spoiler alert!) throughout the show she is seen to behave in a moral fashion befitting an officer working for AC-12, the anti-corruption unit at the centre of the whole show.</p>
+<p><strong>DC Nigel "Nige" Morton</strong> however is in the typeclass <code>Bent Copper</code>, exactly because of his <em>Underhand Business</em>, <em>Dodgy Dealings</em> and <em>Perhaps Not Really Needing That Walking Stick But Claiming Disability Benefits Regardless</em>. He is probably also a lawful instance of <code>Bent Copper</code> (although I understand at this juncture that this makes the whole analogy somewhat confusing) - simply because <em>Bent Coppers Don't Really Have Rules, And If They Did, Playing By Them Would Somewhat Defeat The Point.</em></p>
+<ul>
+<li><code>Anti-Corruption Police Officer</code></li>
+</ul>
+<p><strong>DS Kate Fleming</strong> is also in this typeclass because she <em>Nicks Bent Coppers</em>, whilst <strong>DC Nigel "Nige" Morton</strong> is not because he wouldn't <em>Dob In One Of Our Own</em>. Clear? As mud? Great.</p>
+<h3 id="back-to-stupid-code">Back to stupid code</h3>
+<p>So how does this relate to computers and showing our colleagues how incredibly intellectual we are?</p>
+<p><img src="/images/typeclass6.png" alt="Computer crime is also a type of crime" title="Computer crime is also a type of crime" /></p>
+<p>Let's take an array. That's a thing you have probably used.</p>
+<pre data-lang="javascript" style="background-color:#2b303b;color:#c0c5ce;" class="language-javascript "><code class="language-javascript" data-lang="javascript"><span style="color:#b48ead;">const </span><span style="color:#bf616a;">arr </span><span>= [</span><span style="color:#d08770;">1</span><span>, </span><span style="color:#d08770;">2</span><span>, </span><span style="color:#d08770;">2</span><span>, </span><span style="color:#d08770;">4</span><span>, </span><span style="color:#d08770;">65</span><span>, </span><span style="color:#d08770;">7</span><span>]
+</span></code></pre>
+<p><strong>arr</strong> is not a typeclass, it is an object (or more broadly, a value).</p>
+<p>A <code>Functor</code> is a typeclass though, and <strong>arr</strong> can be an instance of <code>Functor</code>.</p>
+<p>The rules of a 'lawful' <code>Functor</code> is that we can run a Map function over the contents of the array and afterward <em>The Length Of The Array Remains The Same</em> and <em>It's Still An Array</em> and <em>Basically Nothing Really Weird Has Happened</em>.</p>
+<pre data-lang="javascript" style="background-color:#2b303b;color:#c0c5ce;" class="language-javascript "><code class="language-javascript" data-lang="javascript"><span style="color:#bf616a;">arr</span><span>.</span><span style="color:#8fa1b3;">map</span><span>(</span><span style="color:#bf616a;">x </span><span style="color:#b48ead;">=&gt; </span><span style="color:#bf616a;">x</span><span>)
+</span><span style="color:#65737e;">// arr == [1, 2, 2, 4, 65, 7]
+</span></code></pre>
+<p>As you see here, our array is the same length and the function has been applied to each item without any <em>Funny Business</em>. To tie it back to our police-based analogy - if <strong>DS Kate Fleming</strong> was given some important evidence to take back to the station, this result constitutes the evidence arriving at the station untampered for some forensic analysis that will pull the case together in the final nail-biting moments of the series.</p>
+<p>However, what if <strong>DC Nigel "Nige" Morton</strong> was given that same evidence? That's a nice <code>65</code> value in there, surely nobody would notice if he snuck it for himself? Surely he's <em>Done His Bit Over The Years And Deserves It</em>, after all.</p>
+<pre data-lang="javascript" style="background-color:#2b303b;color:#c0c5ce;" class="language-javascript "><code class="language-javascript" data-lang="javascript"><span style="color:#b48ead;">var </span><span style="color:#bf616a;">nigesFilthyPocket </span><span>= []
+</span><span>
+</span><span style="color:#bf616a;">arr</span><span>.</span><span style="color:#8fa1b3;">map</span><span>(</span><span style="color:#bf616a;">x </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>  </span><span style="color:#b48ead;">if </span><span>(</span><span style="color:#bf616a;">x </span><span>&lt; </span><span style="color:#d08770;">65</span><span>) {
+</span><span>    </span><span style="color:#b48ead;">return </span><span style="color:#bf616a;">x
+</span><span>  } </span><span style="color:#b48ead;">else </span><span>{
+</span><span>    </span><span style="color:#bf616a;">nigesFilthyPocket</span><span>.</span><span style="color:#96b5b4;">push</span><span>(</span><span style="color:#bf616a;">x</span><span>)
+</span><span>    </span><span style="color:#b48ead;">return </span><span style="color:#d08770;">0
+</span><span>  }
+</span><span>})
+</span><span style="color:#65737e;">// arr == [1, 2, 2, 4, 0, 7]
+</span></code></pre>
+<p>If you can follow this code (and forgive the use of a mutable variable in an article that is, despite severely beating around the bush about the fact, written about the subject of functional programming) I think we can all agree that <strong>"Nige"</strong> here is a bit of a swine.</p>
+<p><img src="/images/typeclass5.png" alt="An example of a bad crime" title="An example of a bad crime" /></p>
+<p><strong>"Nige"</strong>'s horrible law-breaking evidence-stealing <code>map</code> function does not make a 'lawful' <code>Functor</code>, as it breaks the <em>Basically Nothing Really Weird Has Happened</em> rule above by doing a massive side-effect and mutating an outside variable when it should just be doing nothing outside of the <strong>arr</strong>. However, if there is a <code>TotallyAwfulFunctor</code> typeclass, this would make an excellent instance of it.</p>
+<h3 id="ok-i-m-exhausted-please-tell-me-what-is-a-typeclass">OK, I'm exhausted, please, tell me, what is a typeclass?</h3>
+<p>Sure.</p>
+<p><img src="/images/typeclass2.png" alt="Irrelevant graph" title="Irrelevant graph" /></p>
+<p>Objects and datatypes can be made instances of the typeclass <code>Functor</code>, provided they implement <em>map</em> without any funny business. These could be arrays, tree structure, <code>Maybe</code> and <code>Either</code>, and loads more. You can <em>map</em> over them all and expect the same behaviour.</p>
+<p>People are instances of the typeclass <code>Human Being</code>, as in general they implement the <em>Breath</em>, <em>Eat</em> and <em>Poo</em> functions. (todo: add javascript example)</p>
+<p>Anything that can be compared to another thing to check whether it is the same or not can be an instance of the typeclass <code>Eq</code>.</p>
+<p>Many objects and datatypes can be made instances of the typeclass <code>Monad</code>, if they are also lawful <code>Functors</code> and <code>Applicative Functors</code> and implement <em>bind</em> and <em>return</em> functions. (What? Not now...)</p>
+<p>Therefore...</p>
+<h3 id="a-typeclass-is-a-way-of-categorising-things-based-not-on-what-they-are-but-what-they-can-and-can-t-do">A typeclass is a way of categorising things based not on what they are but what they can and can't do.</h3>
+<p>(Thanks <a href="https://okay.codes/">Riku</a> for helping me put that more succinctly. You may find it hard to believe that I have a tendency to ramble).</p>
+<p>Make sense? If not, why not <a href="/contact.html">get in touch</a>?</p>
+<p>Further reading:</p>
+<p><a href="https://wiki.haskell.org/Typeclassopedia">Typeclassopedia</a></p>
+<p><a href="/tags/typeclasses.html">More about Typeclasses</a></p>
+
+
+    </main>
+
+    <footer>
+      <p><a href="mailto:danieljamesharvey@gmail.com">Contact</a> |
+      <a href="https://github.com/danieljharvey">Github</a></p>
+      <p>Links for nerds:
+        <a href="/atom.xml">atom</a>
+        <a href="/rss.xml">rss</a></p>
+
+    </footer>
+</body>
+
+</html>

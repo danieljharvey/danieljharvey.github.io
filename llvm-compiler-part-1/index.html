@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - Compiling a functional language to LLVM, part 1</title>
+    <link rel="stylesheet" href="https://danieljharvey.github.io/main.css">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="/">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="/">Posts</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        
+<h1 class="title">
+  Compiling a functional language to LLVM, part 1
+</h1>
+<p class="subtitle"><strong>2023-02-08</strong></p>
+<p>
+ <p class="blog-meta">
+        
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/plt/"
+          >#plt</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/mimsa/"
+          >#mimsa</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/typechecker/"
+          >#typechecker</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/llvm/"
+          >#llvm</a
+        >
+         
+      </p>
+
+<p>Recently I thought it would be good to start compiling the small functional
+language <a href="https://github.com/danieljharvey/mimsa">mimsa</a> I've been messing
+around with for the last few years to LLVM. There's a few really helpful
+resources - Joseph Morag's <a href="https://blog.josephmorag.com/posts/mcc0/">Micro-C</a>
+series, and <a href="https://mapping-high-level-constructs-to-llvm-ir.readthedocs.io/">Mapping High Level Concepts to LLVM
+IR</a> in
+particular, but neither go into converting functional programming paradigms
+such as pattern matching, lambdas and ADTs in much depth.</p>
+<p>So, here we're going to give it a go. The plan is that we start with an
+entirely working but tiny language, get it all working, and then as we add
+features to the language, we'll also add a typechecker and introduce more LLVM
+concepts. The source code for the whole working calculator, along with a basic repl, can be found
+at <a href="https://github.com/danieljharvey/llvm-calc/tree/trunk/llvm-calc">llvm-calc</a>.</p>
+<h2 id="our-language">Our language</h2>
+<p>The first iteration of our language is going to be the most basic of
+calculators. Here is a valid program in our language:</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#bf616a;">1</span><span> + 2 * (1 + 100) </span><span style="color:#bf616a;">-</span><span> 100
+</span></code></pre>
+<p>Here are the datatypes for our language. We will use this to represent our
+programs internally.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">Expr</span><span> ann
+</span><span>  = </span><span style="color:#65737e;">-- | An integer value
+</span><span>    </span><span style="color:#d08770;">EPrim</span><span> ann </span><span style="color:#d08770;">Int
+</span><span>  | </span><span style="color:#65737e;">-- | Two values combined with an operator
+</span><span>    </span><span style="color:#d08770;">EInfix</span><span> ann </span><span style="color:#d08770;">Op</span><span> (</span><span style="color:#d08770;">Expr</span><span> ann) (</span><span style="color:#d08770;">Expr</span><span> ann)
+</span><span>  </span><span style="color:#b48ead;">deriving</span><span> stock (</span><span style="color:#d08770;">Eq</span><span>, </span><span style="color:#d08770;">Ord</span><span>, </span><span style="color:#d08770;">Show</span><span>, </span><span style="color:#d08770;">Functor</span><span>, </span><span style="color:#d08770;">Foldable</span><span>, </span><span style="color:#d08770;">Traversable</span><span>)
+</span><span>
+</span><span style="color:#65737e;">-- | Operators for combining integers
+</span><span style="color:#b48ead;">data </span><span style="color:#d08770;">Op </span><span>= </span><span style="color:#d08770;">OpAdd </span><span>| </span><span style="color:#d08770;">OpMultiply </span><span>| </span><span style="color:#d08770;">OpSubtract
+</span><span>  </span><span style="color:#b48ead;">deriving</span><span> stock (</span><span style="color:#d08770;">Eq</span><span>, </span><span style="color:#d08770;">Ord</span><span>, </span><span style="color:#d08770;">Show</span><span>)
+</span></code></pre>
+<p>Here's some example values:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#65737e;">-- | the number `1`
+</span><span style="color:#8fa1b3;">one </span><span style="color:#b48ead;">:: Expr </span><span>()
+</span><span>one = </span><span style="color:#d08770;">EPrim () 1
+</span><span>
+</span><span style="color:#65737e;">-- | the expression `2 + 3`
+</span><span style="color:#8fa1b3;">twoPlusTwo </span><span style="color:#b48ead;">:: Expr </span><span>()
+</span><span>twoPlusTwo = </span><span style="color:#d08770;">EInfix () OpAdd</span><span> (</span><span style="color:#d08770;">EPrim () 2</span><span>) (</span><span style="color:#d08770;">EPrim () 3</span><span>)
+</span></code></pre>
+<p>We call datatypes like <code>Expr</code> <em>Abstract Syntax Trees</em> (or ASTs).</p>
+<p>You may notice the <code>ann</code> type variable. We'll use this to "decorate" items in
+our AST. For now, we'll just use <code>()</code>.</p>
+<h2 id="parsing-text-into-ast-terms">Parsing text into AST terms</h2>
+<p>Although we could provide our compiler as a Haskell library and ask our users
+to manually create <code>Expr</code> values for us, it'd be much nicer to be able to read
+input from a user.</p>
+<p>This process is called <em>parsing</em>, and looks something like this:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">parseInput </span><span style="color:#b48ead;">:: Text -&gt; Either ParseError</span><span> (</span><span style="color:#b48ead;">Expr </span><span>())
+</span></code></pre>
+<p>Given some user input, parsing returns either a valid <code>Expr</code> or a (hopefully)
+helpful error.</p>
+<p>The whole parser can be seen
+<a href="https://github.com/danieljharvey/llvm-calc/tree/trunk/llvm-calc/src/Calc/Parser">here</a>. We'll not go into too much depth as there are already lots of great references
+on parsing, but a few details are worth noting:</p>
+<h3 id="which-library">Which library?</h3>
+<p>We'll be using a library called
+<a href="https://hackage.haskell.org/package/megaparsec">megaparsec</a>. It's fast, it's got a <a href="https://markkarpov.com/tutorial/megaparsec.html">great
+tutorial</a>, and it generates errors that we can render nicely with the <a href="https://github.com/Mesabloo/diagnose">diagnose</a> library.</p>
+<p><img src="/images/llvm-1-parse-error.png" alt="A megaparsec parse error made nice with diagnose" title="A megaparsec parse error made nice with diagnose" /></p>
+<h3 id="dealing-with-whitespace">Dealing with whitespace</h3>
+<p>Although some languages make whitespace meaningful, we won't be bothering with
+any of that for now. However we would like to allow our users some flexibility
+with how they lay out their code. <code>1+1</code> and <code>  1    + 1</code> should mean the same thing. That means we either need a lot of code like this:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">parseInfix </span><span style="color:#b48ead;">:: Parser Int
+</span><span>parseInfix = </span><span style="color:#b48ead;">do
+</span><span>  _ &lt;- space0 </span><span style="color:#65737e;">-- this accepts 0 or more spaces 
+</span><span>  a &lt;- parseInt
+</span><span>  _ &lt;- space0 </span><span style="color:#65737e;">-- space between number and operator
+</span><span>  op &lt;- parseOp
+</span><span>  &lt;- &lt;- space0 </span><span style="color:#65737e;">-- space between operator and second number
+</span><span>  b &lt;- parseInt
+</span><span>  pure (</span><span style="color:#d08770;">Infix</span><span> op a b)
+</span></code></pre>
+<p>...or we need a neat way of automating this. <code>megaparsec</code> has a handy thing
+called a <code>lexeme</code>. This is a sort of rule that says
+"when eating this value, also eat all the whitespace before it". When you see
+<code>myLexeme</code> in the code, this means we're wrapping a parser with
+whitespace-eating powers. This is
+covered in much better detail in the
+<a href="https://markkarpov.com/tutorial/megaparsec.html#white-space">megaparsec tutorial</a>.</p>
+<h3 id="parsing-infixes">Parsing infixes</h3>
+<p>One problem with parser combinator libraries is that it's easy to get into an
+infinite loop. <code>megaparsec</code> has a bunch of useful helpers for this, in
+particular, support for <code>Operator</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#65737e;">-- | to make infix stuff like easier, `megaparsec` provides
+</span><span style="color:#65737e;">-- the `Operator` type
+</span><span style="color:#8fa1b3;">table </span><span style="color:#b48ead;">::</span><span> [[</span><span style="color:#b48ead;">Operator Parser</span><span> (</span><span style="color:#b48ead;">Expr Annotation</span><span>)]]
+</span><span>table =
+</span><span>  [ [binary &quot;</span><span style="color:#a3be8c;">*</span><span>&quot; (</span><span style="color:#d08770;">EInfix</span><span> mempty </span><span style="color:#d08770;">OpMultiply</span><span>)],
+</span><span>    [ binary &quot;</span><span style="color:#a3be8c;">+</span><span>&quot; (</span><span style="color:#d08770;">EInfix</span><span> mempty </span><span style="color:#d08770;">OpAdd</span><span>),
+</span><span>      binary &quot;</span><span style="color:#a3be8c;">-</span><span>&quot; (</span><span style="color:#d08770;">EInfix</span><span> mempty </span><span style="color:#d08770;">OpSubtract</span><span>)
+</span><span>    ]
+</span><span>  ]
+</span></code></pre>
+<p>A nice part of the the above code is that by putting <code>*</code> in a group before <code>+</code>
+and <code>-</code>, we have defined operator precidence and so <code>6 * 1 + 1</code> equals <code>7</code> rather
+than <code>12</code> (which we'd get from <code>6 * (1 + 1)</code>).</p>
+<h3 id="source-code-location">Source code location</h3>
+<p>You may have noticed the <code>ann</code> type variable in our <code>Expr</code> type. This allows us
+to "decorate" our AST nodes. In parsing, it's useful to decorate each node with
+it's location in the code.</p>
+<p>We use the following datatype for this:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">Annotation </span><span>= </span><span style="color:#d08770;">Location Int Int
+</span><span>  </span><span style="color:#b48ead;">deriving</span><span> stock (</span><span style="color:#d08770;">Eq</span><span>, </span><span style="color:#d08770;">Ord</span><span>, </span><span style="color:#d08770;">Show</span><span>)
+</span></code></pre>
+<p>The two <code>Int</code> values are "character number we start at" and "length of the
+string". Therefore parsing " 100" should return:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">parseResult </span><span style="color:#b48ead;">:: Expr Annotation
+</span><span>parseResult = </span><span style="color:#d08770;">EPrim</span><span> (</span><span style="color:#d08770;">Location 1 3</span><span>) </span><span style="color:#d08770;">100
+</span></code></pre>
+<p>We won't be using these values today as our language is so limited that it's
+pretty difficult to break, but as we add multiple types (and thus, the
+possibility of type errors) we'll use them to show the user where they did a
+boo boo.</p>
+<h2 id="a-simple-interpreter">A simple interpreter</h2>
+<p>Before we get stuck into <code>LLVM</code>, it's good to be able to evaluate our language
+internally. Although it's pretty clear how this calculator should work, it
+will be useful to compare our own simple interpreter with the LLVM output as
+things get more complicated.</p>
+<p>You can view the full code
+<a href="https://github.com/danieljharvey/llvm-calc/blob/trunk/llvm-calc/src/Calc/Interpreter.hs">here</a>.
+As you can see, there isn't very much of it:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">interpret </span><span style="color:#b48ead;">::
+</span><span>  </span><span style="color:#b48ead;">Expr </span><span style="color:#bf616a;">ann </span><span style="color:#b48ead;">-&gt;
+</span><span>  </span><span style="color:#b48ead;">Expr </span><span style="color:#bf616a;">ann
+</span><span>interpret (</span><span style="color:#d08770;">EPrim</span><span> ann p) = 
+</span><span>  </span><span style="color:#65737e;">-- don&#39;t do anything with these
+</span><span>  </span><span style="color:#d08770;">EPrim</span><span> ann p
+</span><span>interpret (</span><span style="color:#d08770;">EInfix</span><span> ann op a b) =
+</span><span>  </span><span style="color:#65737e;">-- attempt to simplify these 
+</span><span>  interpretInfix ann op a b
+</span><span>
+</span><span style="color:#8fa1b3;">interpretInfix </span><span style="color:#b48ead;">::
+</span><span>  </span><span style="color:#bf616a;">ann </span><span style="color:#b48ead;">-&gt;
+</span><span>  </span><span style="color:#b48ead;">Op -&gt;
+</span><span>  </span><span style="color:#b48ead;">Expr </span><span style="color:#bf616a;">ann </span><span style="color:#b48ead;">-&gt;
+</span><span>  </span><span style="color:#b48ead;">Expr </span><span style="color:#bf616a;">ann </span><span style="color:#b48ead;">-&gt;
+</span><span>  </span><span style="color:#b48ead;">Expr </span><span style="color:#bf616a;">ann
+</span><span>interpretInfix ann </span><span style="color:#d08770;">OpAdd</span><span> (</span><span style="color:#d08770;">EPrim</span><span> _ a) (</span><span style="color:#d08770;">EPrim</span><span> _ b) =
+</span><span>  </span><span style="color:#65737e;">-- add the int values
+</span><span>  </span><span style="color:#d08770;">EPrim</span><span> ann (a + b)
+</span><span>interpretInfix ann </span><span style="color:#d08770;">OpSubtract</span><span> (</span><span style="color:#d08770;">EPrim</span><span> _ a) (</span><span style="color:#d08770;">EPrim</span><span> _ b) =
+</span><span>  </span><span style="color:#65737e;">-- subtract the int values
+</span><span>  </span><span style="color:#d08770;">EPrim</span><span> ann (a - b)
+</span><span>interpretInfix ann </span><span style="color:#d08770;">OpMultiply</span><span> (</span><span style="color:#d08770;">EPrim</span><span> _ a) (</span><span style="color:#d08770;">EPrim</span><span> _ b) =
+</span><span>  </span><span style="color:#65737e;">-- multiply the int values
+</span><span>  </span><span style="color:#d08770;">EPrim</span><span> ann (a * b)
+</span><span>interpretInfix ann op a b = 
+</span><span>  </span><span style="color:#65737e;">-- one of our arguments isn&#39;t yet a number
+</span><span>  </span><span style="color:#65737e;">-- so simplify the leaves and try again
+</span><span>  interpretInfix ann op (interpret a) (interpret b)
+</span></code></pre>
+<p>When we see an <code>EInfix</code> value, we look for <code>EPrim</code> values inside and <code>add</code> / <code>subtract</code> / <code>multiply</code> them. If they're
+not <code>EPrim</code> values yet, then they must be nested expressions, so we <code>interpret</code> them
+and try again.</p>
+<p><img src="/images/llvm-1-giant-calculator.jpg" alt="A big calculator" title="A big calculator" /></p>
+<h2 id="enough-nonsense-let-s-do-some-compiling">Enough nonsense, let's do some compiling</h2>
+<p>Hopefully we understand what our small language is now, so let's get down to
+the business of turning it into real life native code.</p>
+<h3 id="what-is-llvm">What is LLVM</h3>
+<p>LLVM stands for Low Level Virtual Machine. The idea is that higher level languages compile into LLVM, and then LLVM is turned into whatever local version of assembly is required. This means that by using LLVM, your programs will work on lots of architectures without you needing to understand a tremendous amount about them. As somebody who understands pretty much nothing about any processor architecture, this is very appealing indeed. If you need further persuading, <code>Rust</code>, <code>Swift</code> and <code>GHC</code> can all compile to
+LLVM.</p>
+<p>LLVM is part of the <code>clang</code> C compiler, and as a result, it's very C shaped.
+It's got a bunch of number types, structs, and arrays, functions, and enough pointers to have a
+very bad time.</p>
+<h3 id="our-runtime">Our "runtime"</h3>
+<p>In order to <em>do things</em> our language will need a runtime, This is a bunch of helper code written in something that be compiled to the target
+language. Because we'll be compiling using <code>clang</code>, we'll use <code>C</code>. I don't know much about <code>C</code>, but what I can tell you is that this file contains a single function called <code>printint</code>, that takes an <code>int</code> and prints
+it to <code>stdout</code>.</p>
+<pre data-lang="c" style="background-color:#2b303b;color:#c0c5ce;" class="language-c "><code class="language-c" data-lang="c"><span style="color:#b48ead;">#include </span><span>&lt;</span><span style="color:#a3be8c;">stdio.h</span><span>&gt;
+</span><span style="color:#b48ead;">#include </span><span>&lt;</span><span style="color:#a3be8c;">stdlib.h</span><span>&gt;
+</span><span>
+</span><span style="color:#b48ead;">void </span><span style="color:#8fa1b3;">printint</span><span>(</span><span style="color:#b48ead;">int </span><span style="color:#bf616a;">i</span><span>) {
+</span><span>  </span><span style="color:#96b5b4;">printf</span><span>(&quot;</span><span style="color:#d08770;">%d</span><span>&quot;, i);
+</span><span>}
+</span></code></pre>
+<p>This is the only <code>C</code> you'll need to see today. I'm sorry about that. Onwards!</p>
+<h3 id="our-first-llvm-module">Our first LLVM module</h3>
+<p>LLVM is organised in <a href="https://llvm.org/docs/LangRef.html#module-structure">modules</a>.</p>
+<p>To start us off, here is the IR (Intermediate Representation) for printing the number <code>42</code> to <code>stdout</code>.</p>
+<pre data-lang="llvm" style="background-color:#2b303b;color:#c0c5ce;" class="language-llvm "><code class="language-llvm" data-lang="llvm"><span>; ModuleID = &#39;calc&#39;
+</span><span>
+</span><span>declare external ccc i32 @printint(i32)
+</span><span>
+</span><span>define external ccc i32 @main()    {
+</span><span>  %1 =  call ccc i32 @printint(i32  42)
+</span><span>  ret i32 0
+</span><span>}
+</span></code></pre>
+<p>Let's take this apart line by line:</p>
+<hr />
+<pre data-lang="llvm" style="background-color:#2b303b;color:#c0c5ce;" class="language-llvm "><code class="language-llvm" data-lang="llvm"><span>; ModuleID = &#39;calc&#39;
+</span></code></pre>
+<p>This is a comment. See, LLVM is easy.</p>
+<hr />
+<pre data-lang="llvm" style="background-color:#2b303b;color:#c0c5ce;" class="language-llvm "><code class="language-llvm" data-lang="llvm"><span>declare external ccc i32 @printint(i32)
+</span></code></pre>
+<p>This declares an external function we'd like to use. In this case it's the
+<code>printint</code> function from our standard library defined above. It
+takes a single argument, an <code>i32</code>, and returns an <code>i32</code>.</p>
+<hr />
+<pre data-lang="llvm" style="background-color:#2b303b;color:#c0c5ce;" class="language-llvm "><code class="language-llvm" data-lang="llvm"><span>define external ccc i32 @main() {
+</span></code></pre>
+<p>This defines a function called <code>main</code> that takes no arguments and returns a
+single <code>i32</code>.</p>
+<p>The <code>ccc</code> part is the "calling convention". This defines the manner in which
+LLVM will generate the function code. There are <a href="https://llvm.org/docs/LangRef.html#calling-conventions">absolutely loads of these</a>, many
+designs to optimise specific languages. We'll keep to <code>ccc</code> for now, but may
+want to change our minds when we start doing tail calls.</p>
+<hr />
+<pre data-lang="llvm" style="background-color:#2b303b;color:#c0c5ce;" class="language-llvm "><code class="language-llvm" data-lang="llvm"><span>%1 =  call ccc i32 @printint(i32  42)
+</span></code></pre>
+<p>This line of defines a variable <code>%1</code>, and sets it the result of calling the
+<code>printint</code> function we imported above. We pass the <code>printint</code> function a single
+argument, an <code>i32</code> value of <code>42</code>. This will print the number <code>42</code> to stdout.</p>
+<hr />
+<pre data-lang="llvm" style="background-color:#2b303b;color:#c0c5ce;" class="language-llvm "><code class="language-llvm" data-lang="llvm"><span>ret i32 0
+</span></code></pre>
+<p>Functions in <code>LLVM</code> must return something (although that thing can be <code>null</code>).
+This line returns an <code>i32</code> value of <code>0</code>. Because this is the <code>main</code> function of
+our program, this is what will be returned to the operating system as our exit
+code. <code>0</code> means "great job, everything went fine".</p>
+<hr />
+<pre data-lang="llvm" style="background-color:#2b303b;color:#c0c5ce;" class="language-llvm "><code class="language-llvm" data-lang="llvm"><span>}
+</span></code></pre>
+<p>This is a closing curly brace. <code>LLVM</code> is like <code>C</code>, we have to specifically
+end our functions. No great hardship though.</p>
+<hr />
+<h3 id="compiling-and-running-our-hand-baked-module">Compiling and running our hand-baked module</h3>
+<p>To check that the code above does what we say it does, and to check we've got
+everything installed that we need, let's write the LLVM to a file called
+<code>module.ll</code>, the C code to <code>runtime.c</code>, and then compile it using <code>clang</code>.</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#bf616a;">clang -Wno-override-module -lm</span><span> module.ll runtime.c</span><span style="color:#bf616a;"> -o</span><span> a.out 
+</span></code></pre>
+<p>This should output an executable called <code>a.out</code>. If we run it, we should see
+this:</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#bf616a;">./a.out
+</span><span style="color:#bf616a;">42
+</span></code></pre>
+<p>Hooray!</p>
+<h2 id="compiling-our-programming-language-to-llvm">Compiling our programming language to LLVM</h2>
+<p>OK. So now we've had a taste of the raw power available to us, let's get down
+to business. Although we could just create raw LLVM IR by hand, instead we will use the following
+libraries:</p>
+<p><a href="https://hackage.haskell.org/package/llvm-hs-pure">llvm-hs-pure</a> - a set of
+types for LLVM IR, along with some helpful building functions.</p>
+<p><a href="https://hackage.haskell.org/package/llvm-hs-pretty">llvm-hs-pretty</a> - a
+prettyprinter for <code>llvm-hs-pure</code>.</p>
+<p>We'll use the datatypes in <code>llvm-hs-pure</code> to create modules, then use <code>llvm-hs-pretty</code> to render these to files and then compile by hand. This means that when we
+invariably generate LLVM errors, we'll at least we able to look at the error
+and reference the code we've given it to try and work out what went wrong.</p>
+<h3 id="shut-up-and-show-me-some-haskell-code">Shut up and show me some Haskell code</h3>
+<p>The whole module can be seen
+<a href="https://github.com/danieljharvey/llvm-calc/blob/trunk/llvm-calc/src/Calc/Compile/ToLLVM.hs">here</a>, but let's look at the highlights:</p>
+<hr />
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">primToLLVM </span><span style="color:#b48ead;">:: Int -&gt; LLVM</span><span>.</span><span style="color:#b48ead;">Operand
+</span><span>primToLLVM i = </span><span style="color:#d08770;">LLVM</span><span>.int32 (fromIntegral i)
+</span></code></pre>
+<p>This function creates integer literals from our <code>EPrim</code> constructors, using
+the <a href="https://hackage.haskell.org/package/llvm-hs-pure-9.0.0/docs/LLVM-IRBuilder-Constant.html#v:int32">int32</a> function.
+This returns an <code>Operand</code> (an LLVM value, broadly) that we can pass to other LLVM functions. We'll
+expand this function to include more types as we need them.</p>
+<hr />
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">exprToLLVM </span><span style="color:#b48ead;">::
+</span><span>  ( </span><span style="color:#b48ead;">LLVM</span><span>.</span><span style="color:#b48ead;">MonadIRBuilder </span><span style="color:#bf616a;">m</span><span>,
+</span><span>    </span><span style="color:#b48ead;">LLVM</span><span>.</span><span style="color:#b48ead;">MonadModuleBuilder </span><span style="color:#bf616a;">m
+</span><span>  ) </span><span style="color:#b48ead;">=&gt;
+</span><span>  </span><span style="color:#b48ead;">Expr </span><span style="color:#bf616a;">ann </span><span style="color:#b48ead;">-&gt;
+</span><span>  </span><span style="color:#bf616a;">m </span><span style="color:#b48ead;">LLVM</span><span>.</span><span style="color:#b48ead;">Operand
+</span><span>exprToLLVM (</span><span style="color:#d08770;">EPrim</span><span> _ prim) = 
+</span><span>  pure $ primToLLVM prim
+</span><span>exprToLLVM (</span><span style="color:#d08770;">EInfix</span><span> _ </span><span style="color:#d08770;">OpAdd</span><span> a b) = </span><span style="color:#b48ead;">do
+</span><span>  lhs &lt;- exprToLLVM a
+</span><span>  rhs &lt;- exprToLLVM b
+</span><span>  </span><span style="color:#d08770;">LLVM</span><span>.add lhs rhs
+</span><span>exprToLLVM (</span><span style="color:#d08770;">EInfix</span><span> _ </span><span style="color:#d08770;">OpSubtract</span><span> a b) = </span><span style="color:#b48ead;">do
+</span><span>  lhs &lt;- exprToLLVM a
+</span><span>  rhs &lt;- exprToLLVM b
+</span><span>  </span><span style="color:#d08770;">LLVM</span><span>.sub lhs rhs
+</span><span>exprToLLVM (</span><span style="color:#d08770;">EInfix</span><span> _ </span><span style="color:#d08770;">OpMultiply</span><span> a b) = </span><span style="color:#b48ead;">do
+</span><span>  lhs &lt;- exprToLLVM a
+</span><span>  rhs &lt;- exprToLLVM b
+</span><span>  </span><span style="color:#d08770;">LLVM</span><span>.mul lhs rhs
+</span></code></pre>
+<p>Here we compile our <code>Expr</code> into and take care of adding /
+subtracting / multiplying integers.</p>
+<p>Because we're using the <code>MonadIRBuilder</code>
+and <code>MonadModuleBuilder</code>, it's almost as if we're writing code to do the
+interpreting by hand, as all the actual code output is plumbed away in the
+monad. If you squint, it looks very similar to the interpreter we wrote earlier, so if you
+understand that, you pretty much understand this.</p>
+<hr />
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#65737e;">-- | given our `Expr` type, turn it into an LLVM module
+</span><span style="color:#8fa1b3;">toLLVM </span><span style="color:#b48ead;">:: Expr </span><span style="color:#bf616a;">ann </span><span style="color:#b48ead;">-&gt; LLVM</span><span>.</span><span style="color:#b48ead;">Module
+</span><span>toLLVM expr =
+</span><span>  </span><span style="color:#d08770;">LLVM</span><span>.buildModule &quot;</span><span style="color:#a3be8c;">example</span><span>&quot; $ </span><span style="color:#b48ead;">do
+</span><span>    </span><span style="color:#65737e;">-- import `printint` from our standard library
+</span><span>    </span><span style="color:#65737e;">-- it takes an `i32` and returns an `i32`
+</span><span>    printInt &lt;- </span><span style="color:#d08770;">LLVM</span><span>.extern &quot;</span><span style="color:#a3be8c;">printint</span><span>&quot; [</span><span style="color:#d08770;">LLVM</span><span>.i32] </span><span style="color:#d08770;">LLVM</span><span>.i32
+</span><span>
+</span><span>    </span><span style="color:#65737e;">-- create a function called `main` that will be the entry point to our
+</span><span>    </span><span style="color:#65737e;">-- program
+</span><span>    </span><span style="color:#d08770;">LLVM</span><span>.function &quot;</span><span style="color:#a3be8c;">main</span><span>&quot; </span><span style="color:#d08770;">[] LLVM</span><span>.i32 $ \_ -&gt; </span><span style="color:#b48ead;">do
+</span><span>      </span><span style="color:#65737e;">-- build the LLVM AST for our expression
+</span><span>      ourExpression &lt;- exprToLLVM expr
+</span><span>
+</span><span>      </span><span style="color:#65737e;">-- print our result to stdout
+</span><span>      _ &lt;- </span><span style="color:#d08770;">LLVM</span><span>.call printInt [(ourExpression, </span><span style="color:#d08770;">[]</span><span>)]
+</span><span>
+</span><span>      </span><span style="color:#65737e;">-- return success exit code of `0`
+</span><span>      </span><span style="color:#d08770;">LLVM</span><span>.ret (</span><span style="color:#d08770;">LLVM</span><span>.int32 </span><span style="color:#d08770;">0</span><span>)
+</span></code></pre>
+<p>Finally, we wrap up our compiled <code>Expr</code> and turn it into a
+module. We are going to import <code>printint</code> from our standard library, output the
+response of our computation to stdout, and then return exit code <code>0</code>.</p>
+<p>Let's look at the generated LLVM for <code>6 * 8 - 3</code>:</p>
+<pre data-lang="llvm" style="background-color:#2b303b;color:#c0c5ce;" class="language-llvm "><code class="language-llvm" data-lang="llvm"><span>; ModuleID = &#39;example&#39;
+</span><span>
+</span><span>declare external ccc i32 @printint(i32)
+</span><span>
+</span><span>define external ccc i32 @main() {
+</span><span>  %1 = mul   i32 6, 8
+</span><span>  %2 = sub   i32 %1, 3
+</span><span>  %3 =  call ccc  i32  @printint(i32  %2)
+</span><span>  ret i32 0
+</span><span>}
+</span></code></pre>
+<p>Hopefully, nothing too surprising.</p>
+<h2 id="running-our-code">Running our code</h2>
+<p>As with earlier, our little compiler works by pretty printing the LLVM module
+we created, then running <code>clang</code> to compile it into an executable. I pretty
+much stole the compiling code from
+<a href="https://blog.josephmorag.com/posts/mcc3/">Micro-C</a> (thanks/sorry, Joseph!).
+You can see our slightly tattered version
+<a href="https://github.com/danieljharvey/llvm-calc/blob/trunk/llvm-calc/src/Calc/Compile/RunLLVM.hs">here</a> if for some reason you don't believe any of this actually works.</p>
+<h3 id="well-that-s-that">Well that's that</h3>
+<p>Congratulations, you are all low-level compiler experts now. Hopefully that was
+somewhat helpful. Next time we'll be adding the equality operator and some basic control flow.
+Exciting!</p>
+<p>Make sense? If not, <a href="/contact.html">get in touch</a>!</p>
+<p>Further reading:</p>
+<p><a href="https://llvm.org/docs/LangRef.html">llvm reference</a></p>
+<p><a href="https://github.com/danieljharvey/llvm-calc">llvm-calc</a></p>
+
+
+    </main>
+
+    <footer>
+      <p><a href="mailto:danieljamesharvey@gmail.com">Contact</a> |
+      <a href="https://github.com/danieljharvey">Github</a></p>
+      <p>Links for nerds:
+        <a href="/atom.xml">atom</a>
+        <a href="/rss.xml">rss</a></p>
+
+    </footer>
+</body>
+
+</html>

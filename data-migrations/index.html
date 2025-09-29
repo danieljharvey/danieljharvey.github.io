@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - Mr Migration</title>
+    <link rel="stylesheet" href="https://danieljharvey.github.io/main.css">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="/">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="/">Posts</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        
+<h1 class="title">
+  Mr Migration
+</h1>
+<p class="subtitle"><strong>2019-07-14</strong></p>
+<p>
+ <p class="blog-meta">
+        
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/haskell/"
+          >#haskell</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/migratable/"
+          >#migratable</a
+        >
+         
+      </p>
+
+<p>A few weeks ago I gave a talk at London Haskell that was basically an advert for a data migrating library I haven't even finished yet. However, I managed on the whole to hide this fact and some people even came up afterwards and asked me how the library was performing in production to which of course I said "very well indeed, because of course i am very good at computers" and quickly changed the subject.</p>
+<p>What follows is basically the crap from my slides, occasionally turned from bullet lists into sentences where I realised I had overused that particular presentation device a little much.</p>
+<p>Sitting comfortable? Then we shall begin...</p>
+<h3 id="in-the-beginning">In The Beginning...</h3>
+<p>...we had server side applications.</p>
+<ul>
+<li>
+<p>If the code agrees with the DB schema...</p>
+</li>
+<li>
+<p>Deploy!</p>
+</li>
+<li>
+<p><strong>Great!</strong></p>
+</li>
+</ul>
+<h3 id="then-came-javascript">Then Came Javascript...</h3>
+<ul>
+<li>
+<p>Suddenly all our data was spread around the place</p>
+</li>
+<li>
+<p>Things didn't necessarily agree with one another</p>
+</li>
+<li>
+<p>There was sometimes <em>JQuery</em>.</p>
+</li>
+</ul>
+<p>And at some point we land at</p>
+<h3 id="the-traditional-backend-frontend-monolith">The Traditional Backend / Frontend Monolith</h3>
+<ul>
+<li>
+<p>When the back end changes...</p>
+</li>
+<li>
+<p>Change the front end too.</p>
+</li>
+<li>
+<p><strong>Deploy everything together</strong></p>
+</li>
+<li>
+<p>(did you forget to update the DB schema?)</p>
+</li>
+<li>
+<p><strong>DO THAT QUICKLY</strong></p>
+</li>
+<li>
+<p>Forget about the past</p>
+</li>
+<li>
+<p><strong>YOLO</strong></p>
+</li>
+</ul>
+<h3 id="so">So...</h3>
+<p>What could possibly go wrong with this?</p>
+<p><img src="/images/migrate-1.png" alt="A relatable picture that was not in the presentation to break things up a bit." title="A relatable picture that was not in the presentation to break things up a bit." /></p>
+<h3 id="problem-one">Problem One</h3>
+<p><code>Company A</code> have found that DB schema changes make changing the application more difficult than they would like. Therefore they choose to use <strong>event sourcing</strong>. As the application changes, the DB schemas keep up, but they are soon left with an event table full of various historical versions of JSON data.</p>
+<ul>
+<li><em>What is this data? Do they still understand it?</em></li>
+</ul>
+<h3 id="problem-two">Problem Two</h3>
+<p><code>Company B</code> decide their code is so good that they are going to create a <strong>public API</strong>. Other companies decide to use this API, and annoyingly want it not to change at random. Therefore the API owners make promises not to change their API (even though they bloody love changing their API because they are 10x hackers who just can't stop delivering business value).</p>
+<ul>
+<li><em>How can they make changes to this without breaking everything?</em></li>
+</ul>
+<h3 id="problem-three">Problem Three</h3>
+<p><code>Company C</code> have noticed that <em>large monoliths take ages to deploy</em>. They would also like to decouple teams to maximise parallelisation of work. They adopt a <strong>microservice architecture</strong>. Suddenly, services that talk to one another aren't guaranteed to have versions or interfaces that match, so a old service can be receiving requests from a very old service that hasn't been updated.</p>
+<ul>
+<li><em>How will they cope with communicating with any number of historical deployments?</em></li>
+</ul>
+<h3 id="a-concrete-example">A concrete example</h3>
+<p>Here's a data type that we use in our business critical application. It is called <code>OldUser</code>, which we never really questioned at the time.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">OldUser
+</span><span>  = </span><span style="color:#d08770;">OldUser 
+</span><span>    { firstName :: </span><span style="color:#d08770;">String
+</span><span>    , surname   :: </span><span style="color:#d08770;">String
+</span><span>    , pet       :: </span><span style="color:#d08770;">String
+</span><span>    , age       :: </span><span style="color:#d08770;">Int
+</span><span>    }
+</span></code></pre>
+<p>Business is going pretty well, I can't imagine my meeting this afternoon will go badly...</p>
+<h3 id="oh-no">Oh no!</h3>
+<p><img src="/images/migrate-2.png" alt="A change in business requirements has been spotted." title="A change in business requirements has been spotted." /></p>
+<h3 id="pivot-immediately">Pivot immediately</h3>
+<p>Apparently we can increase profitability by <em>30%</em> by using newtypes properly.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">newtype </span><span style="color:#d08770;">Name
+</span><span>  = </span><span style="color:#d08770;">Name</span><span> { getName :: </span><span style="color:#d08770;">Text</span><span>.</span><span style="color:#d08770;">Text</span><span> }
+</span></code></pre>
+<p>And replacing <code>String</code> selections of <code>pet</code> types with a more restrictive sum type.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">OldPet
+</span><span>  = </span><span style="color:#d08770;">OldDog
+</span><span>  | </span><span style="color:#d08770;">OldCat
+</span><span>  | </span><span style="color:#d08770;">NoPet
+</span></code></pre>
+<p>These changes took all night, but you really pulled through there.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">NewUser
+</span><span>  = </span><span style="color:#d08770;">NewUser
+</span><span>    { newFirstName :: </span><span style="color:#d08770;">Name
+</span><span>    , newSurname   :: </span><span style="color:#d08770;">Name
+</span><span>    , newPet       :: </span><span style="color:#d08770;">OldPet
+</span><span>    , newAge       :: </span><span style="color:#d08770;">Int
+</span><span>    }
+</span></code></pre>
+<p>Great job.</p>
+<h3 id="hold-on-though">Hold On Though</h3>
+<p>Business is obviously booming now, but what are we going to do about:</p>
+<ul>
+<li>
+<p>Third parties that will insist on using <code>OldUser</code> in their API calls for the
+next 18 months</p>
+</li>
+<li>
+<p>Stored JSON data with the old data shape</p>
+</li>
+</ul>
+<h3 id="what-options-do-we-have">What options do we have?</h3>
+<ol>
+<li>As well as developing new code, we keep <strong>old code</strong> for dealing with the <strong>old data</strong></li>
+</ol>
+<ul>
+<li>This seems fine...</li>
+<li>...till you're fixing bugs in the old system too</li>
+<li>Shit! More fixes! Now you're got an new-old system as well as the new-new one.</li>
+<li>More fixes again! Now we have a new-old-new-old system to maintain as well as your main one, which is a new-new-new system by now? It may have been superceded too. Oh dear.</li>
+</ul>
+<ol start="2">
+<li>Or migrate the <strong>old datatypes</strong> to the <strong>new datatypes</strong> and keep one set of logic.</li>
+</ol>
+<ul>
+<li>Logic stays in new code</li>
+<li>Bug fixes in business logic happen once</li>
+<li>Logic of migration separated from business logic</li>
+</ul>
+<h3 id="decision-time">Decision time</h3>
+<p>If you choose Option <code>1</code>, you are on your own. However, if you have chosen Option <code>2</code>, read on...</p>
+<p><img src="/images/migrate-3.png" alt="Another picture of an angry business person." title="Another picture of an angry business person." /></p>
+<h3 id="functions-we-will-need-migrate">Functions we will need: migrate</h3>
+<p>The first thing we'll need is a function to convert our <em>old terrible datatype</em> into our <em>new incredible exciting datatype</em>, in this case <code>OldUser</code> to <code>NewUser</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">migrate </span><span style="color:#b48ead;">:: OldUser -&gt; NewUser
+</span></code></pre>
+<p>Actually. Let's be realistic about this, and account for the idea that this operation could fail, as life is a bin.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">migrate </span><span style="color:#b48ead;">:: OldUser -&gt; Maybe NewUser
+</span></code></pre>
+<h3 id="functions-we-will-need-parse">Functions we will need: parse</h3>
+<p>We'll also need some functions for decoding JSON, as I have made the somewhat brazen assumption this is a REST API that only receives JSON payloads. We'll use functions from the <code>Aeson</code> library because it is reasonably ubiquitous.</p>
+<p>This function will attempt converting some <code>JSON</code> into an <code>OldUser</code></p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">parseOldUser </span><span style="color:#b48ead;">:: JSON -&gt; Maybe OldUser
+</span><span>parseOldUser json
+</span><span>  = parseMaybe (parseJSON json)
+</span></code></pre>
+<p>And this very similar function will try and convert from <code>JSON</code> into a <code>NewUser</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">parseNewUser </span><span style="color:#b48ead;">:: JSON -&gt; Maybe NewUser
+</span><span>parseNewUser
+</span><span>  = parseMaybe . parseJSON
+</span></code></pre>
+<h3 id="putting-it-together">Putting it together</h3>
+<p>We can then make a function that takes some <code>JSON</code>, and then tries to decode it into a <code>NewUser</code>. If it can't decode it into a <code>NewUser</code>, it tries to parse it into an <code>OldUser</code>, and if that succeeds, it uses some sort of <code>migrate</code> function to turn <code>OldUser</code> into a <code>NewUser</code>.</p>
+<p>Said function looks something like this:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">parseSomeKindOfUser </span><span style="color:#b48ead;">:: JSON -&gt; Maybe NewUser
+</span><span>parseSomeKindOfUser json
+</span><span>   =   parseNewUser json
+</span><span>  &lt;|&gt; (parseOldUser json &gt;&gt;= migrate)
+</span></code></pre>
+<p>(The <code>&lt;|&gt;</code> operator comes from the <code>Alternative</code> typeclass, and works sort of like the <code>||</code> function. The intuition is <code>try this OR try this</code>)</p>
+<h3 id="does-it-scale-though">Does it scale though?</h3>
+<p>It seems to do the job, with a couple of datatypes, however it's easy to see how it could get out of hand...</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span>thing = parse a
+</span><span>    &lt;|&gt; parse b &gt;&gt;= migrate
+</span><span>    &lt;|&gt; parse c &gt;&gt;= migrate &gt;&gt;= migrate
+</span><span>    &lt;|&gt; parse d &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate
+</span><span>    &lt;|&gt; parse e &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate
+</span><span>    &lt;|&gt; parse f &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate
+</span><span>    &lt;|&gt; parse g &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate
+</span><span>    &lt;|&gt; parse h &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate
+</span><span>    &lt;|&gt; parse i &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate
+</span><span>    &lt;|&gt; parse j &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate
+</span><span>    &lt;|&gt; parse k &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate
+</span><span>    &lt;|&gt; parse l &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate 
+</span><span>    &lt;|&gt; parse m &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate &gt;&gt;= migrate
+</span></code></pre>
+<h3 id="so-this-method-is-a-no">So this method is a no?</h3>
+<p>I don't think so. But writing all of that is a bit much. Hopefully right now you are asking "Why can't I get the compiler to do this for me?".</p>
+<p><img src="/images/migrate-4.png" alt="The compiler is your friend." title="The compiler is your friend." /></p>
+<h3 id="good-point">Good Point.</h3>
+<p>OK! Let's give it a smash. We start by making a typeclass and using it to version tag our datatype.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">class </span><span style="color:#a3be8c;">Versioned</span><span> (</span><span style="color:#bf616a;">label</span><span> :: </span><span style="color:#a3be8c;">Symbol</span><span>) (</span><span style="color:#bf616a;">num</span><span> :: </span><span style="color:#a3be8c;">Nat</span><span>) </span><span style="color:#b48ead;">where
+</span><span>  </span><span style="color:#b48ead;">type</span><span> num </span><span style="color:#8fa1b3;">`</span><span>VersionOf</span><span style="color:#8fa1b3;">`</span><span> label :: </span><span style="color:#d08770;">Type
+</span></code></pre>
+<p>(This <code>VersionOf</code> type here is an <code>associated type family</code> - a type level function that is scoped to only work inside the typeclass it is defined in.)</p>
+<p>The typeclass defines a function we can use to find a datatype from the <code>label</code> and the <code>num</code>. For example, we can make a label called <code>"User"</code>, and make <code>OldUser</code> version <code>1</code> of it:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">instance Versioned</span><span> &quot;</span><span style="color:#b48ead;">User</span><span>&quot; 1 </span><span style="color:#b48ead;">where
+</span><span>  </span><span style="color:#b48ead;">type </span><span style="color:#d08770;">1 </span><span style="color:#8fa1b3;">`</span><span>VersionOf</span><span style="color:#8fa1b3;">` </span><span>&quot;</span><span style="color:#a3be8c;">User</span><span>&quot; = </span><span style="color:#d08770;">OldUser
+</span></code></pre>
+<p>We'll also define an instance for <code>NewUser</code>, and make that version <code>2</code> of it.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">instance Versioned</span><span> &quot;</span><span style="color:#b48ead;">User</span><span>&quot; 2 </span><span style="color:#b48ead;">where
+</span><span>  </span><span style="color:#b48ead;">type </span><span style="color:#d08770;">2 </span><span style="color:#8fa1b3;">`</span><span>VersionOf</span><span style="color:#8fa1b3;">` </span><span>&quot;</span><span style="color:#a3be8c;">User</span><span>&quot; = </span><span style="color:#d08770;">NewUser
+</span></code></pre>
+<h3 id="linking-versions-together">Linking versions together</h3>
+<p>Next we make a typeclass for migrations that uses our <code>VersionOf</code> type function:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">class </span><span style="color:#a3be8c;">Migratable</span><span> (</span><span style="color:#bf616a;">label</span><span> :: </span><span style="color:#a3be8c;">Symbol</span><span>) (</span><span style="color:#bf616a;">num</span><span> :: </span><span style="color:#a3be8c;">Nat</span><span>) </span><span style="color:#b48ead;">where
+</span><span>  fromPrevious
+</span><span>    :: (num - </span><span style="color:#d08770;">1</span><span>) </span><span style="color:#8fa1b3;">`</span><span>VersionOf</span><span style="color:#8fa1b3;">`</span><span> label
+</span><span>    -&gt; </span><span style="color:#d08770;">Maybe</span><span> (num </span><span style="color:#8fa1b3;">`</span><span>VersionOf</span><span style="color:#8fa1b3;">`</span><span> label)
+</span></code></pre>
+<p>It lets us define a function from the previous version of a datatype to the current one, so let's use it to migrate <code>OldUser</code> to <code>NewUser</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">instance Migratable</span><span> &quot;</span><span style="color:#b48ead;">User</span><span>&quot; 2 </span><span style="color:#b48ead;">where
+</span><span>  </span><span style="color:#8fa1b3;">fromPrevious </span><span style="color:#b48ead;">:: OldUser -&gt; Maybe NewUser
+</span><span>  fromPrevious older
+</span><span>    = </span><span style="color:#d08770;">Just </span><span>$ </span><span style="color:#d08770;">NewUser 
+</span><span>              { newFirstName = </span><span style="color:#d08770;">Name</span><span> (</span><span style="color:#d08770;">Text</span><span>.pack (firstName older))
+</span><span>              , newSurname   = </span><span style="color:#d08770;">Name</span><span> (</span><span style="color:#d08770;">Text</span><span>.pack (surname older))
+</span><span>              , newPet       = readPet (pet older)
+</span><span>              , newAge       = age older
+</span><span>              }
+</span><span>    </span><span style="color:#b48ead;">where
+</span><span>      readPet s
+</span><span>        | s == &quot;</span><span style="color:#a3be8c;">dog</span><span>&quot; = </span><span style="color:#d08770;">OldDog
+</span><span>        | s == &quot;</span><span style="color:#a3be8c;">cat</span><span>&quot; = </span><span style="color:#d08770;">OldCat
+</span><span>        | otherwise  = </span><span style="color:#d08770;">NoPet
+</span></code></pre>
+<h3 id="problem-migrating-from-old-json-versions">Problem: Migrating from old JSON versions</h3>
+<p>Once we've defined instances of the <code>Versioned</code> and <code>Migratable</code> typeclasses for our data, the <code>Data.Migratable</code> library functions start doing helpful things. It provides a version of <code>migrate</code> function we defined concretely earlier, but with a much more exciting (confusing) type signature.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span>migrate 
+</span><span>  :: earliest </span><span style="color:#8fa1b3;">`</span><span>VersionOf</span><span style="color:#8fa1b3;">`</span><span> label 
+</span><span>  -&gt; </span><span style="color:#d08770;">Maybe</span><span> (target </span><span style="color:#8fa1b3;">`</span><span>VersionOf</span><span style="color:#8fa1b3;">`</span><span> label)
+</span></code></pre>
+<p>It means "I can take the <code>earliest</code> version of <code>label</code> and <code>Maybe</code> return you the <code>target</code> version of <code>label</code>". We use <em>type applications</em> to pass <code>versions</code> and a <code>label</code> to convert an old datatype to a new one.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">oldToNew </span><span style="color:#b48ead;">:: OldUser -&gt; Maybe NewUser
+</span><span>oldToNew = migrate @</span><span style="color:#d08770;">1</span><span> @</span><span style="color:#d08770;">2</span><span> @&quot;</span><span style="color:#a3be8c;">User</span><span>&quot;
+</span></code></pre>
+<p>Going from version <code>1</code> to <code>2</code> means we've just done a shitload of work for a single conversion, but the same function will recursively convert through as many versions of the datatype as you like:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">veryOldToVeryNew </span><span style="color:#b48ead;">:: OldUser -&gt; Maybe VeryNewUser
+</span><span>veryOldToVeryNew = migrate @</span><span style="color:#d08770;">1</span><span> @</span><span style="color:#d08770;">100</span><span> @&quot;</span><span style="color:#a3be8c;">User</span><span>&quot;
+</span></code></pre>
+<h3 id="solution-parsejsonvia">Solution: parseJSONVia</h3>
+<p>The <code>Data.Migratable</code> library also provides us <code>parseJSONVia</code>, with the following exciting type signature:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span>parseJSONVia
+</span><span>  :: </span><span style="color:#d08770;">JSON 
+</span><span>  -&gt; </span><span style="color:#d08770;">Maybe</span><span> (target </span><span style="color:#8fa1b3;">`</span><span>VersionOf</span><span style="color:#8fa1b3;">`</span><span> label)
+</span></code></pre>
+<p>We could use to try converting from both <code>OldUser</code> and <code>NewUser</code> like this:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span>parseSomeKindOfUser 
+</span><span>  :: </span><span style="color:#d08770;">JSON 
+</span><span>  -&gt; </span><span style="color:#d08770;">Maybe NewUser
+</span><span>parseSomeKindOfUser 
+</span><span>  = parseJSONVia @&quot;</span><span style="color:#a3be8c;">User</span><span>&quot; @</span><span style="color:#d08770;">1</span><span> @</span><span style="color:#d08770;">2
+</span></code></pre>
+<p>Underneath, this is doing our <code>parse</code> and <code>migrate</code> pattern under thge good</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span>thing = parse @</span><span style="color:#d08770;">NewUser
+</span><span>    &lt;|&gt; parse @</span><span style="color:#d08770;">OldUser </span><span>&gt;&gt;= migrate
+</span></code></pre>
+<h3 id="a-note-on-type-applications">A note on Type Applications</h3>
+<p>To understand how to pass the types to the <code>parseJSONVia</code> function, we need to look at the <code>Schema</code> typeclass that provides this functionality:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">class </span><span style="color:#a3be8c;">Schema</span><span> (</span><span style="color:#bf616a;">label</span><span> :: </span><span style="color:#a3be8c;">Symbol</span><span>) (</span><span style="color:#bf616a;">earliest</span><span> :: </span><span style="color:#a3be8c;">Nat</span><span>) (</span><span style="color:#bf616a;">target</span><span> :: </span><span style="color:#a3be8c;">Nat</span><span>) </span><span style="color:#b48ead;">where
+</span><span>  </span><span style="color:#8fa1b3;">parseJSONVia </span><span style="color:#b48ead;">:: JSON</span><span>.</span><span style="color:#b48ead;">Value -&gt; JSON</span><span>.</span><span style="color:#b48ead;">Parser</span><span> (</span><span style="color:#bf616a;">target</span><span> `</span><span style="color:#b48ead;">VersionOf</span><span>` </span><span style="color:#bf616a;">label</span><span>)
+</span></code></pre>
+<p>When we use it, we are passing it types in the order they appear in the class declaration.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span>parseJSONVia @&quot;</span><span style="color:#a3be8c;">User</span><span>&quot; @</span><span style="color:#d08770;">1</span><span> @</span><span style="color:#d08770;">2
+</span></code></pre>
+<p>Therefore, we are passing the type-level symbol <code>"User"</code> as the first argument <code>label</code>, then a type-level natural number <code>1</code> as the starting version <code>earliest</code>, and finally another type-level natural <code>2</code> as the target version <code>target</code>.</p>
+<h3 id="problem-uniqueness-checking">Problem: Uniqueness checking</h3>
+<p>Uniqueness checking is another feature of <code>Data.Migratable</code>. Let's say that we have this data type <code>Info</code>:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">Info
+</span><span>  = </span><span style="color:#d08770;">Info 
+</span><span>      { amount: </span><span style="color:#d08770;">Pounds</span><span> }
+</span></code></pre>
+<p>Then, after another hard pivot, we change the units:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">NewInfo
+</span><span>  = </span><span style="color:#d08770;">NewInfo
+</span><span>      { amount :: </span><span style="color:#d08770;">Pennies</span><span> }
+</span></code></pre>
+<p>In our static typed ivory tower, we are fine, but our clients keep sending us
+this:</p>
+<pre data-lang="json" style="background-color:#2b303b;color:#c0c5ce;" class="language-json "><code class="language-json" data-lang="json"><span>{ &quot;</span><span style="color:#a3be8c;">amount</span><span>&quot;: </span><span style="color:#d08770;">100 </span><span>}
+</span></code></pre>
+<p>What is it? 100 pennies? 100 pounds? How can we stop this confusion?</p>
+<h3 id="solution-checking-for-duplicates-with-quickcheck">Solution: Checking for duplicates with QuickCheck</h3>
+<p><code>Data.Migratable</code> provides us with the <code>matchAll</code> function:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">matchAll </span><span style="color:#b48ead;">:: IO</span><span> (</span><span style="color:#b48ead;">Either</span><span> [</span><span style="color:#b48ead;">MatchError</span><span>] [</span><span style="color:#b48ead;">Integer</span><span>])
+</span></code></pre>
+<ul>
+<li>
+<p>It uses <code>QuickCheck</code> and it's <code>Arbitrary</code> instances to generate random <code>JSON</code>
+values for each datatype</p>
+</li>
+<li>
+<p>Then tries to load each generated value as each version of the datatype</p>
+</li>
+<li>
+<p>And tells us how many version of a datatype each generated instance is able
+to decode</p>
+</li>
+<li>
+<p>If it's one each - we're going to have a good time:</p>
+</li>
+</ul>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span>describe &quot;</span><span style="color:#a3be8c;">Uses Arbitrary to generate said tests</span><span>&quot; $ </span><span style="color:#b48ead;">do
+</span><span>  it &quot;</span><span style="color:#a3be8c;">Checks if our datatypes will get confused</span><span>&quot; $ </span><span style="color:#b48ead;">do
+</span><span>    found &lt;- matchAll @</span><span style="color:#d08770;">1</span><span> @</span><span style="color:#d08770;">4</span><span> @&quot;</span><span style="color:#a3be8c;">User</span><span>&quot;
+</span><span>    found </span><span style="color:#8fa1b3;">`</span><span>shouldBe</span><span style="color:#8fa1b3;">` </span><span style="color:#d08770;">Right</span><span> [</span><span style="color:#d08770;">1</span><span>,</span><span style="color:#d08770;">2</span><span>,</span><span style="color:#d08770;">3</span><span>,</span><span style="color:#d08770;">4</span><span>]
+</span></code></pre>
+<ul>
+<li>But if our <code>JSON</code> representations are non-unique, we'll know:</li>
+</ul>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span>describe &quot;</span><span style="color:#a3be8c;">Our Pennies and Pounds schema</span><span>&quot; $ </span><span style="color:#b48ead;">do
+</span><span>  it &quot;</span><span style="color:#a3be8c;">Spots our problematic matching schema</span><span>&quot; $ </span><span style="color:#b48ead;">do
+</span><span>    found &lt;- matchAll @</span><span style="color:#d08770;">1</span><span> @</span><span style="color:#d08770;">2</span><span> @&quot;</span><span style="color:#a3be8c;">Same</span><span>&quot;
+</span><span>    found </span><span style="color:#8fa1b3;">`</span><span>shouldBe</span><span style="color:#8fa1b3;">` </span><span style="color:#d08770;">Left</span><span> [</span><span style="color:#d08770;">Duplicates 1</span><span> [</span><span style="color:#d08770;">2</span><span>,</span><span style="color:#d08770;">1</span><span>], </span><span style="color:#d08770;">Duplicates 2</span><span> [</span><span style="color:#d08770;">2</span><span>,</span><span style="color:#d08770;">1</span><span>]]
+</span></code></pre>
+<ul>
+<li>And we can fix our data types to ensure uniqueness.</li>
+</ul>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">Info
+</span><span>  = </span><span style="color:#d08770;">Info 
+</span><span>      { amountPounds :: </span><span style="color:#d08770;">Pounds</span><span> }
+</span><span>
+</span><span style="color:#b48ead;">data </span><span style="color:#d08770;">NewInfo
+</span><span>  = </span><span style="color:#d08770;">NewInfo
+</span><span>      { amountPennies :: </span><span style="color:#d08770;">Pennies</span><span> }
+</span></code></pre>
+<ul>
+<li>Good job.</li>
+</ul>
+<h3 id="problem-getting-a-fromjson-instance">Problem: getting a FromJSON instance</h3>
+<p>The <code>Aeson</code> library works by making datatypes define instances of the <code>FromJSON</code> typeclass, and packages like <code>Servant</code> allow us to automagically create web servers that use these types. Can we still use all this good stuff?</p>
+<h3 id="solution-fromjson-instance-around-a-newtype-wrapper">Solution: FromJSON instance around a newtype wrapper</h3>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">newtype </span><span style="color:#d08770;">APIUser
+</span><span>  = </span><span style="color:#d08770;">APIUser</span><span> { getAPIUser :: </span><span style="color:#d08770;">WhateverTheNewestUserTypeIsTheseDays</span><span> }
+</span></code></pre>
+<p>...and using <code>parseJSONVia</code> to create a <code>FromJSON</code> instance for that datatype...</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">instance JSON</span><span>.</span><span style="color:#b48ead;">FromJSON APIUser where
+</span><span>  parseJSON a
+</span><span>    = </span><span style="color:#d08770;">APIUser </span><span>&lt;$&gt; parseJSONVia @&quot;</span><span style="color:#a3be8c;">User</span><span>&quot; @</span><span style="color:#d08770;">1</span><span> @</span><span style="color:#d08770;">4</span><span> a
+</span></code></pre>
+<p>...we can make a <code>Servant</code> server that can read any of our historical datatypes.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">type </span><span style="color:#d08770;">ExcellentApi </span><span>=
+</span><span>  &quot;</span><span style="color:#a3be8c;">user</span><span>&quot; :&gt; </span><span style="color:#d08770;">Get</span><span> &#39;[</span><span style="color:#d08770;">JSON</span><span>] [</span><span style="color:#d08770;">APIUser</span><span>] 
+</span></code></pre>
+<p>Great job!</p>
+<h3 id="problem-mistakes-in-our-datatypes">Problem: Mistakes in our datatypes</h3>
+<p>What if we make "mistakes" in our types - like removing a piece of data we later decide we need? Here is a first version of some data.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">Dog
+</span><span>  = </span><span style="color:#d08770;">Dog</span><span> { name :: </span><span style="color:#d08770;">String
+</span><span>        , age  :: </span><span style="color:#d08770;">Int
+</span><span>        }
+</span><span>
+</span><span style="color:#b48ead;">instance Versioned</span><span> &quot;</span><span style="color:#b48ead;">Dog</span><span>&quot; 1 </span><span style="color:#b48ead;">where
+</span><span>  </span><span style="color:#b48ead;">type </span><span style="color:#d08770;">1 </span><span style="color:#8fa1b3;">`</span><span>VersionOf</span><span style="color:#8fa1b3;">` </span><span>&quot;</span><span style="color:#a3be8c;">Dog</span><span>&quot; = </span><span style="color:#d08770;">Dog
+</span></code></pre>
+<p>This is the second version of the datatype, where we remove <code>age</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">AgelessDog
+</span><span>  = </span><span style="color:#d08770;">AgelessDog
+</span><span>      { name :: </span><span style="color:#d08770;">String</span><span> }
+</span><span>
+</span><span style="color:#b48ead;">instance Versioned</span><span> &quot;</span><span style="color:#b48ead;">Dog</span><span>&quot; 2 </span><span style="color:#b48ead;">where
+</span><span>  </span><span style="color:#b48ead;">type </span><span style="color:#d08770;">2 </span><span style="color:#8fa1b3;">`</span><span>VersionOf</span><span style="color:#8fa1b3;">` </span><span>&quot;</span><span style="color:#a3be8c;">Dog</span><span>&quot; = </span><span style="color:#d08770;">AgelessDog
+</span></code></pre>
+<p>Oops. We needed that. It's back in version <code>3</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">WithAgeDog
+</span><span>  = </span><span style="color:#d08770;">WithAgeDog
+</span><span>      { name :: </span><span style="color:#d08770;">String
+</span><span>      , age  :: </span><span style="color:#d08770;">Int
+</span><span>      , tail :: </span><span style="color:#d08770;">Bool
+</span><span>      }
+</span><span>
+</span><span style="color:#b48ead;">instance Versioned</span><span> &quot;</span><span style="color:#b48ead;">Dog</span><span>&quot; 3 </span><span style="color:#b48ead;">where
+</span><span>  </span><span style="color:#b48ead;">type </span><span style="color:#d08770;">3 </span><span style="color:#8fa1b3;">`</span><span>VersionOf</span><span style="color:#8fa1b3;">` </span><span>&quot;</span><span style="color:#a3be8c;">Dog</span><span>&quot; = </span><span style="color:#d08770;">WithAgeDog
+</span></code></pre>
+<p>However, this means any version <code>1</code> piece of data will convert through version <code>2</code> and lose everything on the way.</p>
+<h3 id="solution-multiple-import-paths">Solution: multiple import paths</h3>
+<p>Let's change our declarations...</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">Dog
+</span><span>  = </span><span style="color:#d08770;">Dog</span><span> { name :: </span><span style="color:#d08770;">String
+</span><span>        , age  :: </span><span style="color:#d08770;">Int
+</span><span>        }
+</span><span>
+</span><span style="color:#b48ead;">instance Versioned</span><span> &quot;</span><span style="color:#b48ead;">Dog</span><span>&quot; 1 </span><span style="color:#b48ead;">where
+</span><span>  </span><span style="color:#b48ead;">type </span><span style="color:#d08770;">1 </span><span style="color:#8fa1b3;">`</span><span>VersionOf</span><span style="color:#8fa1b3;">` </span><span>&quot;</span><span style="color:#a3be8c;">Dog</span><span>&quot; = </span><span style="color:#d08770;">Dog
+</span><span>
+</span><span style="color:#b48ead;">instance Versioned</span><span> &quot;</span><span style="color:#b48ead;">AgeDog</span><span>&quot; 1 </span><span style="color:#b48ead;">where
+</span><span>  </span><span style="color:#b48ead;">type </span><span style="color:#d08770;">1 </span><span style="color:#8fa1b3;">`</span><span>VersionOf</span><span style="color:#8fa1b3;">` </span><span>&quot;</span><span style="color:#a3be8c;">AgeDog</span><span>&quot; = </span><span style="color:#d08770;">Dog
+</span></code></pre>
+<p>(We've ignored the middle one for now - it is the same)</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">WithAgeDog
+</span><span>  = </span><span style="color:#d08770;">WithAgeDog
+</span><span>      { name :: </span><span style="color:#d08770;">String
+</span><span>      , age  :: </span><span style="color:#d08770;">Int
+</span><span>      , tail :: </span><span style="color:#d08770;">Bool
+</span><span>      }
+</span><span>
+</span><span style="color:#b48ead;">instance Versioned</span><span> &quot;</span><span style="color:#b48ead;">Dog</span><span>&quot; 3 </span><span style="color:#b48ead;">where
+</span><span>  </span><span style="color:#b48ead;">type </span><span style="color:#d08770;">3 </span><span style="color:#8fa1b3;">`</span><span>VersionOf</span><span style="color:#8fa1b3;">` </span><span>&quot;</span><span style="color:#a3be8c;">Dog</span><span>&quot; = </span><span style="color:#d08770;">WithAgeDog
+</span><span>
+</span><span style="color:#b48ead;">instance Versioned</span><span> &quot;</span><span style="color:#b48ead;">AgeDog</span><span>&quot; 2 </span><span style="color:#b48ead;">where
+</span><span>  </span><span style="color:#b48ead;">type </span><span style="color:#d08770;">2 </span><span style="color:#8fa1b3;">`</span><span>VersionOf</span><span style="color:#8fa1b3;">` </span><span>&quot;</span><span style="color:#a3be8c;">AgeDog</span><span>&quot; = </span><span style="color:#d08770;">WithAgeDog
+</span></code></pre>
+<p>Then our parsing function becomes (something like)</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">parseSomeKindOfDog </span><span style="color:#b48ead;">:: JSON -&gt; Maybe WithAgeDog
+</span><span>parseSomeKindOfDog json
+</span><span>  =  parseJSONVia @&quot;</span><span style="color:#a3be8c;">AgeDog</span><span>&quot; @</span><span style="color:#d08770;">1</span><span> @</span><span style="color:#d08770;">2</span><span> json
+</span><span> &lt;|&gt; parseJSONVia @&quot;</span><span style="color:#a3be8c;">Dog</span><span>&quot; @</span><span style="color:#d08770;">1</span><span> @</span><span style="color:#d08770;">3</span><span> json
+</span></code></pre>
+<p>How does it work?</p>
+<ul>
+<li>
+<p>First, we try the lossless path</p>
+</li>
+<li>
+<p>Failing that, we try the lossy path to pick up any <code>AgeLessDog</code> values.</p>
+</li>
+</ul>
+<h3 id="ok-sum-up-what-you-ve-said-and-stop-selling-me-your-crappy-non-existent-library">OK. Sum up what you've said and stop selling me your crappy non-existent library</h3>
+<p>So hopefully, this technique should let you:</p>
+<ul>
+<li>
+<p>Define migrations outside the main logic code, throw those into a file and forget about them forever until the next migration.</p>
+</li>
+<li>
+<p>Use simple ADTs for my types if one feels like it.</p>
+</li>
+<li>
+<p>Avoid historical code making new code more complicated.</p>
+</li>
+</ul>
+<h3 id="but-does-it-work">But does it work?</h3>
+<p>Who knows? See the code at
+<a href="https://github.com/danieljharvey/migratable">https://github.com/danieljharvey/migratable</a> and decide for yourself. I mean, the tests pass, but what does that really tell us.</p>
+<h3 id="addendum">Addendum</h3>
+<p>After the talk, somebody suggested that it's all very well accepting old JSON data version in an API, but really you'd need to provide the response in the old format too. This was a really annoyingly good point, so this is the next feature I am working on for the library - the plan so far is to create a kind of opposite of the <code>Migratable</code> typeclass for responses, that goes from newer to older versions instead.</p>
+
+
+    </main>
+
+    <footer>
+      <p><a href="mailto:danieljamesharvey@gmail.com">Contact</a> |
+      <a href="https://github.com/danieljharvey">Github</a></p>
+      <p>Links for nerds:
+        <a href="/atom.xml">atom</a>
+        <a href="/rss.xml">rss</a></p>
+
+    </footer>
+</body>
+
+</html>

@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - Why The Hell Should I Care About Polymorphism?</title>
+    <link rel="stylesheet" href="https://danieljharvey.github.io/main.css">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="/">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="/">Posts</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        
+<h1 class="title">
+  Why The Hell Should I Care About Polymorphism?
+</h1>
+<p class="subtitle"><strong>2019-01-21</strong></p>
+<p>
+ <p class="blog-meta">
+        
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/haskell/"
+          >#haskell</a
+        >
+         
+      </p>
+
+<p>Let's talk about type signatures.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">hello </span><span style="color:#b48ead;">:: String -&gt; Int -&gt; String
+</span></code></pre>
+<p>Pretty clear what is going on, right? Seems fine. What about this lad?</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">wtflol </span><span style="color:#b48ead;">::</span><span> (</span><span style="color:#b48ead;">Show </span><span style="color:#bf616a;">a</span><span>, </span><span style="color:#b48ead;">Num </span><span style="color:#bf616a;">b</span><span>) </span><span style="color:#b48ead;">=&gt; </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt;</span><span> [</span><span style="color:#bf616a;">a</span><span>] </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">b </span><span style="color:#b48ead;">-&gt;</span><span> (</span><span style="color:#bf616a;">a</span><span>, </span><span style="color:#bf616a;">b</span><span>)
+</span></code></pre>
+<p>That's pretty unhelpful to be honest.</p>
+<p>What are these letters doing in our types when we wanted, well, types?</p>
+<p>Let's work up from a simple one to a stupid one and maybe learn something along the way. Good? Great.</p>
+<h3 id="probably-the-worst-function-ever">Probably the worst function ever</h3>
+<p>Here is a type signature for a mysterious function:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">spooky </span><span style="color:#b48ead;">:: </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">a
+</span></code></pre>
+<p>Given any <code>a</code>, and knowing nothing about that <code>a</code>, what is the only thing that we can do with it?</p>
+<p>If you guessed "just return it", then yes, you were right. It's the classic <code>identity</code> function.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">identity </span><span style="color:#b48ead;">:: </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">a
+</span><span>identity a = a
+</span><span style="color:#65737e;">-- identity 10 == 10
+</span></code></pre>
+<p>What do you think this function does?</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">mystery </span><span style="color:#b48ead;">:: </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">b </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">a
+</span></code></pre>
+<p>Since we don't know anything about <code>b</code>, and the function returns an <code>a</code>, then all we can do is ignore the <code>b</code> altogether. This is called the <code>const</code> function, and is used when we have to want to make a <code>map</code> function do not very much at all.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">const </span><span style="color:#b48ead;">:: </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">b </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">a
+</span><span>const a _ = a
+</span><span style="color:#65737e;">-- const &quot;dog&quot; 100 == &quot;dog&quot;
+</span></code></pre>
+<p>Hopefully the pattern you are seeing here is that if we know nothing about our variables, then there is actually very little we can do with them.</p>
+<h3 id="lists-of-mysterious-things">Lists of mysterious things</h3>
+<p>A place most people come across polymorphism quite early on in their Haskell careers is in stuff like lists. Instead of one function that works on <code>List String</code>, and another one <code>List Int</code>, and another on <code>List (Maybe Tuple (Int, String))</code> we can use polymorphism to act upon the structure of the list itself but not the items inside.</p>
+<p>With this in mind, and given that <code>[a]</code> means a <code>List</code> that is full of zero or more <code>a</code> values, what possible things could this function do to our <code>[a]</code>?</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">thing </span><span style="color:#b48ead;">::</span><span> [</span><span style="color:#bf616a;">a</span><span>] </span><span style="color:#b48ead;">-&gt;</span><span> [</span><span style="color:#bf616a;">a</span><span>]
+</span></code></pre>
+<p>According to the function search engine <a href="https://www.haskell.org/hoogle/?hoogle=%5Ba%5D+-%3E+%5Ba%5D">Hoogle</a> - not a huge amount. It lists four functions that match this signature - and two of them throw exceptions if passed an empty list so they're not the kind of functions that we like to spend our time with. This leaves:</p>
+<ol>
+<li>
+<p><code>cycle</code> - this repeats the list of values infinitely.</p>
+</li>
+<li>
+<p><code>reverse</code> - reverses the order of the list.</p>
+</li>
+</ol>
+<p>The important thing is that since we don't know anything about what the hell <code>a</code> is, all the functions can do is mess around with the ordering a bit, as is their right, I suppose. How can we find out more about these <code>a</code> and <code>b</code> values without concretely specifying what they are?</p>
+<h3 id="constraints">Constraints</h3>
+<p>If there's anything going on before the <code>=&gt;</code> in a type signature, there's a good chance it's a <code>constraint</code>. These are rules that apply to each type they refer to. Here, we are using a constraint on <code>a</code>, that says "I don't care what <code>a</code> is, so long as it has a <code>Show</code> instance".</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">showTheList </span><span style="color:#b48ead;">:: Show </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">=&gt;</span><span> [</span><span style="color:#bf616a;">a</span><span>] </span><span style="color:#b48ead;">-&gt; String
+</span><span>showTheList </span><span style="color:#d08770;">[]       </span><span>= &quot;&quot;
+</span><span>showTheList (a : as) = show a ++ &quot;</span><span style="color:#a3be8c;">, </span><span>&quot; ++ showTheList as
+</span><span style="color:#65737e;">-- showTheList [1,2,3] == &quot;1, 2, 3, &quot;
+</span></code></pre>
+<p>Therefore, the only thing we can really do to these <code>a</code> values is <code>show</code> them, as we don't know anything else about it.</p>
+<p>We can do something similar with the <code>Num</code> typeclass (which is the typeclass of numbers).</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">addStuffUp </span><span style="color:#b48ead;">:: Num </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">=&gt;</span><span> [</span><span style="color:#bf616a;">a</span><span>] </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">a
+</span><span>addStuffUp </span><span style="color:#d08770;">[]       </span><span>= </span><span style="color:#d08770;">0
+</span><span>addStuffUp (a : as) = a + addStuffUp as
+</span><span style="color:#65737e;">-- addStuffUp [1,2,3] == 6
+</span></code></pre>
+<p>Here, the constraint means we don't mind which kind of number we are passed - since they all implement <code>+</code> so we can add them together.</p>
+<p>We can have as many constraints as we like on our variables (often multiple ones on the same value, such as <code>(Show a, Ord a) =&gt;</code> for things that can be sorted and eventually turned into strings) - and can use any typeclass to do the restraining.</p>
+<p>I hope this makes sense. This started melting into something about IO testing, but I have decided to spin that into a separate post before this one spirals out of control, so let's stop for now. Thanks.</p>
+<p>Make sense? If not, why not <a href="/contact.html">get in touch</a>?</p>
+<p>Further reading:</p>
+<p><a href="http://www.haskellforall.com/2015/10/polymorphism-for-dummies.html">Polymorphism for Dummies</a></p>
+<p><a href="http://andrew.gibiansky.com/blog/haskell/haskell-typeclasses/">Polymorphism in Haskell</a></p>
+
+
+    </main>
+
+    <footer>
+      <p><a href="mailto:danieljamesharvey@gmail.com">Contact</a> |
+      <a href="https://github.com/danieljharvey">Github</a></p>
+      <p>Links for nerds:
+        <a href="/atom.xml">atom</a>
+        <a href="/rss.xml">rss</a></p>
+
+    </footer>
+</body>
+
+</html>

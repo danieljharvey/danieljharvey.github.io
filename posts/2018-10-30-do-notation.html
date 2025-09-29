@@ -1,102 +1,12 @@
 <!doctype html>
-<html lang="en">
-
-<head>
-    <meta charset="utf-8">
-    <meta http-equiv="x-ua-compatible" content="ie=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Daniel J. Harvey - Why The Hell Should I Care About Do Notation?</title>
-    <link rel="stylesheet" href="../css/default.css" />
-
-    <!-- Global site tag (gtag.js) - Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-
-      gtag('config', 'G-RKDYZB38Z0');
-    </script>
-</head>
-
-<body>
-    <header>
-        <div class="logo">
-            <a href="../">Daniel J. Harvey</a>
-        </div>
-        <nav>
-            <a href="../">Home</a>
-            <a href="../contact.html">Contact</a>
-            <a href="../archive.html">Archive</a>
-        </nav>
-    </header>
-
-    <main role="main">
-        <h1>Why The Hell Should I Care About Do Notation?</h1>
-        <article>
-    <section class="header">
-        Posted on October 30, 2018
-        
-        <div class="info">
-          
-          Tags: <a title="All pages tagged 'haskell'." href="../tags/haskell.html" rel="tag">haskell</a>
-          
-        </div>
-    </section>
-    <section>
-        <p>Do notation is a strange thing. You first see it in examples of <code>IO ()</code> with something like:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ot">main ::</span> <span class="dt">IO</span> ()</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>main <span class="ot">=</span> <span class="kw">do</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    firstName <span class="ot">&lt;-</span> <span class="fu">getLine</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    surname <span class="ot">&lt;-</span> <span class="fu">getLine</span></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">print</span> (<span class="st">&quot;Hello &quot;</span> <span class="op">++</span> firstName <span class="op">++</span> <span class="st">&quot; &quot;</span> <span class="op">++</span> surname)</span></code></pre></div>
-<p>And all seems well! This functional programming seems fine! But what’s going on here?</p>
-<p>Actually what’s really going on here is</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ot">main2 ::</span> <span class="dt">IO</span> ()</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>main2 <span class="ot">=</span> <span class="fu">getLine</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">&gt;&gt;=</span> (\firstName <span class="ot">-&gt;</span> <span class="fu">getLine</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">&gt;&gt;=</span> (\surname <span class="ot">-&gt;</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>        <span class="fu">print</span> (<span class="st">&quot;Hello &quot;</span> <span class="op">++</span> firstName <span class="op">++</span> <span class="st">&quot; &quot;</span> <span class="op">++</span> surname)))</span></code></pre></div>
-<p>OK. That’s a little scarier. Quite a lot of weird arrows and stuff. What’s this mean then?</p>
-<p>So <code>getStrLn</code> is a function that returns an <code>IO String</code>, which means <code>a string wrapped in the IO monad</code>. With a bit of hand-waving, the <code>&gt;&gt;=</code> (bind) function runs it, unwraps the <code>String</code> inside and passes it into the anonymous function (the one starting with <code>(\firstName -&gt; ...)</code>). This function runs it AGAIN and passes the unwrapped result into the next function. As you can see, the layers could get quite deep, hence the do notation which aims to make everything clearer.</p>
-<p>So is do notation it just an <code>IO</code> thing?</p>
-<p>No!</p>
-<p>Here’s an example with Maybe. <code>safeHead</code> is a function that returns the first item of a list wrapped in a <code>Just</code>, which means that if there isn’t a first item, instead of crapping out and ruining everything we return a <code>Nothing</code> which is easier to cope with.</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ot">safeHead ::</span> [a] <span class="ot">-&gt;</span> <span class="dt">Maybe</span> a</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>safeHead []    <span class="ot">=</span> <span class="dt">Nothing</span></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>safeHead (a<span class="op">:</span>_) <span class="ot">=</span> <span class="dt">Just</span> a</span></code></pre></div>
-<p>And here is a function that does it twice with do notation. Note not an <code>IO ()</code> in sight!</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ot">safeHeadTwice ::</span> [[a]] <span class="ot">-&gt;</span> <span class="dt">Maybe</span> a</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>safeHeadTwice aas <span class="ot">=</span> <span class="kw">do</span></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    as <span class="ot">&lt;-</span> safeHead aas</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    a <span class="ot">&lt;-</span> safeHead as</span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span> a</span></code></pre></div>
-<p>What does this do? Well it takes a list of lists, and returns the first value of the first list inside. Therefore there are two potential points of failure, that being, the entire input being an empty list, or the first list inside the main input being an empty list. Let’s desugar it!</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ot">safeHeadTwice2 ::</span> [[a]] <span class="ot">-&gt;</span> <span class="dt">Maybe</span> a</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>safeHeadTwice2 aas <span class="ot">=</span> safeHead aas</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>            <span class="op">&gt;&gt;=</span> (\as <span class="ot">-&gt;</span> safeHead as</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>            <span class="op">&gt;&gt;=</span> (\a <span class="ot">-&gt;</span> <span class="fu">return</span> a))</span></code></pre></div>
-<p>There is probably a shorter way to write this one to be fair.</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ot">safeHeadTwiceShort ::</span> [[a]] <span class="ot">-&gt;</span> <span class="dt">Maybe</span> a</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>safeHeadTwiceShort a <span class="ot">=</span> safeHead a <span class="op">&gt;&gt;=</span> safeHead</span></code></pre></div>
-<p>OK, so in this case, <code>do notation</code> doesn’t look so great. Oh well. Remember: clever things are interesting but they’re not always good.</p>
-<p>Make sense? If not, why not <a href="../contact.html">get in touch</a>?</p>
-<p>Further reading:</p>
-<p><a href="https://en.wikibooks.org/wiki/Haskell/do_notation">Do Notation in Wikibooks</a></p>
-<p><a href="http://learnyouahaskell.com/a-fistful-of-monads">A Fistful of Monads</a></p>
-    </section>
-</article>
-
-    </main>
-
-    <footer>
-      <p>Site proudly generated by
-      <a href="http://jaspervdj.be/hakyll">Hakyll</a></p>
-      <p>Links for nerds:
-        <a href="../atom.xml">atom</a>
-        <a href="../rss.xml">rss</a></p>
-
-    </footer>
-</body>
-
-</html>
+<meta charset="utf-8">
+<title>Redirect</title>
+<script>
+  const target = "https://danieljharvey.github.io/do-notation/";
+  const hash = window.location.hash || "";
+  window.location.replace(target + hash);
+</script>
+<noscript>
+  <meta http-equiv="refresh" content="0; url=https://danieljharvey.github.io/do-notation/">
+</noscript>
+<p><a href="https://danieljharvey.github.io/do-notation/">Click here</a> to be redirected.</p>

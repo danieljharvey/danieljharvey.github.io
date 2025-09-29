@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - Typeclasses - Profunctor</title>
+    <link rel="stylesheet" href="https://danieljharvey.github.io/main.css">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="/">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="/">Posts</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        
+<h1 class="title">
+  Typeclasses - Profunctor
+</h1>
+<p class="subtitle"><strong>2019-03-12</strong></p>
+<p>
+ <p class="blog-meta">
+        
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/haskell/"
+          >#haskell</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/typeclasses/"
+          >#typeclasses</a
+        >
+         
+      </p>
+
+<p>Hello. Let's make a box for putting functions in...</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">newtype </span><span style="color:#d08770;">FuncBox</span><span> b c
+</span><span>  = </span><span style="color:#d08770;">FuncBox</span><span> { runFuncBox :: b -&gt; c }
+</span></code></pre>
+<p>...and a function...</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">length </span><span style="color:#b48ead;">:: String -&gt; Int
+</span><span>length s = foldl&#39; (\c _ -&gt; c+</span><span style="color:#d08770;">1</span><span>) </span><span style="color:#d08770;">0</span><span> s
+</span></code></pre>
+<p>...and then let's put a function in this box:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">length&#39; </span><span style="color:#b48ead;">:: FuncBox String Int
+</span><span>length&#39; = </span><span style="color:#d08770;">FuncBox</span><span> length
+</span></code></pre>
+<p>Great. A function in a box. You may be concerned that something interesting is going on here, so just to assure you that it's not, let's run the function using <code>runFuncBox</code>, to reassure ourselves that this box is doing no funny business and we're really just unwrapping that <code>newtype</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">length&#39;&#39; </span><span style="color:#b48ead;">:: Int
+</span><span>length&#39;&#39; = runFuncBox length&#39; &quot;</span><span style="color:#a3be8c;">dog</span><span>&quot;
+</span><span style="color:#65737e;">-- length&#39;&#39; == 3
+</span></code></pre>
+<p>OK. Good stuff. We now have a very longwinded way of running the <code>length</code> function. Good stuff. Big day.</p>
+<p><img src="/images/profunctor-optics.png" alt="A relatable piece of content to break up this block of text." title="A relatable piece of content to break up this block of text." /></p>
+<h3 id="the-plot-thickens">The plot thickens</h3>
+<p>Now what if want to run this weird function, but instead of having a <code>String</code> to hand, we only have an <code>Animal</code>...</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">Animal </span><span>= </span><span style="color:#d08770;">Horse </span><span>| </span><span style="color:#d08770;">Dog </span><span>| </span><span style="color:#d08770;">Cat
+</span><span>  </span><span style="color:#b48ead;">deriving</span><span> (</span><span style="color:#a3be8c;">Show</span><span>)
+</span></code></pre>
+<p>I can see you there. You're getting excited and jumping straight for our old pal <a href="/posts/2018-11-17-typeclasses-contravariant.markdown">Contravariant</a> aren't you. But wait! That's not an entirely terrible decision but it turns out there are other problems that we must also solve.</p>
+<h3 id="oh-no">Oh no</h3>
+<p>That's right. Heartbreaking, it also turns out that our somewhat contrived API can output numbers, but instead only lists full of a delicous datatype called <code>Egg</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">Egg </span><span>= </span><span style="color:#d08770;">Egg
+</span></code></pre>
+<p>We can turn any <code>Int</code> into an <code>[Egg]</code> using this excellent function.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">repeatEgg </span><span style="color:#b48ead;">:: Int -&gt;</span><span> [</span><span style="color:#b48ead;">Egg</span><span>]
+</span><span>repeatEgg s
+</span><span>  = replicate s </span><span style="color:#d08770;">Egg
+</span><span>
+</span><span style="color:#8fa1b3;">threeEggs </span><span style="color:#b48ead;">:: List Egg
+</span><span>threeEggs = repeatEgg </span><span style="color:#d08770;">3
+</span><span style="color:#65737e;">-- threeEggs == [Egg, Egg, Egg]
+</span></code></pre>
+<p>OK. So somehow we need to turn an <code>Animal</code> into a <code>List</code> of <code>Egg</code>. We could <code>contramap</code> over our input to turn <code>Animal</code> into <code>String</code>, run the original <code>length</code> function, and then <code>fmap</code> over the result to turn <code>Int</code> into <code>[Egg]</code>. That could work. But what if we could solve this problem using a typeclass, that would be pretty fucking snazzy wouldn't it?</p>
+<h3 id="hold-on-he-s-only-gone-and-done-it">Hold on, he's only gone and done it</h3>
+<p>Looks like a job for our new friend <code>Profunctor</code> I reckon. Let's have a wee look in <code>ghci</code> and see what what the hell it's deal is.</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#bf616a;">import</span><span> Data.Profunctor
+</span><span style="color:#bf616a;">Data.Profunctor</span><span>&gt; :i Profunctor
+</span></code></pre>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">class </span><span style="color:#a3be8c;">Profunctor</span><span> (</span><span style="color:#bf616a;">p</span><span> :: _ -&gt; _ -&gt; \*) </span><span style="color:#b48ead;">where
+</span><span>    </span><span style="color:#8fa1b3;">dimap </span><span style="color:#b48ead;">::</span><span> (</span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">b</span><span>) </span><span style="color:#b48ead;">-&gt;</span><span> (</span><span style="color:#bf616a;">c </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">d</span><span>) </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">p b c </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">p a d
+</span><span>    </span><span style="color:#8fa1b3;">lmap </span><span style="color:#b48ead;">::</span><span> (</span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">b</span><span>) </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">p b c </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">p a c
+</span><span>    </span><span style="color:#8fa1b3;">rmap </span><span style="color:#b48ead;">::</span><span> (</span><span style="color:#bf616a;">b </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">c</span><span>) </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">p a b </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">p a c
+</span><span>    {-# </span><span style="color:#b48ead;">MINIMAL</span><span> dimap | lmap, rmap #-}
+</span></code></pre>
+<p>Look at that! It gives a <code>Contravariant</code> with the <code>lmap</code> function, and a regular <code>Functor</code> with <code>rmap</code>, or everything smashed together in this new exciting <code>dimap</code> function. Let's look at that a little closer.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">dimap </span><span style="color:#b48ead;">::</span><span> (</span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">b</span><span>) </span><span style="color:#b48ead;">-&gt;</span><span> (</span><span style="color:#bf616a;">c </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">d</span><span>) </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">p b c </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">p a d
+</span></code></pre>
+<p>That's pretty beastly, let's put in some real concrete things.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span>dimap
+</span><span>  :: (</span><span style="color:#d08770;">Animal </span><span>-&gt; </span><span style="color:#d08770;">String</span><span>)   </span><span style="color:#65737e;">-- function to go at the start
+</span><span>  -&gt; (</span><span style="color:#d08770;">Int </span><span>-&gt; [</span><span style="color:#d08770;">Egg</span><span>])       </span><span style="color:#65737e;">-- function to go at the end
+</span><span>  -&gt; </span><span style="color:#d08770;">FuncBox String Int   </span><span style="color:#65737e;">-- original container
+</span><span>  -&gt; </span><span style="color:#d08770;">FuncBox Animal</span><span> [</span><span style="color:#d08770;">Egg</span><span>] </span><span style="color:#65737e;">-- exciting new container
+</span></code></pre>
+<p>OK. Let's implement it for our <code>FuncBox</code>.</p>
+<h3 id="instances-binstances-dinstances">Instances, binstances, dinstances</h3>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">import </span><span>Data.Profunctor
+</span><span>
+</span><span style="color:#b48ead;">instance Profunctor FuncBox where
+</span><span>  dimap before after (</span><span style="color:#d08770;">FuncBox</span><span> f)
+</span><span>    = </span><span style="color:#d08770;">FuncBox</span><span> (after . f . before)
+</span></code></pre>
+<p>That's all really. The <code>.</code> is function composition, so therefore our function unwraps the original function and calls it <code>f</code>, then returns a new <code>FuncBox</code> which runs the <code>before</code> function (ie, the <code>a -&gt; b</code> one), then the original <code>f</code> function, and finally the <code>after</code> function (<code>c -&gt; d</code>). The resulting <code>FuncBox</code> can be used exactly as before, and nobody using it knows how secretly clever it is.</p>
+<p>Let's use it to make our all important function for turning an <code>Animal</code> in to a <code>[Egg]</code>, using our <code>length'</code> and <code>repeatEgg</code> functions from earlier.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">dimapped </span><span style="color:#b48ead;">:: FuncBox Animal</span><span> [</span><span style="color:#b48ead;">Egg</span><span>]
+</span><span>dimapped
+</span><span>= dimap show repeatEgg length&#39;
+</span></code></pre>
+<p>This gives us a new <code>FuncBox</code> that turns <code>Animal</code> into <code>[Egg]</code>, but of course we all know that underneath the hood this function it's converting <code>Animal -&gt; String -&gt; Int -&gt; [Egg]</code>. Let's see it in action:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">test </span><span style="color:#b48ead;">::</span><span> [</span><span style="color:#b48ead;">Egg</span><span>]
+</span><span>test = runFuncBox dimapped </span><span style="color:#d08770;">Dog
+</span><span style="color:#65737e;">-- test == [Egg, Egg, Egg]
+</span><span>
+</span><span style="color:#8fa1b3;">test2 </span><span style="color:#b48ead;">:: Int
+</span><span>test2 = runFuncBox dimapped </span><span style="color:#d08770;">Horse
+</span><span style="color:#65737e;">-- test2 == [Egg, Egg, Egg, Egg, Egg]
+</span></code></pre>
+<p>Brilliant. What an absolutely useful non-waste-of-time. OK. So these are stupid examples, but hopefully they give you a rough idea what a <code>Profunctor</code> is under the hood. You often hear of their use in Lenses, as using <code>dimap</code> on a function for changing two small things can make it into a function that changes a small thing inside a much bigger thing, and they compose in the same nice way.</p>
+<p>Good stuff.</p>
+<p>Feel free to shout your brains about how stupid and wrong I am via the <a href="/contact.html">usual channels</a>.</p>
+<p>Further reading:</p>
+<p><a href="https://www.schoolofhaskell.com/user/griba/easier_lenses_profunctor_based_with_mezzolens">Easier lenses</a></p>
+<p><a href="http://hackage.haskell.org/package/profunctors-5.3/docs/Data-Profunctor.html">Data.Profunctor</a></p>
+
+
+    </main>
+
+    <footer>
+      <p><a href="mailto:danieljamesharvey@gmail.com">Contact</a> |
+      <a href="https://github.com/danieljharvey">Github</a></p>
+      <p>Links for nerds:
+        <a href="/atom.xml">atom</a>
+        <a href="/rss.xml">rss</a></p>
+
+    </footer>
+</body>
+
+</html>

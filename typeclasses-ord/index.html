@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - Typeclasses - Ord</title>
+    <link rel="stylesheet" href="https://danieljharvey.github.io/main.css">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="/">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="/">Posts</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        
+<h1 class="title">
+  Typeclasses - Ord
+</h1>
+<p class="subtitle"><strong>2018-11-03</strong></p>
+<p>
+ <p class="blog-meta">
+        
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/haskell/"
+          >#haskell</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/typeclasses/"
+          >#typeclasses</a
+        >
+         
+      </p>
+
+<p>Let's think about moods. Psychologists all agree there are only 5 real emotional states.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">Mood </span><span>= </span><span style="color:#d08770;">Awful </span><span>| </span><span style="color:#d08770;">QuiteBad </span><span>| </span><span style="color:#d08770;">OK </span><span>| </span><span style="color:#d08770;">Good </span><span>| </span><span style="color:#d08770;">Great
+</span></code></pre>
+<p>Which one is better? Is <code>Great</code> better than <code>Awful</code>?</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">broken </span><span style="color:#b48ead;">:: Bool
+</span><span>broken = </span><span style="color:#d08770;">Awful </span><span>&lt; </span><span style="color:#d08770;">Great
+</span></code></pre>
+<p>Shit!</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span>• </span><span style="color:#d08770;">No </span><span style="color:#b48ead;">instance </span><span style="color:#bf616a;">for</span><span> (</span><span style="color:#b48ead;">Ord Mood</span><span>) </span><span style="color:#bf616a;">arising from a use of</span><span> ‘&lt;’
+</span><span>• </span><span style="color:#d08770;">In</span><span> the expression: </span><span style="color:#d08770;">Awful </span><span>&lt; </span><span style="color:#d08770;">Great
+</span><span>    </span><span style="color:#d08770;">In</span><span> an equation for ‘broken’: broken = </span><span style="color:#d08770;">Awful </span><span>&lt; </span><span style="color:#d08770;">Great
+</span></code></pre>
+<p>These cannot be ordered! We need to implement the <code>Ord</code> typeclass (short for "ordering") so that we can compare these values and sort them.</p>
+<p>What will we need to do that then?</p>
+<p>We can find out more by firing up <code>ghci</code>, the GHC repl.</p>
+<p>You should see a prompt with the following:</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#bf616a;">Prelude</span><span>&gt;
+</span></code></pre>
+<p><code>Prelude</code> is telling us that we've loaded the Haskell Prelude, a standard library of functions. <code>Ord</code> is part of that, so let's get some info.</p>
+<p>Enter <code>:info Ord</code> into the repl (and press enter). You should see something like this:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">class </span><span style="color:#ebcb8b;">Eq </span><span style="color:#bf616a;">a</span><span> =&gt; </span><span style="color:#ebcb8b;">Ord </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">where
+</span><span>  </span><span style="color:#8fa1b3;">compare </span><span style="color:#b48ead;">:: </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; Ordering
+</span><span>  </span><span style="color:#8fa1b3;">(&lt;) </span><span style="color:#b48ead;">:: </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; Bool
+</span><span>  </span><span style="color:#8fa1b3;">(&lt;=) </span><span style="color:#b48ead;">:: </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; Bool
+</span><span>  </span><span style="color:#8fa1b3;">(&gt;) </span><span style="color:#b48ead;">:: </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; Bool
+</span><span>  </span><span style="color:#8fa1b3;">(&gt;=) </span><span style="color:#b48ead;">:: </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; Bool
+</span><span>  </span><span style="color:#8fa1b3;">max </span><span style="color:#b48ead;">:: </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">a
+</span><span>  </span><span style="color:#8fa1b3;">min </span><span style="color:#b48ead;">:: </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">a
+</span><span>  {-# </span><span style="color:#b48ead;">MINIMAL</span><span> compare | (&lt;=) #-}
+</span></code></pre>
+<p>This is a list of functions that the <code>Ord</code> typeclass implements. Looks like hard work. What's interesting here?</p>
+<p>Firstly - the <code>Eq a =&gt;</code> constraint means that we can only define an <code>Ord</code> instance for something that has an <code>Eq</code> instance. I guess if we can't tell if two values are the same, how can we dream of putting them in some sort of order?</p>
+<p>Secondly - the slighly cryptic <code>{-# MINIMAL compare | (&lt;=) #-}</code> line is telling us that we can define <code>Ord</code> by either defining the <code>compare</code> or <code>&lt;=</code> functions. Haskell can generate the other functions by using either of these ones. That's great news because hard work is hard and we don't want to do hard work.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">SuperMood </span><span>= </span><span style="color:#d08770;">Worse </span><span>| </span><span style="color:#d08770;">PrettyAverage </span><span>| </span><span style="color:#d08770;">Fine </span><span style="color:#b48ead;">deriving</span><span> (</span><span style="color:#a3be8c;">Eq</span><span>)
+</span></code></pre>
+<p>We're auto-generating the <code>Eq</code> because why have a bad time. Let's make our <code>Ord</code> instance.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">instance Ord SuperMood where
+</span><span>    _ &lt;= </span><span style="color:#d08770;">Fine </span><span>= </span><span style="color:#d08770;">True
+</span><span>    </span><span style="color:#d08770;">Worse </span><span>&lt;= </span><span style="color:#d08770;">PrettyAverage </span><span>= </span><span style="color:#d08770;">True
+</span><span>    _ &lt;= _ = </span><span style="color:#d08770;">False
+</span></code></pre>
+<p>We're implementing it in terms of <code>&lt;=</code> as it returns a <code>Bool</code> which is more straightforward than the <code>Ordering</code> datatype that <code>compare</code> uses).</p>
+<ol>
+<li><code>_ &lt;= Fine = True</code> means that all values are equal to or less than <code>Fine</code>.</li>
+<li><code>Worse &lt;= PrettyAverage = True</code> means that <code>Worse</code> is less than or equal to <code>PrettyAverage</code>.</li>
+<li><code>_ &lt;= _ = False</code> means any other combination returns <code>False</code>.</li>
+</ol>
+<p>Even though we've only implemented one function, since the others can defined using it we get all of them for free:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">yep </span><span style="color:#b48ead;">:: Bool
+</span><span>yep = </span><span style="color:#d08770;">Worse </span><span>&lt; </span><span style="color:#d08770;">PrettyAverage
+</span><span style="color:#65737e;">-- yep = True
+</span></code></pre>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">yep2 </span><span style="color:#b48ead;">:: Bool
+</span><span>yep2 = </span><span style="color:#d08770;">Fine </span><span>&gt;= </span><span style="color:#d08770;">Worse
+</span><span style="color:#65737e;">-- yep2 = True
+</span></code></pre>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">yep3 </span><span style="color:#b48ead;">:: Bool
+</span><span>yep3 = </span><span style="color:#d08770;">Fine </span><span>&gt;= </span><span style="color:#d08770;">Fine
+</span><span style="color:#65737e;">-- yep2 = True
+</span></code></pre>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">nope </span><span style="color:#b48ead;">:: Bool
+</span><span>nope = </span><span style="color:#d08770;">Fine </span><span>&lt; </span><span style="color:#d08770;">Fine
+</span><span style="color:#65737e;">-- nope = False
+</span></code></pre>
+<p>We also get to use any function that requires an <code>Ord</code> instance for free, like <code>sort</code> from <code>Data.List</code>, which has the following type signature:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">sort </span><span style="color:#b48ead;">:: Ord </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">=&gt;</span><span> [</span><span style="color:#bf616a;">a</span><span>] </span><span style="color:#b48ead;">-&gt;</span><span> [</span><span style="color:#bf616a;">a</span><span>]
+</span></code></pre>
+<p>This means "if you pass me a list of any <code>a</code> which is orderable, I can return you a sorted list". Thanks!</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">import </span><span>Data.List
+</span><span>
+</span><span style="color:#8fa1b3;">moods </span><span style="color:#b48ead;">::</span><span> [</span><span style="color:#b48ead;">SuperMood</span><span>]
+</span><span>moods = [</span><span style="color:#d08770;">Fine</span><span>, </span><span style="color:#d08770;">Fine</span><span>, </span><span style="color:#d08770;">Worse</span><span>, </span><span style="color:#d08770;">PrettyAverage</span><span>]
+</span><span>
+</span><span style="color:#8fa1b3;">sorted </span><span style="color:#b48ead;">::</span><span> [</span><span style="color:#b48ead;">SuperMood</span><span>]
+</span><span>sorted = sort moods
+</span><span style="color:#65737e;">-- sorted = [Worse, PrettyAverage, Fine, Fine]
+</span></code></pre>
+<p>Great job!</p>
+<p>Still seems like hard work though, can we auto generate this typeclass too? Yes!</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">LazyMood </span><span>= </span><span style="color:#d08770;">Sloppy
+</span><span>              | </span><span style="color:#d08770;">Ploppy
+</span><span>              | </span><span style="color:#d08770;">Poopy
+</span><span>              | </span><span style="color:#d08770;">Nicey </span><span style="color:#b48ead;">deriving</span><span> (</span><span style="color:#a3be8c;">Eq</span><span>, </span><span style="color:#a3be8c;">Ord</span><span>)
+</span><span>
+</span><span style="color:#8fa1b3;">lazySorted </span><span style="color:#b48ead;">::</span><span> [</span><span style="color:#b48ead;">LazyMood</span><span>]
+</span><span>lazySorted = sort [</span><span style="color:#d08770;">Nicey</span><span>, </span><span style="color:#d08770;">Poopy</span><span>, </span><span style="color:#d08770;">Ploppy</span><span>, </span><span style="color:#d08770;">Sloppy</span><span>]
+</span><span style="color:#65737e;">-- lazySorted = [Sloppy, Ploppy, Poopy, Nicey]
+</span></code></pre>
+<p>Nice.</p>
+<p>Make sense? If not, why not <a href="/contact.html">get in touch</a>?</p>
+<p>Further reading:</p>
+<p><a href="http://hackage.haskell.org/package/base-4.12.0.0/docs/Data-Ord.html">Data.Ord</a></p>
+
+
+    </main>
+
+    <footer>
+      <p><a href="mailto:danieljamesharvey@gmail.com">Contact</a> |
+      <a href="https://github.com/danieljharvey">Github</a></p>
+      <p>Links for nerds:
+        <a href="/atom.xml">atom</a>
+        <a href="/rss.xml">rss</a></p>
+
+    </footer>
+</body>
+
+</html>

@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - Typeclasses - Bifunctor</title>
+    <link rel="stylesheet" href="https://danieljharvey.github.io/main.css">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="/">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="/">Posts</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        
+<h1 class="title">
+  Typeclasses - Bifunctor
+</h1>
+<p class="subtitle"><strong>2019-01-13</strong></p>
+<p>
+ <p class="blog-meta">
+        
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/haskell/"
+          >#haskell</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/typeclasses/"
+          >#typeclasses</a
+        >
+         
+      </p>
+
+<p>Let's talk about things that could be one thing, or indeed could be another thing altogether.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">Things</span><span> a b = </span><span style="color:#d08770;">This</span><span> a | </span><span style="color:#d08770;">That</span><span> b
+</span></code></pre>
+<p>This could be a <code>This</code> with an <code>a</code> inside, like a <code>String</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">thisEgg </span><span style="color:#b48ead;">:: Things String Int
+</span><span>thisEgg = </span><span style="color:#d08770;">This </span><span>&quot;</span><span style="color:#a3be8c;">Egg</span><span>&quot;
+</span></code></pre>
+<p>Or indeed a <code>That</code> with a <code>b</code> inside, like an <code>Int</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">thatNumber </span><span style="color:#b48ead;">:: Things String Int
+</span><span>thatNumber = </span><span style="color:#d08770;">That 68
+</span></code></pre>
+<p>Now hopefully you are now thinking - "Oh please, I do hope we map a function over one of these values soon" - and worry not, we absolutely bloody can.</p>
+<h3 id="mappity-mappity-map">Mappity Mappity Map</h3>
+<p>Let's really push the boat out, and add one to the value inside.</p>
+<p>First we'll need a <a href="/posts/2018-11-16-typeclasses-functor.markdown">Functor</a> instance. Hopefully nothing too surprising here.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">instance Functor</span><span> (</span><span style="color:#b48ead;">Things </span><span style="color:#bf616a;">a</span><span>) </span><span style="color:#b48ead;">where
+</span><span>  fmap f (</span><span style="color:#d08770;">That</span><span> b) = </span><span style="color:#d08770;">That</span><span> (f b)
+</span><span>  fmap _ (</span><span style="color:#d08770;">This</span><span> a) = </span><span style="color:#d08770;">This</span><span> a
+</span></code></pre>
+<p>Now we can map away to our heart's content:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">biggerNumber </span><span style="color:#b48ead;">:: Things String Int
+</span><span>biggerNumber = fmap addOne (</span><span style="color:#d08770;">That 68</span><span>)
+</span><span style="color:#65737e;">-- biggerNumber == That 69
+</span></code></pre>
+<p>Nice.</p>
+<p>But what about `This "Egg"``? I'd like to get at that egg. Perhaps eat it.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">eat </span><span style="color:#b48ead;">:: String -&gt; String
+</span><span>eat s = &quot;</span><span style="color:#a3be8c;">The </span><span>&quot; ++ s ++ &quot;</span><span style="color:#a3be8c;"> was delicious!</span><span>&quot;
+</span></code></pre>
+<p>Can we do that with <code>Functor</code>?</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">doesntWork </span><span style="color:#b48ead;">:: Things String Int
+</span><span>doesntWork = fmap eat thisEgg
+</span><span style="color:#65737e;">-- ERROR: Couldn&#39;t match type ‘[Char]’ with ‘Int’
+</span></code></pre>
+<p>I'm afraid not. Looking back at our <code>Functor</code> instance we can see that the <code>fmap</code> function only lets us map over the values inside <code>That</code>, leaving poor <code>This</code> and our lonely egg very much map-less. But fear not! We have another weapon at hand that will let us get at it.</p>
+<p>Enter....<code>Bifunctor!</code></p>
+<p>(cue lightning, thunder, explosions and sounds of a large crowd who are clearly quite impressed).</p>
+<h3 id="definition">Definition</h3>
+<p>Let's ask <code>ghci</code> what's up.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span>&gt; </span><span style="color:#b48ead;">import </span><span>Data.bifunctor
+</span><span>&gt; :i </span><span style="color:#d08770;">Bifunctor
+</span></code></pre>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">class </span><span style="color:#a3be8c;">Bifunctor</span><span> (</span><span style="color:#bf616a;">p</span><span> :: * -&gt; * -&gt; *) </span><span style="color:#b48ead;">where
+</span><span>  </span><span style="color:#8fa1b3;">first </span><span style="color:#b48ead;">::</span><span> (</span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">b</span><span>) </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">p a c </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">p b c
+</span><span>  </span><span style="color:#8fa1b3;">second </span><span style="color:#b48ead;">::</span><span> (</span><span style="color:#bf616a;">b </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">c</span><span>) </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">p a b </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">p a c
+</span><span>  </span><span style="color:#8fa1b3;">bimap </span><span style="color:#b48ead;">::</span><span> (</span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">b</span><span>) </span><span style="color:#b48ead;">-&gt;</span><span> (</span><span style="color:#bf616a;">c </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">d</span><span>) </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">p a c </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">p b d
+</span><span>  {-# </span><span style="color:#b48ead;">MINIMAL</span><span> bimap | first, second #-}
+</span></code></pre>
+<p>Ok. Three functions in here, and it looks like we can make something a <code>Bifunctor</code> by implementing instances of both <code>first</code> and <code>second</code> or just <code>bimap</code>.</p>
+<p>Let's take a look at them.</p>
+<ol>
+<li>
+<p><code>first :: (a -&gt; b) -&gt; p a c -&gt; p b c</code> - this takes a <code>Bifunctor</code> that may contain some <code>a</code> and <code>c</code> values, and a function that turns an <code>a</code> into some sort of <code>b</code>. It then runs the function on the <code>a</code> value, turning it into a <code>b</code> value. Sort of like doing an <code>fmap</code> over the <code>a</code> inside <code>This</code> from earlier. Pretty nice. Tl;dr - it's <code>fmap</code> but over the left value.</p>
+</li>
+<li>
+<p><code>second :: (b -&gt; c) -&gt; p a b -&gt; p a c</code> - this takes a <code>Bifunctor</code> with an <code>a</code> and a <code>b</code> and a function that turns the <code>b</code> values into <code>c</code> values. In the case of our <code>Things</code> datatype of <code>This</code> and <code>That</code>, this let's us get at the <code>That</code> values, which we could anyway so big whoop. Tl;dr - it's our pal <code>fmap</code> again.</p>
+</li>
+<li>
+<p><code>bimap :: (a -&gt; b) -&gt; (c -&gt; d) -&gt; p a c -&gt; p b d</code> - this takes a <code>Bifunctor</code> that may contain <code>a</code> and <code>c</code> values, and runs a function over both sides. It's doing <code>first</code> and <code>second</code> at the same time.</p>
+</li>
+</ol>
+<p>OK. If you understand <code>Functor</code> there's hopefully nothing out of the ordinary going on here. Let's slop an instance together and get to work on that delicious egg.</p>
+<h3 id="instances">Instances</h3>
+<p>Laziness dictates that we should define <code>bimap</code> because it is one function instead of two.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">instance Bifunctor Things where
+</span><span>  bimap f _ (</span><span style="color:#d08770;">This</span><span> a) = </span><span style="color:#d08770;">This</span><span> (f a)
+</span><span>  bimap _ g (</span><span style="color:#d08770;">That</span><span> b) = </span><span style="color:#d08770;">That</span><span> (g b)
+</span></code></pre>
+<p>Seems fairly sensible hopefully. Let's give it a spin.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">delicious </span><span style="color:#b48ead;">:: Things String Int
+</span><span>delicious = first eat (</span><span style="color:#d08770;">This </span><span>&quot;</span><span style="color:#a3be8c;">Egg</span><span>&quot;)
+</span><span style="color:#65737e;">-- delicious = This &quot;The Egg was delicious!&quot;
+</span></code></pre>
+<p>Hooray! Although we defined <code>bimap</code> we got <code>first</code> for free, and that egg was pretty nice.</p>
+<p>We can still map over the right hand value too!</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">doesWork </span><span style="color:#b48ead;">:: Things String Int
+</span><span>doesWork = second addOne (</span><span style="color:#d08770;">That 68</span><span>)
+</span><span style="color:#65737e;">-- doesWork == That 69
+</span></code></pre>
+<p>Again, nice.</p>
+<h3 id="tuples-pooples">Tuples, Pooples</h3>
+<p>Although our <code>Things</code> example is about <code>sum</code> types, we can also use it on <code>product</code> types like a <code>Tuple</code>, and use <code>Bifunctor</code> to mess with either value as we please.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">twoThings </span><span style="color:#b48ead;">::</span><span> (</span><span style="color:#b48ead;">Int</span><span>, </span><span style="color:#b48ead;">String</span><span>)
+</span><span>twoThings = (</span><span style="color:#d08770;">100</span><span>, &quot;</span><span style="color:#a3be8c;">Dogs</span><span>&quot;)
+</span></code></pre>
+<p>Now, we could go ahead and show you <code>first</code> and <code>second</code> but I think you can work out what's going to happen, so let's go absolutely bonkers and race straight to <code>bimap</code>.</p>
+<p>(but first, a helper function. Nothing untoward - it merely returns the first thing you give it and ignores the second.)</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">myConst </span><span style="color:#b48ead;">:: </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">b </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">a
+</span><span>myConst a _ = a
+</span></code></pre>
+<p>Now we can turn our <code>Tuple</code> into a bestselling novel.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">oneBestSeller </span><span style="color:#b48ead;">::</span><span> (</span><span style="color:#b48ead;">Int</span><span>, </span><span style="color:#b48ead;">String</span><span>)
+</span><span>oneBestSeller = bimap (+</span><span style="color:#d08770;">1</span><span>) (myConst &quot;</span><span style="color:#a3be8c;">Dalmations</span><span>&quot;) twoThings
+</span><span style="color:#65737e;">-- oneBestSeller = (101, &quot;Dalmations&quot;)
+</span></code></pre>
+<p>I Bet You Did Not See That Coming.</p>
+<p>For a bonus point, why not try and define <code>first</code> and <code>second</code> for <code>Tuple</code> types using <code>bimap</code> and <code>myConst</code>? Go on. You'll have a great time, I absolutely promise.</p>
+<h3 id="that-s-all-folks">That's all, folks</h3>
+<p>So although helpful with <code>Tuple</code> and <code>Either</code> types, <code>Bifunctor</code> isn't particularly mindblowing, but comes into it's own when we combine it with <a href="/posts/2018-11-17-typeclasses-contravariant.markdown">Contravariant</a> to make <code>Profunctor</code>. More on that in the future though!</p>
+<p>Further reading:</p>
+<p><a href="https://www.youtube.com/watch?v=JZPXzJ5tp9w">The Extended Functor Family (video)</a></p>
+<p><a href="http://hackage.haskell.org/package/base-4.12.0.0/docs/Data-Bifunctor.html">Data.Bifunctor</a></p>
+
+
+    </main>
+
+    <footer>
+      <p><a href="mailto:danieljamesharvey@gmail.com">Contact</a> |
+      <a href="https://github.com/danieljharvey">Github</a></p>
+      <p>Links for nerds:
+        <a href="/atom.xml">atom</a>
+        <a href="/rss.xml">rss</a></p>
+
+    </footer>
+</body>
+
+</html>

@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - Typeclasses - Contravariant</title>
+    <link rel="stylesheet" href="https://danieljharvey.github.io/main.css">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="/">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="/">Posts</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        
+<h1 class="title">
+  Typeclasses - Contravariant
+</h1>
+<p class="subtitle"><strong>2018-11-17</strong></p>
+<p>
+ <p class="blog-meta">
+        
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/haskell/"
+          >#haskell</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/typeclasses/"
+          >#typeclasses</a
+        >
+         
+      </p>
+
+<p>Let's think about Predicates.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">newtype </span><span style="color:#d08770;">Preddy</span><span> a = </span><span style="color:#d08770;">Preddy</span><span> { getPreddy :: a -&gt; </span><span style="color:#d08770;">Bool</span><span> }
+</span></code></pre>
+<p>What the hell is this?</p>
+<p>OK. So it's a <code>newtype</code>. What is basically does is let's us take some sort of value (here, any function from <code>a -&gt; Bool</code>) and make a new type out of it so we can give it typeclasses and do magic shit to it.</p>
+<p>So let's say we have a basic function that takes a number and let's us know whether that number is over 3.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">threePred </span><span style="color:#b48ead;">:: Int -&gt; Bool
+</span><span>threePred i = i &gt; </span><span style="color:#d08770;">3
+</span></code></pre>
+<p>Great!</p>
+<p>To put this into a <code>newtype</code> (our <code>Preddy</code> one, to be exact) - we do this:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">overThree </span><span style="color:#b48ead;">:: Preddy Int
+</span><span>overThree = </span><span style="color:#d08770;">Preddy</span><span> threePred
+</span></code></pre>
+<p>The type has changed - the <code>a</code> in <code>a -&gt; Bool</code> is <code>Int</code> so we get <code>Preddy Int</code>. We don't need to specify the <code>Bool</code> anywhere because that's sort of implicit in the <code>Preddy</code>-ness.</p>
+<p>OK. I get it, you're worried. My function is gone for ever. Can I get it out again? Sure.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">isOverThree </span><span style="color:#b48ead;">:: Int -&gt; Bool
+</span><span>isOverThree = getPreddy overThree
+</span></code></pre>
+<p><code>threePred</code> and <code>isOverThree</code> are completely the same thing. So now we're comfortable this <code>newtype</code> thing is basically doing nothing awful to our code, what it is good for?</p>
+<p>Oh yeah. We said earlier. Because <code>Preddy</code> is a datatype of it's own we can make typeclass instances for it. Let's make a <code>Contravariant</code> instance, for no other reason than this being the name of the post and we're a long way into it without doing anything particularly useful.</p>
+<p>What will we need for doing that then?</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#d08770;">Prelude</span><span>&gt; :i </span><span style="color:#d08770;">Contravariant
+</span></code></pre>
+<p>If are typing along with all this and get an error, please skip to the bottom of the page for some useful links, however if you have the <code>contravariant</code> library floating around or are just happy to take my word for it then GREAT! You'll see this:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">class </span><span style="color:#a3be8c;">Contravariant</span><span> (</span><span style="color:#bf616a;">f</span><span> :: * -&gt; *) </span><span style="color:#b48ead;">where
+</span><span>  </span><span style="color:#8fa1b3;">contramap </span><span style="color:#b48ead;">::</span><span> (</span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">b</span><span>) </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">f b </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">f a
+</span><span>  </span><span style="color:#8fa1b3;">(&gt;$) </span><span style="color:#b48ead;">:: </span><span style="color:#bf616a;">b </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">f b </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">f a
+</span><span>  {-# </span><span style="color:#b48ead;">MINIMAL</span><span> contramap #-}
+</span></code></pre>
+<p>The key thing to look when starting out is this <code>MINIMAL</code> part - as it means the only functions we need to worry about for the time being.</p>
+<p>So, <code>contramap</code> is it. What does this do?</p>
+<p>It takes a function from <code>(a -&gt; b)</code> and then it takes an <code>f b</code> and returns an <code>f a</code>. Sure.</p>
+<p>What?</p>
+<p>Are you out of your fucking mind? How do I turn <code>b</code> into <code>a</code> using <code>(a -&gt; b)</code>?</p>
+<p>Is this...a backwards functor? Can I implement undo on all my functions? Is the special magic Haskell sauce I've been waiting for?</p>
+<p>So it turns out no.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">nameLength </span><span style="color:#b48ead;">:: String -&gt; Int
+</span><span>nameLength &quot;&quot;      = </span><span style="color:#d08770;">0
+</span><span>nameLength (x: xs) = </span><span style="color:#d08770;">1 </span><span>+ nameLength xs
+</span></code></pre>
+<p>So a regular <code>functor</code> is actually a <code>covariant functor</code> which I guess means forwards functor. When we map over it, we changing what happens after it. Hence if I have a <code>Maybe String</code> and <code>fmap</code> a <code>String -&gt; Int</code> function like <code>nameLength</code> over it I get a <code>Maybe Int</code> and all is well in the world.</p>
+<p>However our pal <code>Preddy</code>, unbeknownst to him, is about to become a <code>contravariant functor</code> which sort of means backwards. What this means is if he's waiting for an <code>Int</code> to see if it's over 3, we can <code>contramap</code> that same <code>String -&gt; Int</code> function <code>nameLength</code> over it, and instead <code>Preddy</code> is waiting for a <code>String</code> so he can tell you whether the <code>String</code> has over 3 characters. The map happens beforehand, basically. That's how an <code>(a -&gt; b)</code> function turns a <code>Preddy b</code> (predicate waiting for a <code>b</code>) into a <code>Preddy a</code> (predicate waiting for an <code>a</code>).</p>
+<p>Seems weird? Sure. Let's look at an example.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">instance Contravariant Preddy where
+</span><span>  contramap f (</span><span style="color:#d08770;">Preddy</span><span> p) = </span><span style="color:#d08770;">Preddy</span><span> (p . f)
+</span></code></pre>
+<p>This looks a lot like <code>fmap</code>, except our new <code>f</code> function happens BEFORE the <code>p</code> function that is already in there.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">nameLengthOverThree </span><span style="color:#b48ead;">:: Preddy String
+</span><span>nameLengthOverThree = contramap nameLength overThree
+</span></code></pre>
+<p>Here we've turned our <code>Preddy Int</code> function <code>overThree</code> into a <code>Preddy String</code> function using a <code>String -&gt; Int</code> function and <code>contramap</code>.</p>
+<p>Let's use it!</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">nameIsOverThree </span><span style="color:#b48ead;">:: String -&gt; Bool
+</span><span>nameIsOverThree = getPreddy nameLengthOverThree
+</span><span style="color:#65737e;">-- nameIsOverThree &quot;Lou&quot; == False
+</span><span style="color:#65737e;">-- nameIsOverThree &quot;Doug&quot; == True
+</span></code></pre>
+<p>Great! Now we can use it to see if words are Just Too Long.</p>
+<p>All this wrapping and unwrapping seems a lot of work for that, but what if we start using <code>contramap</code> for more?</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">Person </span><span>= </span><span style="color:#d08770;">Person</span><span> { name :: </span><span style="color:#d08770;">String</span><span>, age :: </span><span style="color:#d08770;">Int</span><span> } </span><span style="color:#b48ead;">deriving</span><span> (</span><span style="color:#a3be8c;">Show</span><span>)
+</span><span>
+</span><span style="color:#8fa1b3;">steve </span><span style="color:#b48ead;">:: Person
+</span><span>steve = </span><span style="color:#d08770;">Person</span><span> { name = &quot;</span><span style="color:#a3be8c;">Steve</span><span>&quot;, age = </span><span style="color:#d08770;">100</span><span> }
+</span><span>
+</span><span style="color:#8fa1b3;">lou </span><span style="color:#b48ead;">:: Person
+</span><span>lou = </span><span style="color:#d08770;">Person</span><span> { name = &quot;</span><span style="color:#a3be8c;">Lou</span><span>&quot;, age = </span><span style="color:#d08770;">69</span><span> }
+</span></code></pre>
+<p>Here are Steve and Lou. They are, at least syntactically, people.</p>
+<p>Let's use mathematics to judge whether their names are too long.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">personTooLong </span><span style="color:#b48ead;">:: Person -&gt; Bool
+</span><span>personTooLong = getPreddy personPreddy </span><span style="color:#b48ead;">where
+</span><span>  personPreddy = contramap (nameLength . name) overThree
+</span><span>
+</span><span style="color:#65737e;">-- personTooLong steve == True
+</span><span style="color:#65737e;">-- personTooLong lou == False
+</span></code></pre>
+<p>Excellent! That will show them.</p>
+<p>You will note that here we've somewhat rushed and combined the <code>contramap</code>-ing and unwrapping into one function. This was mostly to show that when you come to use these things, it doesn't need to be quite as laborious as our broken down examples above. Hopefully you can follow, the key thing is that <code>(nameLength . name)</code> means "put the value into <code>name</code> and the pass the result to <code>nameLength</code>".</p>
+<p>Contravariant doesn't show up a huge amount on it's own, but it comes into it's own as part of <code>Profunctor</code> (lightning flashes, thunder, excitement!) which no doubt we'll flop towards at some unspecified future moment.</p>
+<p>Make sense? If not, why not <a href="/contact.html">get in touch</a>?</p>
+<p>Further reading:</p>
+<p><a href="https://www.youtube.com/watch?v=JZPXzJ5tp9w">The Extended Functor Family (video)</a></p>
+<p><a href="http://hackage.haskell.org/package/contravariant-1.5/docs/Data-Functor-Contravariant.html">Data.Functor.Contravariant</a></p>
+<p>NOTE: If you happened to get this error:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span>&lt;interactive&gt;:</span><span style="color:#d08770;">1</span><span>:</span><span style="color:#d08770;">1</span><span>: error: </span><span style="color:#d08770;">Not </span><span style="color:#b48ead;">in</span><span> scope: ‘</span><span style="color:#d08770;">Contravariant</span><span>’
+</span></code></pre>
+<p>...then you will need to install the <code>contravariant</code> package from Hackage. I'm not going to go into Haskell package management at this point but here is a good starting point: <a href="http://seanhess.github.io/2015/08/04/practical-haskell-getting-started.html">Practical Haskell - Getting Started</a>. It's all going to be fine, I promise. The documentation isn't great but the tools are pretty nice.</p>
+
+
+    </main>
+
+    <footer>
+      <p><a href="mailto:danieljamesharvey@gmail.com">Contact</a> |
+      <a href="https://github.com/danieljharvey">Github</a></p>
+      <p>Links for nerds:
+        <a href="/atom.xml">atom</a>
+        <a href="/rss.xml">rss</a></p>
+
+    </footer>
+</body>
+
+</html>

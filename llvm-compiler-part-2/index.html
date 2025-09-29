@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - Compiling a functional language to LLVM, part 2</title>
+    <link rel="stylesheet" href="https://danieljharvey.github.io/main.css">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="/">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="/">Posts</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        
+<h1 class="title">
+  Compiling a functional language to LLVM, part 2
+</h1>
+<p class="subtitle"><strong>2023-02-23</strong></p>
+<p>
+ <p class="blog-meta">
+        
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/plt/"
+          >#plt</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/mimsa/"
+          >#mimsa</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/typechecker/"
+          >#typechecker</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/llvm/"
+          >#llvm</a
+        >
+         
+      </p>
+
+<p>Welcome to part 2 of this series in compiling functional languages to LLVM. In
+<a href="/posts/2023-02-08-llvm-compiler-part-1.html">part 1</a> we created a very simple
+calculator that let us add, subtract and multiply integers like <code>1 + 1</code> or <code>6 * (5 - 2)</code>.</p>
+<p>Today we're going to spice things up a touch by adding some basic control flow.
+By the end of today we're going to be writing sweet syntax such as:</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#bf616a;">2</span><span> + 2 == 5
+</span><span>
+</span><span style="color:#b48ead;">if </span><span style="color:#bf616a;">6</span><span> == 6 then False else True
+</span></code></pre>
+<h2 id="what-s-new-then">What's new then?</h2>
+<p>To make our dreams come true, we're going to two new
+syntactic features:</p>
+<ul>
+<li>
+<p><code>if</code> expressions</p>
+</li>
+<li>
+<p>an <code>==</code> infix operator</p>
+</li>
+</ul>
+<p>Let's do that now!</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#65737e;">-- | operators for combining expressions
+</span><span style="color:#b48ead;">data </span><span style="color:#d08770;">Op
+</span><span>  = </span><span style="color:#d08770;">OpAdd
+</span><span>  | </span><span style="color:#d08770;">OpMultiply
+</span><span>  | </span><span style="color:#d08770;">OpSubtract
+</span><span>  | </span><span style="color:#d08770;">OpEquals </span><span style="color:#65737e;">-- this is new! 
+</span><span>  </span><span style="color:#b48ead;">deriving</span><span> stock (</span><span style="color:#d08770;">Eq</span><span>, </span><span style="color:#d08770;">Ord</span><span>, </span><span style="color:#d08770;">Show</span><span>)
+</span><span>
+</span><span style="color:#65737e;">-- | Expressions, decorated with some unknown `ann`
+</span><span style="color:#b48ead;">data </span><span style="color:#d08770;">Expr</span><span> ann
+</span><span>  = </span><span style="color:#d08770;">EPrim</span><span> ann </span><span style="color:#d08770;">Prim </span><span style="color:#65737e;">-- this `Prim` used to always be `Int`
+</span><span>  | </span><span style="color:#d08770;">EInfix</span><span> ann </span><span style="color:#d08770;">Op</span><span> (</span><span style="color:#d08770;">Expr</span><span> ann) (</span><span style="color:#d08770;">Expr</span><span> ann)
+</span><span>  | </span><span style="color:#d08770;">EIf</span><span> ann (</span><span style="color:#d08770;">Expr</span><span> ann) (</span><span style="color:#d08770;">Expr</span><span> ann) (</span><span style="color:#d08770;">Expr</span><span> ann) </span><span style="color:#65737e;">-- this is new!
+</span><span>  </span><span style="color:#b48ead;">deriving</span><span> stock (</span><span style="color:#d08770;">Eq</span><span>, </span><span style="color:#d08770;">Ord</span><span>, </span><span style="color:#d08770;">Show</span><span>, </span><span style="color:#d08770;">Functor</span><span>, </span><span style="color:#d08770;">Foldable</span><span>, </span><span style="color:#d08770;">Traversable</span><span>)
+</span></code></pre>
+<p>Our <code>EIf</code> constructor takes three <code>Expr ann</code> as arguments. The first is the
+<code>predicate</code>, ie, the thing that must evaluate to <code>True</code> or <code>False</code>, and the
+other two are expressions to be evaluated on the <code>then</code> and <code>else</code> branches.
+For all of this to make any sense, these will need to be the same type.</p>
+<h2 id="types">Types?</h2>
+<p>Previously we sort of glossed over the idea of types, because every value in
+our calculator was either an <code>Integer</code> (ie, <code>1</code>, <code>42</code>) or an expression that would eventually
+evaluate into an <code>Integer</code> (like <code>1 + 1</code>, <code>6 * 12</code>).</p>
+<p>However, the expression <code>1 == 1</code> doesn't resolve to an <code>Integer</code>, it can only
+be <code>True</code> or <code>False</code>, ie a <code>Boolean</code> type. (it is true that we could express
+this with an <code>Integer</code> but if we start cutting corners this early in the game
+we'll never get anywhere). This means we'll need to extend our <code>Prim</code> type to also describe <code>Boolean</code> values as
+well as <code>Integer</code>s.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#65737e;">-- | types of basic values
+</span><span style="color:#b48ead;">data </span><span style="color:#d08770;">Prim
+</span><span>  = </span><span style="color:#d08770;">PInt Integer
+</span><span>  | </span><span style="color:#d08770;">PBool Bool
+</span><span>  </span><span style="color:#b48ead;">deriving</span><span> stock (</span><span style="color:#d08770;">Eq</span><span>, </span><span style="color:#d08770;">Ord</span><span>, </span><span style="color:#d08770;">Show</span><span>)
+</span></code></pre>
+<p>However this means we are in danger of our users being able to make silly mistakes like <code>if 27 then False else 6</code>? How can we stop this? This can only mean one thing: we are going to need
+to write a bidirectional type checker.</p>
+<h3 id="bidirect-what">Bidirect what?</h3>
+<p>A bidirectional type checker is a way of working which types parts of an
+expression has, and identifying parts that don't make sense. What makes it
+"bidirectional" is that it works in two "modes":</p>
+<ul>
+<li><code>infer</code> mode: given an expression, give me the type</li>
+<li><code>check</code> mode: given an expression and the type we think it has, give me the
+type</li>
+</ul>
+<p>The broad idea is when we don't know anything about an expression, we <code>infer</code>
+what types it has, but as we learn more, we use that information to help us
+work the rest out. Although we could arguably get away with just an <code>infer</code> mode for a language
+this simple, we will need this special two-way magic in future.</p>
+<p>Enough waffle, let's see some code, and then talk about it.</p>
+<h3 id="code">Code</h3>
+<p>Firstly, we need a type for types. We'll call it <code>Type</code>. We are adding an <code>ann</code>
+type argument to it, so that we can attach source code locations etc. This will
+be helpful for showing our user helpful errors, which we will be doing today:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">TypePrim </span><span>= </span><span style="color:#d08770;">TBool </span><span>| </span><span style="color:#d08770;">TInt
+</span><span>  </span><span style="color:#b48ead;">deriving</span><span> stock (</span><span style="color:#d08770;">Eq</span><span>, </span><span style="color:#d08770;">Ord</span><span>, </span><span style="color:#d08770;">Show</span><span>)
+</span><span>
+</span><span style="color:#65737e;">-- the `ann` is used to attach source code location etc
+</span><span style="color:#b48ead;">data </span><span style="color:#d08770;">Type</span><span> ann
+</span><span>  = </span><span style="color:#d08770;">TPrim</span><span> ann </span><span style="color:#d08770;">TypePrim
+</span><span>  </span><span style="color:#b48ead;">deriving</span><span> stock (</span><span style="color:#d08770;">Eq</span><span>, </span><span style="color:#d08770;">Ord</span><span>, </span><span style="color:#d08770;">Show</span><span>, </span><span style="color:#d08770;">Functor</span><span>)
+</span></code></pre>
+<h3 id="things-go-wrong">Things go wrong</h3>
+<p>Any old typechecker can tell you when things are going well, but the ones that
+are really worth their salt are the ones that tell you helpfully what is going
+wrong. We will need these ones:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">TypeError</span><span> ann
+</span><span>  = </span><span style="color:#d08770;">PredicateIsNotBoolean</span><span> ann (</span><span style="color:#d08770;">Type</span><span> ann)
+</span><span>  | </span><span style="color:#d08770;">InfixTypeMismatch Op</span><span> [(</span><span style="color:#d08770;">Type</span><span> ann, </span><span style="color:#d08770;">Type</span><span> ann)]
+</span><span>  | </span><span style="color:#d08770;">TypeMismatch</span><span> (</span><span style="color:#d08770;">Type</span><span> ann) (</span><span style="color:#d08770;">Type</span><span> ann)
+</span><span>  </span><span style="color:#b48ead;">deriving</span><span> stock (</span><span style="color:#d08770;">Eq</span><span>, </span><span style="color:#d08770;">Ord</span><span>, </span><span style="color:#d08770;">Show</span><span>)
+</span></code></pre>
+<h3 id="the-meat-of-the-thing">The meat of the thing</h3>
+<p>Therefore, the point of the typechecker is to take <code>Expr ann</code> (ie, an <code>Expr</code>
+carrying around some <code>ann</code> that does not concern us), and turn it into either
+<code>TypeError ann</code> or <code>Expr (Type ann)</code>.</p>
+<p><code>Expr (Type ann)</code> means that we'll have "decorated" each part of the <code>Expr</code>
+with it's type. We'll take whatever <code>ann</code> was in there and put it in the <code>Type</code>
+instead. For example:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">oneWhichIsAnInteger </span><span style="color:#b48ead;">:: Expr</span><span> (</span><span style="color:#b48ead;">Type </span><span>())
+</span><span>oneWhichIsAnInteger = </span><span style="color:#d08770;">EPrim</span><span> (</span><span style="color:#d08770;">TPrim () TInt</span><span>) (</span><span style="color:#d08770;">PInt 1</span><span>)
+</span></code></pre>
+<p>The entire typechecker lives
+<a href="https://github.com/danieljharvey/llvm-calc/blob/trunk/llvm-calc2/src/Calc/Typecheck/Elaborate.hs">here</a>.
+Let's go through the key parts:</p>
+<hr />
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#65737e;">-- | this is the function we run
+</span><span style="color:#8fa1b3;">elaborate </span><span style="color:#b48ead;">:: Expr </span><span style="color:#bf616a;">ann </span><span style="color:#b48ead;">-&gt; Either</span><span> (</span><span style="color:#b48ead;">TypeError </span><span style="color:#bf616a;">ann</span><span>) (</span><span style="color:#b48ead;">Expr</span><span> (</span><span style="color:#b48ead;">Type </span><span style="color:#bf616a;">ann</span><span>))
+</span><span>elaborate = infer </span><span style="color:#65737e;">-- start with `infer` because we know nothing
+</span></code></pre>
+<p><code>elaborate</code> is the function the typechecker exports. It takes an untypechecked
+<code>Expr ann</code> and returns either <code>Expr (Type ann)</code> or an excuse. It starts by
+running <code>infer</code>, which we'll see shortly.</p>
+<hr />
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">typeFromPrim </span><span style="color:#b48ead;">:: </span><span style="color:#bf616a;">ann </span><span style="color:#b48ead;">-&gt; Prim -&gt; Type </span><span style="color:#bf616a;">ann
+</span><span>typeFromPrim ann (</span><span style="color:#d08770;">PInt</span><span> _) = </span><span style="color:#d08770;">TPrim</span><span> ann </span><span style="color:#d08770;">TInt </span><span style="color:#65737e;">-- It&#39;s an Integer!
+</span><span>typeFromPrim ann (</span><span style="color:#d08770;">PBool</span><span> _) = </span><span style="color:#d08770;">TPrim</span><span> ann </span><span style="color:#d08770;">TBool </span><span style="color:#65737e;">-- It&#39;s a Boolean!
+</span></code></pre>
+<p>The most basic type inference we can do is looking at a primitive value. As it
+stands in our language, there is one number type and one boolean type, so we
+can unambiguously work out the type just by looking at the value.</p>
+<hr />
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">inferIf </span><span style="color:#b48ead;">:: </span><span style="color:#bf616a;">ann </span><span style="color:#b48ead;">-&gt; Expr </span><span style="color:#bf616a;">ann </span><span style="color:#b48ead;">-&gt; Expr </span><span style="color:#bf616a;">ann </span><span style="color:#b48ead;">-&gt; Expr </span><span style="color:#bf616a;">ann </span><span style="color:#b48ead;">-&gt; Either</span><span> (</span><span style="color:#b48ead;">TypeError </span><span style="color:#bf616a;">ann</span><span>) (</span><span style="color:#b48ead;">Expr</span><span> (</span><span style="color:#b48ead;">Type </span><span style="color:#bf616a;">ann</span><span>))
+</span><span>inferIf ann predExpr thenExpr elseExpr = </span><span style="color:#b48ead;">do
+</span><span>  predA &lt;- infer predExpr
+</span><span>  </span><span style="color:#b48ead;">case</span><span> getOuterAnnotation predA </span><span style="color:#b48ead;">of
+</span><span>    (</span><span style="color:#d08770;">TPrim</span><span> _ </span><span style="color:#d08770;">TBool</span><span>) -&gt; pure </span><span style="color:#d08770;">()
+</span><span>    otherType -&gt; throwError (</span><span style="color:#d08770;">PredicateIsNotBoolean</span><span> ann otherType)
+</span><span>  thenA &lt;- infer thenExpr
+</span><span>  elseA &lt;- check (getOuterAnnotation thenA) elseExpr
+</span><span>  pure (</span><span style="color:#d08770;">EIf</span><span> (getOuterAnnotation elseA) predA thenA elseA)
+</span></code></pre>
+<p>This is how <code>if</code> works. We <code>infer</code> the type of the predicate, then use
+<code>getOuterAnnotation</code> to get the <code>Type ann</code> out of it. We then case match on it
+to see if it's a <code>Boolean</code> or not, "throwing" an error if not.</p>
+<hr />
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">inferInfix </span><span style="color:#b48ead;">::
+</span><span>  </span><span style="color:#bf616a;">ann </span><span style="color:#b48ead;">-&gt;
+</span><span>  </span><span style="color:#b48ead;">Op -&gt;
+</span><span>  </span><span style="color:#b48ead;">Expr </span><span style="color:#bf616a;">ann </span><span style="color:#b48ead;">-&gt;
+</span><span>  </span><span style="color:#b48ead;">Expr </span><span style="color:#bf616a;">ann </span><span style="color:#b48ead;">-&gt;
+</span><span>  </span><span style="color:#b48ead;">Either</span><span> (</span><span style="color:#b48ead;">TypeError </span><span style="color:#bf616a;">ann</span><span>) (</span><span style="color:#b48ead;">Expr</span><span> (</span><span style="color:#b48ead;">Type </span><span style="color:#bf616a;">ann</span><span>))
+</span><span>inferInfix ann </span><span style="color:#d08770;">OpEquals</span><span> a b = </span><span style="color:#b48ead;">do
+</span><span>  elabA &lt;- infer a
+</span><span>  elabB &lt;- infer b
+</span><span>  ty &lt;- </span><span style="color:#b48ead;">case</span><span> (getOuterAnnotation elabA, getOuterAnnotation elabB) </span><span style="color:#b48ead;">of
+</span><span>    (</span><span style="color:#d08770;">TPrim</span><span> _ tA, </span><span style="color:#d08770;">TPrim</span><span> _ tB)
+</span><span>      | tA == tB -&gt;
+</span><span>          </span><span style="color:#65737e;">-- if the types are the same, then great! it&#39;s a bool!
+</span><span>          pure (</span><span style="color:#d08770;">TPrim</span><span> ann </span><span style="color:#d08770;">TBool</span><span>)
+</span><span>    (otherA, otherB) -&gt;
+</span><span>      </span><span style="color:#65737e;">-- otherwise, error!
+</span><span>      throwError (</span><span style="color:#d08770;">TypeMismatch</span><span> otherA otherB)
+</span><span>  pure (</span><span style="color:#d08770;">EInfix</span><span> ty </span><span style="color:#d08770;">OpEquals</span><span> elabA elabB)
+</span></code></pre>
+<p>When typechecking <code>==</code>, we want to make sure both sides have the same type,
+"throwing" an error if not.</p>
+<hr />
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span>inferInfix ann op a b = </span><span style="color:#b48ead;">do
+</span><span>  elabA &lt;- infer a
+</span><span>  elabB &lt;- infer b
+</span><span>  </span><span style="color:#65737e;">-- all the other infix operators need to be Int -&gt; Int -&gt; Int
+</span><span>  ty &lt;- </span><span style="color:#b48ead;">case</span><span> (getOuterAnnotation elabA, getOuterAnnotation elabB) </span><span style="color:#b48ead;">of
+</span><span>    (</span><span style="color:#d08770;">TPrim</span><span> _ </span><span style="color:#d08770;">TInt</span><span>, </span><span style="color:#d08770;">TPrim</span><span> _ </span><span style="color:#d08770;">TInt</span><span>) -&gt;
+</span><span>      </span><span style="color:#65737e;">-- if the types are the same, then great! it&#39;s an int!
+</span><span>      pure (</span><span style="color:#d08770;">TPrim</span><span> ann </span><span style="color:#d08770;">TInt</span><span>)
+</span><span>    (</span><span style="color:#d08770;">TPrim</span><span> _ </span><span style="color:#d08770;">TInt</span><span>, other) -&gt;
+</span><span>      throwError
+</span><span>        ( </span><span style="color:#d08770;">InfixTypeMismatch
+</span><span>            op
+</span><span>            [ ( </span><span style="color:#d08770;">TPrim</span><span> (getOuterTypeAnnotation other) </span><span style="color:#d08770;">TInt</span><span>,
+</span><span>                other
+</span><span>              )
+</span><span>            ]
+</span><span>        )
+</span><span>    (other, </span><span style="color:#d08770;">TPrim</span><span> _ </span><span style="color:#d08770;">TInt</span><span>) -&gt;
+</span><span>      throwError
+</span><span>        ( </span><span style="color:#d08770;">InfixTypeMismatch
+</span><span>            op
+</span><span>            [ ( </span><span style="color:#d08770;">TPrim</span><span> (getOuterTypeAnnotation other) </span><span style="color:#d08770;">TInt</span><span>,
+</span><span>                other
+</span><span>              )
+</span><span>            ]
+</span><span>        )
+</span><span>    (otherA, otherB) -&gt;
+</span><span>      </span><span style="color:#65737e;">-- otherwise, error!
+</span><span>      throwError
+</span><span>        ( </span><span style="color:#d08770;">InfixTypeMismatch
+</span><span>            op
+</span><span>            [ (</span><span style="color:#d08770;">TPrim</span><span> (getOuterTypeAnnotation otherA) </span><span style="color:#d08770;">TInt</span><span>, otherA),
+</span><span>              (</span><span style="color:#d08770;">TPrim</span><span> (getOuterTypeAnnotation otherB) </span><span style="color:#d08770;">TInt</span><span>, otherB)
+</span><span>            ]
+</span><span>        )
+</span><span>  pure (</span><span style="color:#d08770;">EInfix</span><span> ty op elabA elabB)
+</span></code></pre>
+<p>Here are the other operators. Both the arguments should be <code>Integer</code> and the
+return type is <code>Integer</code>, otherwise we construct and return an error type. It
+seems like a lot of work to be so specific, but look how helpful our errors
+are!</p>
+<p><img src="/images/llvm-2-type-error-1.png" alt="Nice!" title="Nice!" /></p>
+<p><img src="/images/llvm-2-type-error-2.png" alt="Great!" title="Great!" /></p>
+<p><img src="/images/llvm-2-type-error-3.png" alt="Tremendous!" title="Tremendous!" /></p>
+<p><img src="/images/llvm-2-type-error-4.png" alt="Whoa!" title="Whoa!" /></p>
+<p><img src="/images/llvm-2-type-error-5.png" alt="What?" title="What?" /></p>
+<p><img src="/images/llvm-2-type-error-6.png" alt="Absolutely!" title="Absolutely!" /></p>
+<p><img src="/images/llvm-2-type-error-7.png" alt="Surely not?" title="Surely not?" /></p>
+<p><img src="/images/llvm-2-type-error-8.png" alt="Ridiculous!" title="Ridiculous!" /></p>
+<p><img src="/images/llvm-2-type-error-9.png" alt="Huh?" title="Huh?" /></p>
+<p>You can see all the error rendering code
+<a href="https://github.com/danieljharvey/llvm-calc/blob/trunk/llvm-calc2/src/Calc/Typecheck/Error.hs">here</a>.</p>
+<hr />
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">infer </span><span style="color:#b48ead;">:: Expr </span><span style="color:#bf616a;">ann </span><span style="color:#b48ead;">-&gt; Either</span><span> (</span><span style="color:#b48ead;">TypeError </span><span style="color:#bf616a;">ann</span><span>) (</span><span style="color:#b48ead;">Expr</span><span> (</span><span style="color:#b48ead;">Type </span><span style="color:#bf616a;">ann</span><span>))
+</span><span>infer (</span><span style="color:#d08770;">EPrim</span><span> ann prim) =
+</span><span>  pure (</span><span style="color:#d08770;">EPrim</span><span> (typeFromPrim ann prim) prim)
+</span><span>infer (</span><span style="color:#d08770;">EIf</span><span> ann predExpr thenExpr elseExpr) =
+</span><span>  inferIf ann predExpr thenExpr elseExpr
+</span><span>infer (</span><span style="color:#d08770;">EInfix</span><span> ann op a b) =
+</span><span>  inferInfix ann op a b
+</span></code></pre>
+<p>That's how we put <code>infer</code> together, easy!</p>
+<hr />
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">check </span><span style="color:#b48ead;">:: Type </span><span style="color:#bf616a;">ann </span><span style="color:#b48ead;">-&gt; Expr </span><span style="color:#bf616a;">ann </span><span style="color:#b48ead;">-&gt; Either</span><span> (</span><span style="color:#b48ead;">TypeError </span><span style="color:#bf616a;">ann</span><span>) (</span><span style="color:#b48ead;">Expr</span><span> (</span><span style="color:#b48ead;">Type </span><span style="color:#bf616a;">ann</span><span>))
+</span><span>check ty expr = </span><span style="color:#b48ead;">do
+</span><span>  exprA &lt;- infer expr
+</span><span>  </span><span style="color:#b48ead;">if</span><span> void (getOuterAnnotation exprA) == void ty
+</span><span>    </span><span style="color:#b48ead;">then</span><span> pure (expr $&gt; ty)
+</span><span>    </span><span style="color:#b48ead;">else</span><span> throwError (</span><span style="color:#d08770;">TypeMismatch</span><span> ty (getOuterAnnotation exprA))
+</span></code></pre>
+<p>Lastly, here's <code>check</code>. We only use it when comparing arms of <code>if</code> statements,
+but soon this will become more interesting.</p>
+<p>You can see all of the typechecker code
+<a href="https://github.com/danieljharvey/llvm-calc/blob/trunk/llvm-calc2/src/Calc/Typecheck/Elaborate.hs">here</a>.</p>
+<hr />
+<h2 id="interpreting-our-new-friends">Interpreting our new friends</h2>
+<p>Before heading back into LLVM land, let's update our manual interpreter so we
+can understand what's needed here.</p>
+<p>Firstly, it's now possible that our interpreter can fail. This will only happen
+if our typechecker is not working as expected, but we should make a proper
+error type for it anyway because we are good programmers who care about our
+users.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">InterpreterError</span><span> ann
+</span><span>  = </span><span style="color:#d08770;">NonBooleanPredicate</span><span> ann (</span><span style="color:#d08770;">Expr</span><span> ann)
+</span><span>  </span><span style="color:#b48ead;">deriving</span><span> stock (</span><span style="color:#d08770;">Eq</span><span>, </span><span style="color:#d08770;">Ord</span><span>, </span><span style="color:#d08770;">Show</span><span>)
+</span></code></pre>
+<p>Interpreting infix expressions is a little bit more complicated, as our pattern
+matches have to make sure we're looking at the right <code>Prim</code> values. The
+eagle-eyed may notice that a broken typechecker could send this into a loop.
+Can you see where?</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">interpretInfix </span><span style="color:#b48ead;">::
+</span><span>  (</span><span style="color:#b48ead;">MonadError</span><span> (</span><span style="color:#b48ead;">InterpreterError </span><span style="color:#bf616a;">ann</span><span>) </span><span style="color:#bf616a;">m</span><span>) </span><span style="color:#b48ead;">=&gt;
+</span><span>  </span><span style="color:#bf616a;">ann </span><span style="color:#b48ead;">-&gt;
+</span><span>  </span><span style="color:#b48ead;">Op -&gt;
+</span><span>  </span><span style="color:#b48ead;">Expr </span><span style="color:#bf616a;">ann </span><span style="color:#b48ead;">-&gt;
+</span><span>  </span><span style="color:#b48ead;">Expr </span><span style="color:#bf616a;">ann </span><span style="color:#b48ead;">-&gt;
+</span><span>  </span><span style="color:#bf616a;">m</span><span> (</span><span style="color:#b48ead;">Expr </span><span style="color:#bf616a;">ann</span><span>)
+</span><span>interpretInfix ann </span><span style="color:#d08770;">OpAdd</span><span> (</span><span style="color:#d08770;">EPrim</span><span> _ (</span><span style="color:#d08770;">PInt</span><span> a)) (</span><span style="color:#d08770;">EPrim</span><span> _ (</span><span style="color:#d08770;">PInt</span><span> b)) =
+</span><span>  pure $ </span><span style="color:#d08770;">EPrim</span><span> ann (</span><span style="color:#d08770;">PInt </span><span>$ a + b)
+</span><span>interpretInfix ann </span><span style="color:#d08770;">OpSubtract</span><span> (</span><span style="color:#d08770;">EPrim</span><span> _ (</span><span style="color:#d08770;">PInt</span><span> a)) (</span><span style="color:#d08770;">EPrim</span><span> _ (</span><span style="color:#d08770;">PInt</span><span> b)) =
+</span><span>  pure $ </span><span style="color:#d08770;">EPrim</span><span> ann (</span><span style="color:#d08770;">PInt </span><span>$ a - b)
+</span><span>interpretInfix ann </span><span style="color:#d08770;">OpMultiply</span><span> (</span><span style="color:#d08770;">EPrim</span><span> _ (</span><span style="color:#d08770;">PInt</span><span> a)) (</span><span style="color:#d08770;">EPrim</span><span> _ (</span><span style="color:#d08770;">PInt</span><span> b)) =
+</span><span>  pure $ </span><span style="color:#d08770;">EPrim</span><span> ann (</span><span style="color:#d08770;">PInt </span><span>$ a * b)
+</span><span>interpretInfix ann </span><span style="color:#d08770;">OpEquals</span><span> (</span><span style="color:#d08770;">EPrim</span><span> _ a) (</span><span style="color:#d08770;">EPrim</span><span> _ b) =
+</span><span>  pure $ </span><span style="color:#d08770;">EPrim</span><span> ann (</span><span style="color:#d08770;">PBool </span><span>$ a == b)
+</span><span>interpretInfix ann op a b = </span><span style="color:#b48ead;">do
+</span><span>  iA &lt;- interpret a
+</span><span>  iB &lt;- interpret b
+</span><span>  interpretInfix ann op iA iB
+</span></code></pre>
+<p>We ended up with a <code>MonadError</code> constraint above - why's that? It's because the
+main <code>interpret</code> function can now "explode" if we try and match a non-predicate
+in an if statement. Our typechecker <em>should</em> stop this happening of course.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#65737e;">-- | just keep reducing the thing until the smallest thing
+</span><span style="color:#8fa1b3;">interpret </span><span style="color:#b48ead;">::
+</span><span>  ( </span><span style="color:#b48ead;">MonadError</span><span> (</span><span style="color:#b48ead;">InterpreterError </span><span style="color:#bf616a;">ann</span><span>) </span><span style="color:#bf616a;">m
+</span><span>  ) </span><span style="color:#b48ead;">=&gt;
+</span><span>  </span><span style="color:#b48ead;">Expr </span><span style="color:#bf616a;">ann </span><span style="color:#b48ead;">-&gt;
+</span><span>  </span><span style="color:#bf616a;">m</span><span> (</span><span style="color:#b48ead;">Expr </span><span style="color:#bf616a;">ann</span><span>)
+</span><span>interpret (</span><span style="color:#d08770;">EPrim</span><span> ann p) = pure (</span><span style="color:#d08770;">EPrim</span><span> ann p)
+</span><span>interpret (</span><span style="color:#d08770;">EInfix</span><span> ann op a b) =
+</span><span>  interpretInfix ann op a b
+</span><span>interpret (</span><span style="color:#d08770;">EIf</span><span> ann predExpr thenExpr elseExpr) = </span><span style="color:#b48ead;">do
+</span><span>  predA &lt;- interpret predExpr
+</span><span>  </span><span style="color:#b48ead;">case</span><span> predA </span><span style="color:#b48ead;">of
+</span><span>    (</span><span style="color:#d08770;">EPrim</span><span> _ (</span><span style="color:#d08770;">PBool True</span><span>)) -&gt; interpret thenExpr
+</span><span>    (</span><span style="color:#d08770;">EPrim</span><span> _ (</span><span style="color:#d08770;">PBool False</span><span>)) -&gt; interpret elseExpr
+</span><span>    other -&gt; throwError (</span><span style="color:#d08770;">NonBooleanPredicate</span><span> ann other)
+</span></code></pre>
+<p>We interpret if statements by reducing the predicate down to a boolean, then
+taking a peek, and then interpreting the appropriate branch. If we don't need a
+branch, there's no need to interpret it!</p>
+<p>You can see all of the interpreter code
+<a href="https://github.com/danieljharvey/llvm-calc/blob/trunk/llvm-calc2/src/Calc/Interpreter.hs">here</a>.</p>
+<h2 id="ok-llvm-time">OK, LLVM time</h2>
+<p>I feel like I'm rushing through all this, and maybe copy pasta-ing an entire
+typechecker in the preamble was somewhat undisclined of me.</p>
+<p>BUT, here we go.</p>
+<h3 id="digression">Digression</h3>
+<p>Firstly, we'll add a new function to our C "standard library":</p>
+<pre data-lang="c" style="background-color:#2b303b;color:#c0c5ce;" class="language-c "><code class="language-c" data-lang="c"><span style="color:#b48ead;">void </span><span style="color:#8fa1b3;">printbool</span><span>(</span><span style="color:#b48ead;">int </span><span style="color:#bf616a;">b</span><span>) {
+</span><span>  </span><span style="color:#96b5b4;">printf</span><span>(b ? &quot;</span><span style="color:#a3be8c;">True</span><span>&quot; : &quot;</span><span style="color:#a3be8c;">False</span><span>&quot;);
+</span><span>}
+</span></code></pre>
+<p>It will take an LLVM boolean, and print either <code>True</code> or <code>False</code> depending on
+whether it is <code>0</code> or not.</p>
+<h3 id="to-the-ir">To the IR!</h3>
+<p>We're going to start by looking at the LLVM IR for the following arbitrary
+expression:</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#b48ead;">if </span><span style="color:#bf616a;">2</span><span> == 1 then True else False 
+</span></code></pre>
+<pre data-lang="llvm" style="background-color:#2b303b;color:#c0c5ce;" class="language-llvm "><code class="language-llvm" data-lang="llvm"><span>; ModuleID = &#39;example&#39;
+</span><span>
+</span><span>declare external ccc  void @printbool(i1)
+</span><span>
+</span><span>define external ccc  i32 @main()    {
+</span><span>  %1 = icmp eq i32 2, 1
+</span><span>  %2 = alloca i1
+</span><span>  br i1 %1, label %then_0, label %else_0
+</span><span>then_0:
+</span><span>  store   i1 1, i1* %2
+</span><span>  br label %done_0
+</span><span>else_0:
+</span><span>  store   i1 0, i1* %2
+</span><span>  br label %done_0
+</span><span>done_0:
+</span><span>  %3 = load   i1, i1* %2
+</span><span>   call ccc  void  @printbool(i1  %3)
+</span><span>  ret i32 0
+</span><span>}
+</span></code></pre>
+<p>What a ride! Let's take it line by line.</p>
+<hr />
+<pre data-lang="llvm" style="background-color:#2b303b;color:#c0c5ce;" class="language-llvm "><code class="language-llvm" data-lang="llvm"><span>; ModuleID = &#39;example&#39;
+</span></code></pre>
+<p>Once again, let's ease ourselves in with a code comment.</p>
+<hr />
+<pre data-lang="llvm" style="background-color:#2b303b;color:#c0c5ce;" class="language-llvm "><code class="language-llvm" data-lang="llvm"><span>declare external ccc  void @printbool(i1)
+</span></code></pre>
+<p>Declaration for the new function in our standard library. It takes an <code>i1</code> (a
+boolean, stored as <code>0</code> or <code>1</code>) and returns <code>void</code>.</p>
+<hr />
+<pre data-lang="llvm" style="background-color:#2b303b;color:#c0c5ce;" class="language-llvm "><code class="language-llvm" data-lang="llvm"><span>define external ccc  i32 @main()    {
+</span></code></pre>
+<p>We define the <code>main</code> function, which is the entry point of our program. It
+takes no arguments, and returns an <code>i32</code> integer value (which becomes the exit
+code).</p>
+<hr />
+<pre data-lang="llvm" style="background-color:#2b303b;color:#c0c5ce;" class="language-llvm "><code class="language-llvm" data-lang="llvm"><span>%1 = icmp eq i32 2, 1
+</span></code></pre>
+<p>Here we are making a new variable, <code>%1</code>, by comparing two integers, <code>2</code> and
+<code>1</code>, using <code>eq</code>. This is our <code>2 == 1</code> expression, and maps across quite neatly.</p>
+<hr />
+<pre data-lang="llvm" style="background-color:#2b303b;color:#c0c5ce;" class="language-llvm "><code class="language-llvm" data-lang="llvm"><span>%2 = alloca i1
+</span></code></pre>
+<p>To make control flow works, we are going to need to jump to different places.
+However, LLVM has no way of passing a value back between sections. Therefore,
+we are going to create a mutable placeholder for the result, and each branch
+will be responsible for storing the result here. <code>alloca</code> is broadly "allocate
+memory" and <code>i1</code> is the LLVM type for a <code>Boolean</code>.</p>
+<hr />
+<pre data-lang="llvm" style="background-color:#2b303b;color:#c0c5ce;" class="language-llvm "><code class="language-llvm" data-lang="llvm"><span>br i1 %1, label %then_0, label %else_0
+</span></code></pre>
+<p>This is where we do the branching. <code>br</code> takes an <code>i1</code> value for the predicate,
+and then two labels for blocks that we'll jump to depending on the value of the predicate.
+Therefore if <code>%1</code> is <code>1</code> we'll jump to <code>then_0</code>, otherwise we'll jump to
+<code>else_0</code>. We'll define these shortly.</p>
+<hr />
+<pre data-lang="llvm" style="background-color:#2b303b;color:#c0c5ce;" class="language-llvm "><code class="language-llvm" data-lang="llvm"><span>then_0:
+</span><span>  store   i1 1, i1* %2
+</span><span>  br label %done_0
+</span></code></pre>
+<p>This defines a block labelled <code>then_0</code>. We will "jump" here in the "then" case
+of the if statement. We store <code>1</code> in the <code>%2</code> variable, and then jump to the
+<code>done_0</code> block.</p>
+<hr />
+<pre data-lang="llvm" style="background-color:#2b303b;color:#c0c5ce;" class="language-llvm "><code class="language-llvm" data-lang="llvm"><span>else_0:
+</span><span>  store   i1 0, i1* %2
+</span><span>  br label %done_0
+</span></code></pre>
+<p>This defines a block labelled <code>else_0</code>. We will "jump" here in the "else" case.
+Once again, we store <code>0</code> in the <code>%2</code> variable, and then jump to <code>done_0</code>.</p>
+<hr />
+<pre data-lang="llvm" style="background-color:#2b303b;color:#c0c5ce;" class="language-llvm "><code class="language-llvm" data-lang="llvm"><span>done_0:
+</span><span>  %3 = load   i1, i1* %2
+</span></code></pre>
+<p>This introduces a new block called <code>done_0</code>. As our if construct is an
+expression, we always need to return something, so ee jump here when the
+<code>then</code> or <code>expr</code> branches are finishing doing their business, and load whatever
+they stored in <code>%2</code>.</p>
+<hr />
+<pre data-lang="llvm" style="background-color:#2b303b;color:#c0c5ce;" class="language-llvm "><code class="language-llvm" data-lang="llvm"><span>call ccc  void  @printbool(i1  %3)
+</span></code></pre>
+<p>Call the <code>printbool</code> function from our standard library with the loaded value.</p>
+<hr />
+<pre data-lang="llvm" style="background-color:#2b303b;color:#c0c5ce;" class="language-llvm "><code class="language-llvm" data-lang="llvm"><span>ret i32 0
+</span></code></pre>
+<p>As our program succeeded, we return a <code>0</code>, this becomes our exit code.</p>
+<hr />
+<pre data-lang="llvm" style="background-color:#2b303b;color:#c0c5ce;" class="language-llvm "><code class="language-llvm" data-lang="llvm"><span>}
+</span></code></pre>
+<p>As a little palette cleanser, a nice closing brace.</p>
+<h3 id="generating-it-from-haskell">Generating it from Haskell</h3>
+<p>Now we have <code>Boolean</code> as well as <code>Integer</code> values, we'll need to represent them
+in LLVM. We'll use a <code>bit</code> which is a 1-bit LLVM number to represent
+<code>Boolean</code>s.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">primToLLVM </span><span style="color:#b48ead;">:: Prim -&gt; LLVM</span><span>.</span><span style="color:#b48ead;">Operand
+</span><span>primToLLVM (</span><span style="color:#d08770;">PInt</span><span> i) = </span><span style="color:#d08770;">LLVM</span><span>.int32 (fromIntegral i)
+</span><span>primToLLVM (</span><span style="color:#d08770;">PBool True</span><span>) = </span><span style="color:#d08770;">LLVM</span><span>.bit </span><span style="color:#d08770;">1
+</span><span>primToLLVM (</span><span style="color:#d08770;">PBool False</span><span>) = </span><span style="color:#d08770;">LLVM</span><span>.bit </span><span style="color:#d08770;">0
+</span></code></pre>
+<p>Now we'll need to choose the right printing function:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#65737e;">-- import the correct output function from our standard library
+</span><span style="color:#65737e;">-- depending on the output type of our expression
+</span><span style="color:#8fa1b3;">printFunction </span><span style="color:#b48ead;">::</span><span> (</span><span style="color:#b48ead;">LLVM</span><span>.</span><span style="color:#b48ead;">MonadModuleBuilder </span><span style="color:#bf616a;">m</span><span>) </span><span style="color:#b48ead;">=&gt; Type </span><span style="color:#bf616a;">ann </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">m </span><span style="color:#b48ead;">LLVM</span><span>.</span><span style="color:#b48ead;">Operand
+</span><span>printFunction (</span><span style="color:#d08770;">TPrim</span><span> _ </span><span style="color:#d08770;">TInt</span><span>) = </span><span style="color:#d08770;">LLVM</span><span>.extern &quot;</span><span style="color:#a3be8c;">printint</span><span>&quot; [</span><span style="color:#d08770;">LLVM</span><span>.i32] </span><span style="color:#d08770;">LLVM</span><span>.void
+</span><span>printFunction (</span><span style="color:#d08770;">TPrim</span><span> _ </span><span style="color:#d08770;">TBool</span><span>) = </span><span style="color:#d08770;">LLVM</span><span>.extern &quot;</span><span style="color:#a3be8c;">printbool</span><span>&quot; [</span><span style="color:#d08770;">LLVM</span><span>.i1] </span><span style="color:#d08770;">LLVM</span><span>.void
+</span></code></pre>
+<p>The most interesting part is <code>if</code> expressions. We use the <code>RecursiveDo</code>
+extension, which gives us the <code>mdo</code> syntax. This lets us use bindings before
+they are created. This will allow us to use <code>thenBlock</code> and <code>elseBlock</code> before
+they're defined. We create IR for the <code>predExpr</code>, then pass it to
+<code>LLVM.condBr</code>, which will then jump to the appropriate block depending on the
+value.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">ifToLLVM </span><span style="color:#b48ead;">::
+</span><span>  (</span><span style="color:#b48ead;">LLVM</span><span>.</span><span style="color:#b48ead;">MonadIRBuilder </span><span style="color:#bf616a;">m</span><span>, </span><span style="color:#b48ead;">LLVM</span><span>.</span><span style="color:#b48ead;">MonadModuleBuilder </span><span style="color:#bf616a;">m</span><span>, </span><span style="color:#b48ead;">MonadFix </span><span style="color:#bf616a;">m</span><span>) </span><span style="color:#b48ead;">=&gt;
+</span><span>  </span><span style="color:#b48ead;">Type </span><span style="color:#bf616a;">ann </span><span style="color:#b48ead;">-&gt;
+</span><span>  </span><span style="color:#b48ead;">Expr</span><span> (</span><span style="color:#b48ead;">Type </span><span style="color:#bf616a;">ann</span><span>) </span><span style="color:#b48ead;">-&gt;
+</span><span>  </span><span style="color:#b48ead;">Expr</span><span> (</span><span style="color:#b48ead;">Type </span><span style="color:#bf616a;">ann</span><span>) </span><span style="color:#b48ead;">-&gt;
+</span><span>  </span><span style="color:#b48ead;">Expr</span><span> (</span><span style="color:#b48ead;">Type </span><span style="color:#bf616a;">ann</span><span>) </span><span style="color:#b48ead;">-&gt;
+</span><span>  </span><span style="color:#bf616a;">m </span><span style="color:#b48ead;">LLVM</span><span>.</span><span style="color:#b48ead;">Operand
+</span><span>ifToLLVM tyReturn predExpr thenExpr elseExpr = mdo
+</span><span>  </span><span style="color:#65737e;">-- create IR for predicate
+</span><span>  irPred &lt;- exprToLLVM predExpr
+</span><span>
+</span><span>  </span><span style="color:#65737e;">-- make variable for return value
+</span><span>  irReturnValue &lt;- </span><span style="color:#d08770;">LLVM</span><span>.alloca (typeToLLVM tyReturn) </span><span style="color:#d08770;">Nothing 0
+</span><span>
+</span><span>  </span><span style="color:#65737e;">-- this does the switching
+</span><span>  </span><span style="color:#65737e;">-- we haven&#39;t created these blocks yet but RecursiveDo lets us do this with
+</span><span>  </span><span style="color:#65737e;">-- MonadFix magic
+</span><span>  </span><span style="color:#d08770;">LLVM</span><span>.condBr irPred thenBlock elseBlock
+</span><span>
+</span><span>  </span><span style="color:#65737e;">-- create a block for the &#39;then` branch
+</span><span>  thenBlock &lt;- </span><span style="color:#d08770;">LLVM</span><span>.block `</span><span style="color:#d08770;">LLVM</span><span>.named` &quot;</span><span style="color:#a3be8c;">then</span><span>&quot;
+</span><span>  </span><span style="color:#65737e;">-- create ir for the then branch
+</span><span>  irThen &lt;- exprToLLVM thenExpr
+</span><span>  </span><span style="color:#65737e;">-- store the result in irResultValue
+</span><span>  </span><span style="color:#d08770;">LLVM</span><span>.store irReturnValue </span><span style="color:#d08770;">0</span><span> irThen
+</span><span>  </span><span style="color:#65737e;">-- branch back to the &#39;done&#39; block
+</span><span>  </span><span style="color:#d08770;">LLVM</span><span>.br doneBlock
+</span><span>
+</span><span>  </span><span style="color:#65737e;">-- create a block for the &#39;else&#39; branch
+</span><span>  elseBlock &lt;- </span><span style="color:#d08770;">LLVM</span><span>.block `</span><span style="color:#d08770;">LLVM</span><span>.named` &quot;</span><span style="color:#a3be8c;">else</span><span>&quot;
+</span><span>  </span><span style="color:#65737e;">-- create ir for the else branch
+</span><span>  irElse &lt;- exprToLLVM elseExpr
+</span><span>  </span><span style="color:#65737e;">-- store the result in irReturnValue
+</span><span>  </span><span style="color:#d08770;">LLVM</span><span>.store irReturnValue </span><span style="color:#d08770;">0</span><span> irElse
+</span><span>  </span><span style="color:#65737e;">-- branch back to the `done` block
+</span><span>  </span><span style="color:#d08770;">LLVM</span><span>.br doneBlock
+</span><span>
+</span><span>  </span><span style="color:#65737e;">-- create a block for &#39;done&#39; that we always branch to
+</span><span>  doneBlock &lt;- </span><span style="color:#d08770;">LLVM</span><span>.block `</span><span style="color:#d08770;">LLVM</span><span>.named` &quot;</span><span style="color:#a3be8c;">done</span><span>&quot;
+</span><span>  </span><span style="color:#65737e;">-- load the result and return it
+</span><span>  </span><span style="color:#d08770;">LLVM</span><span>.load irReturnValue </span><span style="color:#d08770;">0
+</span></code></pre>
+<p>To work out which kind of type to <code>alloca</code>, we take the return type and use it
+to work which LLVM type to use.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">typeToLLVM </span><span style="color:#b48ead;">:: Type </span><span style="color:#bf616a;">ann </span><span style="color:#b48ead;">-&gt; LLVM</span><span>.</span><span style="color:#b48ead;">Type
+</span><span>typeToLLVM (</span><span style="color:#d08770;">TPrim</span><span> _ </span><span style="color:#d08770;">TBool</span><span>) = </span><span style="color:#d08770;">LLVM</span><span>.i1
+</span><span>typeToLLVM (</span><span style="color:#d08770;">TPrim</span><span> _ </span><span style="color:#d08770;">TInt</span><span>) = </span><span style="color:#d08770;">LLVM</span><span>.i32
+</span></code></pre>
+<p>You can see all of the LLVM conversion code
+<a href="https://github.com/danieljharvey/llvm-calc/blob/trunk/llvm-calc2/src/Calc/Compile/ToLLVM.hs">here</a>.</p>
+<hr />
+<h3 id="well-that-s-that">Well that's that</h3>
+<p>Congratulations, you are all bidirectional type checking experts now. Hopefully that was
+somewhat helpful. Next time we'll be adding basic functions and variables.
+Great!</p>
+<p>Make sense? If not, <a href="/contact.html">get in touch</a>!</p>
+<p>Further reading:</p>
+<p><a href="https://llvm.org/docs/LangRef.html">llvm reference</a></p>
+<p><a href="https://github.com/danieljharvey/llvm-calc">llvm-calc</a></p>
+
+
+    </main>
+
+    <footer>
+      <p><a href="mailto:danieljamesharvey@gmail.com">Contact</a> |
+      <a href="https://github.com/danieljharvey">Github</a></p>
+      <p>Links for nerds:
+        <a href="/atom.xml">atom</a>
+        <a href="/rss.xml">rss</a></p>
+
+    </footer>
+</body>
+
+</html>

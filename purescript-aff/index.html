@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - A game in Purescript (Part 2 - Effect and Aff)</title>
+    <link rel="stylesheet" href="https://danieljharvey.github.io/main.css">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="/">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="/">Posts</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        
+<h1 class="title">
+  A game in Purescript (Part 2 - Effect and Aff)
+</h1>
+<p class="subtitle"><strong>2019-03-31</strong></p>
+<p>
+ <p class="blog-meta">
+        
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/purescript/"
+          >#purescript</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/effect/"
+          >#effect</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/aff/"
+          >#aff</a
+        >
+         
+      </p>
+
+<p>Good morning and/or evening. I found myself defaulting to starting with an apology for the amount of time since my last post, then I caught myself and reminded myself that <em>It's My Blog And I Can Post Whenever I Feel Like It Actually</em>. So with that in mind, let's continue to today's main course, at exactly the rambling pace
+of my choosing.</p>
+<p><img src="/images/eggmore.png" alt="The new game looking completely OK." title="The new game looking completely OK." /></p>
+<p>As I may have mentioned, my current timesink of choice is a Purescript re-write of a browser game I wrote a couple of years back called <a href="http://itistheegg.com/">It Is The Egg</a>. It is going pretty OK, all told, I've gotten all the awful fiddly stuff like rendering sorted so now I am free to remake the game logic in nice pure functions and generally have a good time. For those of that don't spend their free time ignoring their loved ones and instead writing terrible games in a functional programming style, a few notes on the vague architecture that I have settled on.</p>
+<p>It falls into three parts:</p>
+<ul>
+<li>Admin</li>
+<li>Rendering</li>
+<li>Logic</li>
+</ul>
+<h3 id="admin">Admin</h3>
+<p>The admin of the game is everything that needs setting up at the start. Images need loading, level files need loading, window events need setting, and we need to start a game loop that will run everything all the other parts. All of this stuff is very <em>effectful</em> as it involves interacting with the real actual world, the thing that functional programmers are rightly terrified of. This is mostly the layer that we will be discussing today. This layer is difficult to test, so don't.</p>
+<h3 id="rendering">Rendering</h3>
+<p>Much like in the React architecture, the Rendering layer is only concerned with receiving the current state of the game, and displaying it on the screen. We will come back to this later when we talk about working with the HTML Canvas in Purescript, and how we use buffering to keep things (vaguely) smooth. The Rendering layer only has access to a) the current game state and b) the previous game state, so that we can do a few optimisations to avoid unnecessary work. It has no way of changing the game state in any way. This layer, because of it's need to write to the canvas, is also <em>effectful</em>, and difficult to test so try and keep it as thin as possible.</p>
+<h3 id="logic">Logic</h3>
+<p>The Logic layer is run every "turn" of the game and is a function that takes the current game state, any input that has been received since the last turn, and uses this to compute the next game state to pass to Rendering layer. Everything in the Logic layer is pure functions, and is very easy to test, therefore this should have lots of tests because we all good programmers who appreciate software craftsmanship. Anybody that has written Redux reducers should find this very familiar.</p>
+<p>(Anybody vaguely familiar with design patterns in Haskell might be thinking "shit, this sounds a lot like Matt Parsons' <a href="https://www.parsonsmatt.org/2018/03/22/three_layer_haskell_cake.html">Three Layer Haskell Cake</a> pattern, this could be pretty awkward" - and yes - it is indeed pretty similar, and shamelessly so.)</p>
+<p><img src="/images/eggs.png" alt="More screenshots because code is tiring." title="More screenshots because code is tiring." /></p>
+<p>So today we're going to talk about the game setup part, and on the way, discover, as I did, the actual difference between Purescript's <code>Effect</code> and <code>Aff</code> and how to operate the two of them.</p>
+<h3 id="firstly-some-background">Firstly, some background</h3>
+<p>Whilst any Haskell programming must start with a function such as this:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">main </span><span style="color:#b48ead;">:: IO </span><span>()
+</span><span>main = </span><span style="color:#b48ead;">do
+</span><span>  putStrLn &quot;</span><span style="color:#a3be8c;">Hello world!</span><span>&quot;
+</span></code></pre>
+<p>(The type signature <code>IO ()</code> means "this returns a function that does some IO and returns nothing of interest")</p>
+<p>The Purescript equivalent is this, taken from the default program generated by <code>Pulp</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">main </span><span style="color:#b48ead;">:: Effect Unit
+</span><span>main = </span><span style="color:#b48ead;">do
+</span><span>  log &quot;</span><span style="color:#a3be8c;">Hello sailor!</span><span>&quot;
+</span></code></pre>
+<p>This program uses <code>console.log</code> to write out a friendly message, and returns nothing of interest. The <code>Effect</code> type is like Haskell's <code>IO</code>, meaning "this function does something <em>effectful</em>" and <code>Unit</code> is the same as <code>()</code>, meaning "nothing", but Purescript prefers it written using words which is arguably easier to understand.</p>
+<p>There is a more subtle difference though - Haskell's IO is blocking - meaning we can write code like this, no problem:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">main </span><span style="color:#b48ead;">:: IO </span><span>()
+</span><span>main = </span><span style="color:#b48ead;">do
+</span><span>  putStrLn &quot;</span><span style="color:#a3be8c;">Hello, what is your name?</span><span>&quot;
+</span><span>  name &lt;- readLine
+</span><span>  putStrLn (&quot;</span><span style="color:#a3be8c;">Greetings, </span><span>&quot; ++ name)
+</span></code></pre>
+<p>When we run this program approximate this will happen:</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#bf616a;">Hello,</span><span> what is your name?
+</span><span>&gt; Mr </span><span style="color:#bf616a;">Horse   </span><span style="color:#65737e;"># user input
+</span><span style="color:#bf616a;">Greetings,</span><span> Mr Horse
+</span></code></pre>
+<p>The program greets the user, ask them their name, read the response, and use that name in the reply. The type signature for <code>readLine</code> is <code>IO String</code>, meaning a function that does some IO and returns a <code>String</code>. It does not specify when said string will arrive. If the user sits and waits for 100 years to type a response, the program will happily sit and do absolutely nothing else, obediently waiting for the user before continuing with the program.</p>
+<p><img src="/images/egg-sprite-yellow.png" alt="Let&#39;s distract ourselves briefly with some eggs." title="Let&#39;s distract ourselves briefly with some eggs." /></p>
+<p>Purescript, however, is built on top of Javascript, and some of you may be lucky enough to remember first getting stung by the concepts of callbacks etc when first moving to writing front end code. It's equivalent function to <code>readLine</code>, looks something like this:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span>readLine
+</span><span>  :: (</span><span style="color:#d08770;">String </span><span>-&gt; </span><span style="color:#d08770;">Effect Unit</span><span>)
+</span><span>  -&gt; </span><span style="color:#d08770;">Effect Unit
+</span></code></pre>
+<p>Hopefully what should be bothering you is that this function returns <code>Effect Unit</code> - ie, with no <code>String</code> to be seen. What's going on? Well - the actual return is happening in the the callback function, which is the first argument - <code>(String -&gt; Effect Unit)</code>. This function will immediately return <code>Effect Unit</code> but then send the <code>String</code> to the callback whenever the user sees fit to provide on. Therefore we can write the original greeting function in this new style as thus:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">main </span><span style="color:#b48ead;">:: Effect Unit
+</span><span>main = </span><span style="color:#b48ead;">do
+</span><span>  log &quot;</span><span style="color:#a3be8c;">Hello, what is your name?</span><span>&quot;
+</span><span>  readLine (\name -&gt; </span><span style="color:#b48ead;">do
+</span><span>    log (&quot;</span><span style="color:#a3be8c;">Greetings, </span><span>&quot; ++ name)
+</span><span>  )
+</span></code></pre>
+<p>This seems pretty OK, however if we end up asking a lot of questions, we're going to end in a classic Javascript anti-pattern, the Pyramid Of Death.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">bigChat </span><span style="color:#b48ead;">:: Effect Unit
+</span><span>bigChat
+</span><span>  = </span><span style="color:#b48ead;">do
+</span><span>      log &quot;</span><span style="color:#a3be8c;">What is your name?</span><span>&quot;
+</span><span>      _ &lt;- readLine
+</span><span>        (\name -&gt; </span><span style="color:#b48ead;">do
+</span><span>          log &quot;</span><span style="color:#a3be8c;">What?</span><span>&quot;
+</span><span>          _ &lt;- readLine
+</span><span>            (\what -&gt; </span><span style="color:#b48ead;">do
+</span><span>              log &quot;</span><span style="color:#a3be8c;">Are those your hands?</span><span>&quot;
+</span><span>              _ &lt;- readLine
+</span><span>                (\hands -&gt; </span><span style="color:#b48ead;">do
+</span><span>                  log &quot;</span><span style="color:#a3be8c;">Have you washed them recently?</span><span>&quot;
+</span><span>                  _ &lt;- readLine
+</span><span>                    (\clean -&gt; </span><span style="color:#b48ead;">do
+</span><span>                      log &quot;</span><span style="color:#a3be8c;">I see.</span><span>&quot;
+</span><span>                  pure unit)
+</span><span>              pure unit)
+</span><span>          pure unit)
+</span><span>      pure unit
+</span></code></pre>
+<p>Not ideal.</p>
+<h3 id="what-has-this-got-to-do-with-eggs">What has this got to do with eggs?</h3>
+<p>Sure, sure. Coming back round to our game, we have a similar problem. The game is tile based and so before we can dream of drawing anything we're going to need to load a big pile of images.</p>
+<p><img src="/images/egg-sprite.png" alt="A sprite sheet for an egg." title="A sprite sheet for an egg." /></p>
+<p>As we can see in the <a href="https://pursuit.purescript.org/packages/purescript-canvas/4.0.0/docs/Graphics.Canvas">Purescript Canvas Docs</a> we are going to need a <code>CanvasImageSource</code> to draw a sprite onto the canvas:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">drawImage </span><span style="color:#b48ead;">:: Context2D -&gt; CanvasImageSource -&gt; Number -&gt; Number -&gt; Effect Unit
+</span></code></pre>
+<p>How do we load one? With this <code>tryLoadImage</code> function.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">tryLoadImage </span><span style="color:#b48ead;">:: String -&gt;</span><span> (</span><span style="color:#b48ead;">Maybe CanvasImageSource -&gt; Effect Unit</span><span>) </span><span style="color:#b48ead;">-&gt; Effect Unit
+</span></code></pre>
+<p>It takes a <code>String</code> (the path to the image), a callback function (that will be passed <code>Maybe CanvasImageSource</code>), and then returns <code>Effect Unit</code>. This is very similar to <code>readLine</code>, so if we want to load lots of images we are going to end up with a weird pyramid of callbacks and generally a bad mess.</p>
+<h3 id="enter-aff">Enter Aff</h3>
+<p><a href="https://github.com/slamdata/purescript-aff">Aff</a> is the asynchronous effect monad for Purescript. It allows to sequence async events without using callbacks, and we're going to use it to load loads of images. First we are going to need to wrap our <code>Effect</code> function to make an <code>Aff</code> function.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">tryLoadImageAff </span><span style="color:#b48ead;">::
+</span><span>  </span><span style="color:#b48ead;">String -&gt;
+</span><span>  </span><span style="color:#b48ead;">Aff CanvasImageSource
+</span><span>tryLoadImageAff path = makeAff wrappedFn
+</span><span>  </span><span style="color:#b48ead;">where
+</span><span>    wrappedFn done = </span><span style="color:#b48ead;">do
+</span><span>      tryLoadImage path (\maybeImage -&gt; </span><span style="color:#b48ead;">case</span><span> maybeImage </span><span style="color:#b48ead;">of
+</span><span>        </span><span style="color:#d08770;">Just</span><span> canvasImage -&gt; done (</span><span style="color:#d08770;">Right</span><span> canvasImage))
+</span><span>        </span><span style="color:#d08770;">Nothing          </span><span>-&gt; done (</span><span style="color:#d08770;">Left</span><span> (error &quot;</span><span style="color:#a3be8c;">Could not load </span><span>&quot; &lt;&gt; path))
+</span><span>      )
+</span><span>    pure mempty </span><span style="color:#65737e;">-- return empty cancellation function
+</span></code></pre>
+<p>How does this work then?</p>
+<p>Firstly, it probably helps to look at the type signature for <code>makeAff</code>:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">makeAff </span><span style="color:#b48ead;">:: </span><span style="color:#bf616a;">forall a</span><span>. ((</span><span style="color:#b48ead;">Either Error </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; Effect Unit</span><span>) </span><span style="color:#b48ead;">-&gt; Effect Canceler</span><span>) </span><span style="color:#b48ead;">-&gt; Aff </span><span style="color:#bf616a;">a
+</span></code></pre>
+<p>OK. It's a bit weird. The <code>a</code> can be whatever item we're trying to move around, let's replace it with <code>CanvasImageSource</code>:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">makeAff </span><span style="color:#b48ead;">::</span><span> ((</span><span style="color:#b48ead;">Either Error CanvasImageSource -&gt; Effect Unit</span><span>) </span><span style="color:#b48ead;">-&gt; Effect Canceler</span><span>) </span><span style="color:#b48ead;">-&gt; Aff CanvasImageSource
+</span></code></pre>
+<p>This function takes a function that returns an <code>Effect Canceler</code>, and returns an <code>Aff</code> function that returns a <code>CanvasImageSource</code>. The <code>(Either Error CanvasImageSource -&gt; Effect Unit)</code> function will actually be passed to you, to use as the callback for the <code>Effect</code> function you are wrapping.</p>
+<p>Let's look closer at <code>wrappedFn</code>, with a type signature added for clarity.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span>wrappedFn
+</span><span>  :: (</span><span style="color:#d08770;">Either Error CanvasImageSource </span><span>-&gt; </span><span style="color:#d08770;">Effect Unit</span><span>)
+</span><span>  -&gt; </span><span style="color:#d08770;">Effect Canceler
+</span><span>wrappedFn done = </span><span style="color:#b48ead;">do
+</span><span>  tryLoadImage path (\maybeImage -&gt; </span><span style="color:#b48ead;">case</span><span> maybeImage </span><span style="color:#b48ead;">of
+</span><span>    </span><span style="color:#d08770;">Just</span><span> canvasImage -&gt; done (</span><span style="color:#d08770;">Right</span><span> canvasImage))
+</span><span>    </span><span style="color:#d08770;">Nothing          </span><span>-&gt; done (</span><span style="color:#d08770;">Left</span><span> (error &quot;</span><span style="color:#a3be8c;">Could not load </span><span>&quot; &lt;&gt; path))
+</span><span>  )
+</span><span>  pure mempty
+</span></code></pre>
+<p>It is passed <code>done</code> - which takes an <code>Either</code> holding either an <code>Error</code> for failure, or a <code>CanvasImageSource</code> if all went well.</p>
+<p>The callback in <code>tryLoadImage</code> gives us a <code>Maybe</code> so we pattern match on that, add a helpful <code>Error</code> if things go wrong, or return the <code>CanvasImageSource</code> if it all works.</p>
+<p>Finally, it creates an <code>Effect Canceler</code> with <code>pure mempty</code> - which just returns a <code>Canceler</code> that does nothing.</p>
+<h3 id="using-our-exciting-new-function">Using our exciting new function</h3>
+<p><img src="/images/crate.png" alt="A sprite of a box." title="A sprite of a box." /></p>
+<p>Now instead of using callbacks, we can use regular monad binds to get our images out.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">loadLots </span><span style="color:#b48ead;">:: Aff</span><span> (</span><span style="color:#b48ead;">Array CanvasImageSource</span><span>)
+</span><span>loadLots = </span><span style="color:#b48ead;">do
+</span><span>  file1 &lt;- tryLoadImageAff &quot;</span><span style="color:#a3be8c;">./static/images/brick.png</span><span>&quot;
+</span><span>  file2 &lt;- tryLoadImageAff &quot;</span><span style="color:#a3be8c;">./static/images/tile.png</span><span>&quot;
+</span><span>  file3 &lt;- tryLoadImageAff &quot;</span><span style="color:#a3be8c;">./static/images/egg.png</span><span>&quot;
+</span><span>  pure [file1, file2, file3]
+</span></code></pre>
+<p>And even better than that, if we take an array of file paths...</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">paths </span><span style="color:#b48ead;">:: Array String
+</span><span>paths = [ &quot;</span><span style="color:#a3be8c;">./static/images/brick.png</span><span>&quot;
+</span><span>        , &quot;</span><span style="color:#a3be8c;">./static/images/tile.png</span><span>&quot;
+</span><span>        , &quot;</span><span style="color:#a3be8c;">./static/images/egg.png</span><span>&quot;
+</span><span>        , &quot;</span><span style="color:#a3be8c;">./static/images/egg2.png</span><span>&quot;
+</span><span>        , &quot;</span><span style="color:#a3be8c;">./static/images/egg3.png</span><span>&quot;
+</span><span>        ]
+</span></code></pre>
+<p>...we can use traverse to turn an array of paths into an array of <code>CanvasImageSource</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">loadImages </span><span style="color:#b48ead;">:: Array String -&gt; Aff</span><span> (</span><span style="color:#b48ead;">Array CanvasImageSource</span><span>)
+</span><span>loadImages paths
+</span><span>  = traverse tryLoadImageAff paths
+</span></code></pre>
+<p><code>loadImages</code> takes our list of file paths, and returns an <code>Aff</code> containing an <code>Array</code> of <code>CanvasImageSource</code>. <code>traverse</code> runs our function on each item in the array, then turns the types inside out so we can <code>Aff (Array CanvasImageSource)</code> instead of <code>Array (Aff CanvasImageSource)</code>.</p>
+<p>Constructing this <code>Aff</code> doesn't do anything until we actually run it, which we can do with <code>runAff</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">runAff_ </span><span style="color:#b48ead;">:: </span><span style="color:#bf616a;">forall a</span><span>. (</span><span style="color:#b48ead;">Either Error </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; Effect Unit</span><span>) </span><span style="color:#b48ead;">-&gt; Aff </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; Effect Unit
+</span></code></pre>
+<p>It takes a callback, the <code>Aff</code> we have constructed, and then returns <code>Effect Unit</code>. Our whole image loading program would thus look like this:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">main </span><span style="color:#b48ead;">:: Effect Unit
+</span><span>main = </span><span style="color:#b48ead;">do
+</span><span>  </span><span style="color:#b48ead;">let</span><span> imageAff
+</span><span>        = loadImages paths
+</span><span>      callback
+</span><span>        = (\images -&gt; </span><span style="color:#b48ead;">case</span><span> images </span><span style="color:#b48ead;">of
+</span><span>            </span><span style="color:#d08770;">Left</span><span> a  -&gt; log a
+</span><span>            </span><span style="color:#d08770;">Right</span><span> a -&gt; log $ show (length a) &lt;&gt; &quot;</span><span style="color:#a3be8c;"> images loaded!</span><span>&quot;
+</span><span>          )
+</span><span>  runAff_ callback imageAff
+</span></code></pre>
+<p>This will attempt to load the files, and then either log out the error message or the number of files loaded! Magic! Next time, we'll grab these images and print them all over the screen in an exciting manner. For now though, this is quite enough.</p>
+<p>Further reading:</p>
+<p><a href="https://pursuit.purescript.org/packages/purescript-canvas/4.0.0/docs/Graphics.Canvas">Graphics.Canvas</a></p>
+<p><a href="https://pursuit.purescript.org/packages/purescript-aff/5.1.1/docs/Effect.Aff">Effect.Aff</a></p>
+
+
+    </main>
+
+    <footer>
+      <p><a href="mailto:danieljamesharvey@gmail.com">Contact</a> |
+      <a href="https://github.com/danieljharvey">Github</a></p>
+      <p>Links for nerds:
+        <a href="/atom.xml">atom</a>
+        <a href="/rss.xml">rss</a></p>
+
+    </footer>
+</body>
+
+</html>

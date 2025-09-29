@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - Why The Hell Should I Care About Lens? (Part 2)</title>
+    <link rel="stylesheet" href="https://danieljharvey.github.io/main.css">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="/">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="/">Posts</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        
+<h1 class="title">
+  Why The Hell Should I Care About Lens? (Part 2)
+</h1>
+<p class="subtitle"><strong>2018-12-18</strong></p>
+<p>
+ <p class="blog-meta">
+        
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/haskell/"
+          >#haskell</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/optics/"
+          >#optics</a
+        >
+         
+      </p>
+
+<p>So last time we looked at <a href="/posts/2018-10-30-optics-pt-1-lens.html">lens</a> and saw had to jump into record-shaped structures and change things around like big hacker professionals. However we didn't try to change anything with a <code>sum type</code> in it, like <code>Either</code> or <code>Maybe</code> or something. What can we use for that? Only a bloody <code>Prism</code>, apparently.</p>
+<p>Here's an example sum type that can either contain a dog's name or it's age, and is in no way utterly contrived.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">DogFact </span><span>= </span><span style="color:#d08770;">DogName String </span><span>| </span><span style="color:#d08770;">DogAge Int
+</span></code></pre>
+<p>Here are some examples of it is in use. Here it is valiantly holding a dog's name, a <code>String</code>, with the <code>DogName</code> constructor.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">spruceBruce </span><span style="color:#b48ead;">:: DogFact
+</span><span>spruceBruce = </span><span style="color:#d08770;">DogName </span><span>&quot;</span><span style="color:#a3be8c;">Spruce Bruce</span><span>&quot;
+</span></code></pre>
+<p>Great!</p>
+<p>And here, instead, is a dog's age, stored as an <code>Int</code> inside <code>DogAge</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">oldDog </span><span style="color:#b48ead;">:: DogFact
+</span><span>oldDog = </span><span style="color:#d08770;">DogAge 100
+</span></code></pre>
+<p>Excellent stuff, I'm sure you'll agree.</p>
+<p>Now, we could start making all our getters and settings by hand again like this...</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">getDogNameFromDogFact </span><span style="color:#b48ead;">:: DogFact -&gt; Maybe String
+</span><span>getDogNameFromDogFact (</span><span style="color:#d08770;">DogName</span><span> s) = </span><span style="color:#d08770;">Just</span><span> s
+</span><span>getDogNameFromDogFact _           = </span><span style="color:#d08770;">Nothing
+</span><span>
+</span><span style="color:#8fa1b3;">getDogAgeFromDogFact </span><span style="color:#b48ead;">:: DogFact -&gt; Maybe Int
+</span><span>getDogAgeFromDogFact (</span><span style="color:#d08770;">DogAge</span><span> s) = </span><span style="color:#d08770;">Just</span><span> s
+</span><span>getDogAgeFromDogFact _          = </span><span style="color:#d08770;">Nothing
+</span></code></pre>
+<p>...but I'm sure it's clear it's soon going to get quite verbose and we should probably use something more clever instead.</p>
+<p>Enter <code>Prism</code>! (the crowd goes wild, etc.)</p>
+<p>A <code>Prism</code> is like a <code>Lens</code>, except it let's you peek into a particular part of a <code>sum type</code>. Therefore we can make one <code>Prism</code> that is interested in the name of dogs...</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">dogNamePrism </span><span style="color:#b48ead;">:: Prism</span><span>&#39; </span><span style="color:#b48ead;">DogFact String
+</span><span>dogNamePrism = prism&#39; </span><span style="color:#d08770;">DogName</span><span> (\e -&gt; </span><span style="color:#b48ead;">case</span><span> e </span><span style="color:#b48ead;">of
+</span><span>                                </span><span style="color:#d08770;">DogName</span><span> a -&gt; </span><span style="color:#d08770;">Just</span><span> a
+</span><span>                                _         -&gt; </span><span style="color:#d08770;">Nothing</span><span>)
+</span></code></pre>
+<p>...and another which only cares about the age of dogs...</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">dogAgePrism </span><span style="color:#b48ead;">:: Prism</span><span>&#39; </span><span style="color:#b48ead;">DogFact Int
+</span><span>dogAgePrism = prism&#39; </span><span style="color:#d08770;">DogAge</span><span> (\e -&gt; </span><span style="color:#b48ead;">case</span><span> e </span><span style="color:#b48ead;">of
+</span><span>                              </span><span style="color:#d08770;">DogAge</span><span> b -&gt; </span><span style="color:#d08770;">Just</span><span> b
+</span><span>                              _        -&gt; </span><span style="color:#d08770;">Nothing</span><span>)
+</span></code></pre>
+<p>OK. So how do we use them?</p>
+<p>In <code>lens</code>, we had <code>view</code> for peeking inside, <code>set</code> for changing values, and <code>over</code> for mapping over the values inside. What has <code>Prism</code> got going on?</p>
+<h3 id="preview">preview</h3>
+<p>Unlike <code>lens</code> which has <code>set</code>, <code>prism</code> has a good pal called <code>preview</code> that it uses for checking out values. It returns the result inside a <code>Maybe</code> as the value is not guaranteed to actually be there.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">dogAge </span><span style="color:#b48ead;">:: Maybe Int
+</span><span>dogAge = preview dogAgePrism (</span><span style="color:#d08770;">DogAge 100</span><span>)
+</span><span style="color:#65737e;">-- dogAge == Just 100
+</span></code></pre>
+<p>That seems reasonable.</p>
+<p>What about running that on <code>spruceBruce</code> (that is built from a <code>DogName</code>)?</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">notDogAge </span><span style="color:#b48ead;">:: Maybe Int
+</span><span>notDogAge = preview dogAgePrism spruceBruce
+</span><span style="color:#65737e;">-- notDogAge == Nothing
+</span></code></pre>
+<p>No dice. Zero dice. A complete lack of dice. No age, no <code>int</code>, sorry.</p>
+<p>Maybe our <code>dogNamePrism</code> can help though...?</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">dogName </span><span style="color:#b48ead;">:: Maybe String
+</span><span>dogName = preview dogNamePrism spruceBruce
+</span><span style="color:#65737e;">-- dogName == Just &quot;Spruce Bruce&quot;
+</span></code></pre>
+<p>Yes! Good stuff. Does he work on ages though?</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">notDogName </span><span style="color:#b48ead;">:: Maybe String
+</span><span>notDogName = preview dogNamePrism (</span><span style="color:#d08770;">DogAge 69</span><span>)
+</span><span style="color:#65737e;">-- notDogName == Nothing
+</span></code></pre>
+<p>No. Damn.</p>
+<h3 id="set">set</h3>
+<p>In <code>lens</code> we used <code>set</code> for changing the value of something nested. How does that work here?</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">youngerDog </span><span style="color:#b48ead;">:: DogFact
+</span><span>youngerDog = set dogAgePrism </span><span style="color:#d08770;">27</span><span> (</span><span style="color:#d08770;">DogAge 100</span><span>)
+</span><span style="color:#65737e;">-- youngerDog == DogAge 27
+</span></code></pre>
+<p>All seems well here, pretty similar to a regular <code>lens</code>. How about we give our dog a name instead of an age?</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">noNewName </span><span style="color:#b48ead;">:: DogFact
+</span><span>noNewName = set dogNamePrism &quot;</span><span style="color:#a3be8c;">Nice Name</span><span>&quot; (</span><span style="color:#d08770;">DogAge 100</span><span>)
+</span><span style="color:#65737e;">-- noNewName == DogAge 100
+</span></code></pre>
+<p>What's happened here? Where is the name? We've ended up with exactly what we started with! How the hell do we give the dog a name? I must admit this confused me for quite a while, until I realised that <code>Prism</code> is doing exactly as it should - letting us get at the values inside a sum type without changing it's structure.</p>
+<p>Therefore we can change one <code>DogName</code> for another...</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">newDogName </span><span style="color:#b48ead;">:: </span><span style="color:#bf616a;">dogFact
+</span><span>newDogName = set dogNamePrism &quot;</span><span style="color:#a3be8c;">Excellent Bruce</span><span>&quot; (</span><span style="color:#d08770;">DogName </span><span>&quot;</span><span style="color:#a3be8c;">Steve</span><span>&quot;)
+</span><span style="color:#65737e;">-- newDogName == DogName &quot;Excellent Bruce&quot;
+</span></code></pre>
+<p>...but not change the name of <code>DogAge</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">noNewDogName </span><span style="color:#b48ead;">:: </span><span style="color:#bf616a;">dogFact
+</span><span>noNewDogName = set dogNamePrism &quot;</span><span style="color:#a3be8c;">Good Old Nigel</span><span>&quot; (</span><span style="color:#d08770;">DogAge 400</span><span>)
+</span><span style="color:#65737e;">-- noNewDogName == DogAge 400
+</span></code></pre>
+<h3 id="over">over</h3>
+<p>As well as inheriting <code>set</code> from <code>lens</code> the <code>prism</code> also has <code>over</code>, that lets us map a function over nested value.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">stillQuiteOldDog </span><span style="color:#b48ead;">:: DogFact
+</span><span>stillQuiteOldDog = over dogAgePrism (-</span><span style="color:#d08770;">1</span><span>) oldDog
+</span><span style="color:#65737e;">-- stillQuiteOldDog == DogAge 99
+</span></code></pre>
+<p>When you think about how mapping a function doesn't change the structure around the value (hello, <code>functor</code>) then the behaviour of <code>set</code> that initially confused me so much seems a lot more reasonable. The <code>over</code> function just lets us muddle around with whatever is inside our chosen sum type, should it be there to muddle around with. As such. Clear as mud, right?</p>
+<h3 id="composition">Composition</h3>
+<p>Ok. So like all these examples, the one above is quite simple so that you can see what's going on, but like all abstractions, it can leave us thinking "thanks pal, but this all seems a little bit much like hard work, surely". But what makes it all worthwhile is when we combine a <code>Prism</code> with other optics to make a giant super-optic. Remember our example from part one?</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">appData </span><span style="color:#b48ead;">:: AppConfig
+</span><span>appData = </span><span style="color:#d08770;">AppConfig</span><span> {
+</span><span>    count = </span><span style="color:#d08770;">Right 100
+</span><span>  , title = &quot;</span><span style="color:#a3be8c;">Hello</span><span>&quot;
+</span><span>  , dbConfig = </span><span style="color:#d08770;">DbConfig</span><span> {
+</span><span>      ipAddress = &quot;</span><span style="color:#a3be8c;">127.0.0.1</span><span>&quot;
+</span><span>    , thePort = </span><span style="color:#d08770;">8080
+</span><span>  }
+</span><span>}
+</span></code></pre>
+<p>What if we wanted to change what's inside <code>count</code>? That would be nice, wouldn't it.</p>
+<p>First, let's make a <code>prism</code> for <code>count</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">countIntPrism </span><span style="color:#b48ead;">:: Prism</span><span>&#39; (</span><span style="color:#b48ead;">Either Error Int</span><span>) </span><span style="color:#b48ead;">Int
+</span><span>countIntPrism = prism&#39; </span><span style="color:#d08770;">Right</span><span> (\e -&gt; </span><span style="color:#b48ead;">case</span><span> e </span><span style="color:#b48ead;">of
+</span><span>                               </span><span style="color:#d08770;">Right</span><span> b -&gt; </span><span style="color:#d08770;">Just</span><span> b
+</span><span>                               _       -&gt; </span><span style="color:#d08770;">Nothing</span><span>)
+</span></code></pre>
+<p>...and a <code>lens</code> for getting a <code>count</code> out of the main <code>appConfig</code>...</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">countLens </span><span style="color:#b48ead;">:: Lens</span><span>&#39; </span><span style="color:#b48ead;">AppConfig</span><span> (</span><span style="color:#b48ead;">Either String Int</span><span>)
+</span><span>countLens = lens count (\app newVal -&gt; app { count = newVal } )
+</span></code></pre>
+<p>...and then we can compose them together to make a new thing.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">fullCountInt </span><span style="color:#b48ead;">:: Traversal</span><span>&#39; </span><span style="color:#b48ead;">AppConfig Int
+</span><span>fullCountInt = countLens . countIntPrism
+</span></code></pre>
+<p>Let's use it to grab that <code>count</code> value...</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">initialCount </span><span style="color:#b48ead;">:: Maybe Int
+</span><span>initialCount = preview fullCountInt appData
+</span><span style="color:#65737e;">-- initialCount == Just 100
+</span></code></pre>
+<p>Great job!</p>
+<p>And we can use it to change things too! With <code>set</code>!</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">changedCount </span><span style="color:#b48ead;">:: </span><span style="color:#bf616a;">appConfig
+</span><span>changedCount = set fullCountInt </span><span style="color:#d08770;">1000</span><span> appData
+</span><span style="color:#65737e;">-- changedCount = AppConfig
+</span><span style="color:#65737e;">--  { value = Right 1000
+</span><span style="color:#65737e;">--  , title = &quot;Hello!!!&quot;
+</span><span style="color:#65737e;">--  , dbConfig = DbConfig
+</span><span style="color:#65737e;">--    { ipAddress = &quot;127.0.0.1&quot;
+</span><span style="color:#65737e;">--    , thePort = 8080
+</span><span style="color:#65737e;">--    }
+</span><span style="color:#65737e;">--  }
+</span></code></pre>
+<p>And <code>over</code>!</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">incrementedCount </span><span style="color:#b48ead;">:: </span><span style="color:#bf616a;">appConfig
+</span><span>incrementedCount = set fullCountInt (+</span><span style="color:#d08770;">1</span><span>) appData
+</span><span style="color:#65737e;">-- incrementedCount = AppConfig
+</span><span style="color:#65737e;">--  { value = Right 101
+</span><span style="color:#65737e;">--  , title = &quot;Hello!!!&quot;
+</span><span style="color:#65737e;">--  , dbConfig = DbConfig
+</span><span style="color:#65737e;">--    { ipAddress = &quot;127.0.0.1&quot;
+</span><span style="color:#65737e;">--    , thePort = 8080
+</span><span style="color:#65737e;">--    }
+</span><span style="color:#65737e;">--  }
+</span></code></pre>
+<p>All our friends are here!</p>
+<p>You might notice the new type <code>Traversal</code> that has been produced by combining a <code>Lens</code> and a <code>Prism</code>. That's an interesting thing in itself, but we'll come to that another time.</p>
+<p>That's quite enough.</p>
+<p>Make sense? If not, why not <a href="/contact.html">get in touch</a>?</p>
+<p>Further reading:</p>
+<p><a href="https://lens-by-example.chrispenner.ca/articles/prisms/overview">Lens by example - Prisms</a></p>
+
+
+    </main>
+
+    <footer>
+      <p><a href="mailto:danieljamesharvey@gmail.com">Contact</a> |
+      <a href="https://github.com/danieljharvey">Github</a></p>
+      <p>Links for nerds:
+        <a href="/atom.xml">atom</a>
+        <a href="/rss.xml">rss</a></p>
+
+    </footer>
+</body>
+
+</html>

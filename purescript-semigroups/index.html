@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - A game in Purescript (Part 1 - Semigroups)</title>
+    <link rel="stylesheet" href="https://danieljharvey.github.io/main.css">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="/">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="/">Posts</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        
+<h1 class="title">
+  A game in Purescript (Part 1 - Semigroups)
+</h1>
+<p class="subtitle"><strong>2019-02-17</strong></p>
+<p>
+ <p class="blog-meta">
+        
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/purescript/"
+          >#purescript</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/semigroup/"
+          >#semigroup</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/monoid/"
+          >#monoid</a
+        >
+         
+      </p>
+
+<p>Hello! I hope you are well. It has been a little while between posts as I keep starting things and then not finishing them.</p>
+<p>My most recent distraction has been remaking a game that I wrote a year or two back called <a href="http://itistheegg.com/">It Is The Egg</a>, which is an HTML canvas game where eggs roll around and generally have a nice time. I wanted to add more levels and features but I have no strong desire to write Typescript in my free time, so I have made the somewhat foolish and time-sucking decision to port it over to Purescript.</p>
+<p><img src="/images/it-is-the-egg.png" alt="The original game in it&#39;s full glory." title="The original game in it&#39;s full glory" /></p>
+<p>So far I've learned a few things, listed thus:</p>
+<ol>
+<li>Rewriting an entire game takes a while actually.</li>
+<li>Using Purescript means about 30% of the LOC it took in Typescript</li>
+<li>A lot of the problems have already been solved by other people</li>
+<li>Abstractions are helpful</li>
+</ol>
+<p>Anyhow, I figured concrete useful examples are the most difficult thing to find when explaining functional programming, and since I stumbled across a few in this process I figured I'd share some. Today I'm going to example how to describe positions and movement using a <code>semigroup</code>.</p>
+<p>Meaningless? Possibly! Perhaps some examples...</p>
+<p>So we have a <code>Player</code> type - it describes one of the eggs onscreen. The eggs have a <code>position</code> onscreen, and a <code>direction</code> that they are currently moving in.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">type </span><span style="color:#d08770;">Player
+</span><span>  = { position  :: </span><span style="color:#d08770;">Coord
+</span><span>    , direction :: </span><span style="color:#d08770;">Coord
+</span><span>    }
+</span></code></pre>
+<p>This is the <code>Coord</code> type. The eagle-eyed might notice it's a <code>newtype</code> rather than a <code>type</code> - the reason for this will be explained shortly.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">newtype </span><span style="color:#d08770;">Coord </span><span>= </span><span style="color:#d08770;">Coord
+</span><span>    { x       :: </span><span style="color:#d08770;">Int
+</span><span>    , y       :: </span><span style="color:#d08770;">Int
+</span><span>    , offsetX :: </span><span style="color:#d08770;">Int
+</span><span>    , offsetY :: </span><span style="color:#d08770;">Int
+</span><span>    }
+</span></code></pre>
+<p>The game board is a grid, so <code>position</code> is a <code>Coord</code> where <code>x</code> and <code>y</code> describe the current square the <code>Player</code> is in, and any movement away from the center is described by <code>offsetX</code> and <code>offsetY</code>. Once a players <code>position</code> offset goes over a certain boundary, we increase or decrease <code>x</code> or <code>y</code> and set <code>offsetX</code> or <code>offsetY</code> back to zero.</p>
+<p>The <code>position</code> for the pink egg in the above screenshot would look something like this:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">position </span><span style="color:#b48ead;">:: Coord
+</span><span>position
+</span><span>  = </span><span style="color:#d08770;">Coord</span><span> { x:       </span><span style="color:#d08770;">3
+</span><span>          , y:       </span><span style="color:#d08770;">2
+</span><span>          , offsetX: </span><span style="color:#d08770;">0
+</span><span>          , offsetY: </span><span style="color:#d08770;">32
+</span><span>          }
+</span></code></pre>
+<p>The <code>direction</code> is also a <code>Coord</code>, where we use <code>x</code> and <code>y</code> to express which direction the player is headed. Our pink egg above is falling downwards, which would look like this:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">falling </span><span style="color:#b48ead;">:: Coord
+</span><span>falling
+</span><span>  = </span><span style="color:#d08770;">Coord</span><span> { x: </span><span style="color:#d08770;">0
+</span><span>          , y: </span><span style="color:#d08770;">1
+</span><span>          , offsetX: </span><span style="color:#d08770;">0
+</span><span>          , offsetY: </span><span style="color:#d08770;">0
+</span><span>          }
+</span></code></pre>
+<p>The <code>offsetX</code> and <code>offsetY</code> don't really have much use in this context, but that's fine.</p>
+<p>So what's the use in expressing two slightly different things in the same data type and also what about that <code>newtype</code> and why have we not mentioned <code>semigroup</code> yet?</p>
+<p>An abridged version of each game turn goes as follows.</p>
+<ol>
+<li>Look around to see if we are still able to move in direction we want to</li>
+<li>If not, change direction</li>
+<li>Move the player in whichever direction we're now decided on</li>
+</ol>
+<h3 id="looking-around-the-board">Looking around the board</h3>
+<p>OK. So firstly we need to check around the board to see if we are allowed to carry on moving where we are moving. Without going into the whole mechanics of the game board, let's say we have a function that tells us whether a certain <code>Coord</code> on the board is a place we are allowed to go.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">canMove </span><span style="color:#b48ead;">:: Coord -&gt; Boolean
+</span></code></pre>
+<p>What this function does is none of our business at this point - all we need to know is whether the square we intend to move into is happy with our decision to do so.</p>
+<p>My first implementation followed the original logic and looked something like this:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">canIMoveNext </span><span style="color:#b48ead;">:: Player -&gt; Boolean
+</span><span>canIMoveNext player@{ position: </span><span style="color:#d08770;">Coord</span><span> pos, direction: </span><span style="color:#d08770;">Coord</span><span> dir }
+</span><span>  | dir.x &lt; </span><span style="color:#d08770;">0 </span><span>= canMove ( </span><span style="color:#d08770;">Coord </span><span>$ pos { x = pos.x - </span><span style="color:#d08770;">1</span><span> } )
+</span><span>  | dir.x &gt; </span><span style="color:#d08770;">0 </span><span>= canMove ( </span><span style="color:#d08770;">Coord </span><span>$ pos { x = pos.x + </span><span style="color:#d08770;">1</span><span> } )
+</span><span>  | dir.y &lt; </span><span style="color:#d08770;">0 </span><span>= canMove ( </span><span style="color:#d08770;">Coord </span><span>$ pos { y = pos.y - </span><span style="color:#d08770;">1</span><span> } )
+</span><span>  | dir.y &gt; </span><span style="color:#d08770;">0 </span><span>= canMove ( </span><span style="color:#d08770;">Coord </span><span>$ pos { y = pos.y + </span><span style="color:#d08770;">1</span><span> } )
+</span><span>  | otherwise       = true
+</span></code></pre>
+<p>"If we are moving left then look to the current square but with x reduced once but if we're looking right then look to the current square but with x increased but if we're looking up....".</p>
+<p>Quite a laborious thing to read really, and it says nothing of it's intentions.</p>
+<p>(If you are not familiar with <code>guard</code> syntax, think of this as very similar to <code>select case</code> statement in Javascript.)</p>
+<h3 id="stand-back-i-am-going-to-use-maths">Stand back, I am going to use Maths.</h3>
+<p>OK, so we made that <code>Coord</code> a <code>newtype</code> for a reason right? Let's add some typeclass instances to it and get it working for us for a change.</p>
+<p>First we must please the gods of boilerplate by deriving some standard instances of <code>Eq</code>, <code>Ord</code> and <code>Show</code>. Purescript needs this to be a little more explicit that Haskell does, sadly.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span>derive </span><span style="color:#b48ead;">newtype instance </span><span style="color:#bf616a;">eqCoord</span><span> :: </span><span style="color:#b48ead;">Eq Coord
+</span><span>derive </span><span style="color:#b48ead;">newtype instance </span><span style="color:#bf616a;">ordCoord</span><span> :: </span><span style="color:#b48ead;">Ord Coord
+</span><span>derive </span><span style="color:#b48ead;">newtype instance </span><span style="color:#bf616a;">showCoord</span><span> :: </span><span style="color:#b48ead;">Show Coord
+</span></code></pre>
+<p><code>derive newtype instance</code> means "You know how you're a <code>newtype</code> wrapped around something, can you just copy whatever the thing inside does? Ace, thanks."</p>
+<p>This means we can now compare and order things, which is helpful although not the main point here.</p>
+<p>Let's define a <code>semigroup</code>!</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">instance </span><span style="color:#bf616a;">semigroupCoord</span><span> :: </span><span style="color:#b48ead;">Semigroup Coord where
+</span><span>  append (</span><span style="color:#d08770;">Coord</span><span> fst) (</span><span style="color:#d08770;">Coord</span><span> snd)
+</span><span>    = </span><span style="color:#d08770;">Coord</span><span> { x: fst.x + snd.x
+</span><span>            , y: fst.y + snd.y
+</span><span>            , offsetX: fst.offsetX + snd.offsetX
+</span><span>            , offsetY: fst.offsetY + snd.offsetY
+</span><span>            }
+</span></code></pre>
+<p>(Notice that unlike Haskell, Purescript likes us to give our instances names, hence we have chosen the olympically dull <code>semigroupCoord</code>. It could be <code>pintsOfCream</code> or <code>indepedenceDayIsPrettyUnderatedAsFarAsBlockbustersGo</code>, go absolutely wild if you like.)</p>
+<p>So what does this <code>append</code> function we have defined do then?</p>
+<p>It takes two <code>Coord</code> values (<code>fst</code> and <code>snd</code> in this case) - adds up <code>x</code>, <code>y</code>, <code>offsetX</code> and <code>offsetY</code> - then makes and returns a new <code>Coord</code>. Therefore we can do stuff like add a <code>position</code> and a <code>direction</code> together.</p>
+<p>In the above example of our pink egg, and our <code>position</code> and <code>falling</code> values defined above, we can check whether we're OK to keep falling downwards as such.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">canIMoveDown </span><span style="color:#b48ead;">:: Boolean
+</span><span>canIMoveDown = canMove (position &lt;&gt; falling)
+</span><span style="color:#65737e;">-- canIMoveDown == true (according to the picture)
+</span></code></pre>
+<p>(Note we're using <code>&lt;&gt;</code> which is another name for the <code>append</code> function, we could just as easily have written <code>canMove (append position falling)</code> but I think the little <code>&lt;&gt;</code> looks nicer.)</p>
+<h3 id="looking-around-the-board-with-maths">Looking around the board with Maths</h3>
+<p>Back to our implementation of <code>canIMoveNext</code>, here is the new version that combines our player's <code>direction</code> and <code>position</code> in a nice tidy way.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">canIMoveTwo </span><span style="color:#b48ead;">:: Player -&gt; Boolean
+</span><span>canIMoveTwo player
+</span><span>  = canMove (player.position &lt;&gt; player.direction)
+</span></code></pre>
+<p>Nice.</p>
+<h3 id="changing-direction">Changing direction</h3>
+<p>What if our egg hits a wall or something? What should we do then? It should be as easy as reversing the <code>direction</code>, right?</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">invert </span><span style="color:#b48ead;">:: Coord -&gt; Coord
+</span><span>invert (</span><span style="color:#d08770;">Coord</span><span> coord)
+</span><span>  = </span><span style="color:#d08770;">Coord</span><span> { x: (-</span><span style="color:#d08770;">1</span><span>) * coord.x
+</span><span>          , y: (-</span><span style="color:#d08770;">1</span><span>) * coord.y
+</span><span>          , offsetX: (-</span><span style="color:#d08770;">1</span><span>) * coord.offsetX
+</span><span>          , offsetY: (-</span><span style="color:#d08770;">1</span><span>) * coord.offsetY
+</span><span>          }
+</span></code></pre>
+<p>Therefore we can use it on our player like thus:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">turnAround </span><span style="color:#b48ead;">:: Player -&gt; Player
+</span><span>turnAround player
+</span><span>  = player { direction = invert player.direction }
+</span></code></pre>
+<p>And wrap up the entire logic for the turn like this:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">updateDirection </span><span style="color:#b48ead;">:: Player -&gt; Player
+</span><span>updateDirection player
+</span><span>  = </span><span style="color:#b48ead;">if</span><span> canMove player.position
+</span><span>    </span><span style="color:#b48ead;">then</span><span> player
+</span><span>    </span><span style="color:#b48ead;">else</span><span> turnAround player
+</span></code></pre>
+<p>(Readers with a keen eye will notice we did not use anything particularly clever or typeclass based here, I just included it for completeness.)</p>
+<p><img src="/images/eggy2.png" alt="Another screenshot of the original game to break up the large amount of text." title="Another screenshot of the original game to break up the large amount of text." /></p>
+<h3 id="actually-moving-that-egg-around">Actually moving that egg around</h3>
+<p>Let's get back to moving the egg around. Once we've worked out that our egg is moving somewhere it is allowed to, we need to actually update the <code>offsetX</code> and <code>offsetY</code> in it's <code>position</code> so that's in the new location and ready to go through all this hell again. As web browsers are flaky at best, instead of moving by a set amount the actually amount to increment the change depends on how much time has passed since the last frame. Therefore we need a function that takes the amount to move and a <code>Player</code>, and returns a new <code>Player</code> that has moved in some way.</p>
+<p>Here, in a similar manner to our earlier function, is something like my original painful version.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">incrementPlayerPosition </span><span style="color:#b48ead;">:: Int -&gt; Player -&gt; Player
+</span><span>incrementPlayerPosition moveAmount player@{ position: </span><span style="color:#d08770;">Coord</span><span> pos, direction: </span><span style="color:#d08770;">Coord</span><span> dir }
+</span><span>  = player { position = newPosition }
+</span><span>  </span><span style="color:#b48ead;">where
+</span><span>    newPosition
+</span><span>      | dir.x &lt; </span><span style="color:#d08770;">0 </span><span>= </span><span style="color:#d08770;">Coord </span><span>$ pos { offsetX = pos.offsetX - moveAmount }
+</span><span>      | dir.x &gt; </span><span style="color:#d08770;">0 </span><span>= </span><span style="color:#d08770;">Coord </span><span>$ pos { offsetX = pos.offsetX + moveAmount }
+</span><span>      | dir.y &lt; </span><span style="color:#d08770;">0 </span><span>= </span><span style="color:#d08770;">Coord </span><span>$ pos { offsetY = pos.offsetY - moveAmount }
+</span><span>      | dir.y &gt; </span><span style="color:#d08770;">0 </span><span>= </span><span style="color:#d08770;">Coord </span><span>$ pos { offsetY = pos.offsetY + moveAmount }
+</span><span>      | otherwise = </span><span style="color:#d08770;">Coord</span><span> pos
+</span></code></pre>
+<p>It should work but it's a bit terrifying. Let's break it up and get some of that sweet <code>semigroup</code> magic working for us.</p>
+<p>Firstly, a helper function - this takes an <code>Int</code> and a <code>Coord</code> and creates a new <code>Coord</code> that describes the movement we want the egg to do.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">createMoveCoord </span><span style="color:#b48ead;">:: Int -&gt; Coord -&gt; Coord
+</span><span>createMoveCoord amount (</span><span style="color:#d08770;">Coord</span><span> coord)
+</span><span>  = </span><span style="color:#d08770;">Coord</span><span> { x: </span><span style="color:#d08770;">0
+</span><span>          , y: </span><span style="color:#d08770;">0
+</span><span>          , offsetX: amount * coord.x
+</span><span>          , offsetY: amount * coord.y
+</span><span>          }
+</span></code></pre>
+<p>Therefore if we take the <code>falling</code> value from earlier, and a moving amount of <code>20</code>, it would create something like this:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">downMove </span><span style="color:#b48ead;">:: Coord
+</span><span>downMove
+</span><span>  = </span><span style="color:#d08770;">Coord</span><span> { x: </span><span style="color:#d08770;">0
+</span><span>          , y: </span><span style="color:#d08770;">0
+</span><span>          , offsetX: </span><span style="color:#d08770;">0
+</span><span>          , offsetY: </span><span style="color:#d08770;">20
+</span><span>          }
+</span></code></pre>
+<p>With our helpful helper function in hand, and a dash of <code>&lt;&gt;</code>, we can now rewrite our move function like thus:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">incrementPlayerDirection </span><span style="color:#b48ead;">:: Int -&gt; Player -&gt; Player
+</span><span>incrementPlayerDirection amount player
+</span><span>  = player { position = newPosition }
+</span><span>  </span><span style="color:#b48ead;">where
+</span><span>    </span><span style="color:#8fa1b3;">newPosition </span><span style="color:#b48ead;">:: Coord
+</span><span>    newPosition
+</span><span>      = player.position &lt;&gt; moveCoord
+</span><span>
+</span><span>    </span><span style="color:#8fa1b3;">moveCoord </span><span style="color:#b48ead;">:: Coord
+</span><span>    moveCoord
+</span><span>      = createMoveCoord amount player.direction
+</span></code></pre>
+<p>So here we're creating a <code>Coord</code> for the movement (called <code>moveCoord</code>) - and then using the <code>&lt;&gt;</code> function to combine it with the current <code>position</code> to make a new <code>Coord</code> called <code>newPosition</code>, and then making a new <code>Player</code> with that <code>position</code>.</p>
+<h3 id="putting-it-all-together">Putting it all together</h3>
+<p>Now we've created all our functions, we can plop them together like this to do the whole move:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">doMove </span><span style="color:#b48ead;">:: Int -&gt; Player -&gt; Player
+</span><span>doMove amount
+</span><span>  = updateDirection
+</span><span>  &gt;&gt;&gt; incrementPlayerDirection amount
+</span></code></pre>
+<p>Easy as pie.</p>
+<p>"But I thought we'd actually draw one of those attractive looking eggs and instead we've just done some shitty maths", I hear you say. OK, OK, sure, I get it, you want adventure, you want action. We'll come to it soon, I promise.</p>
+
+
+    </main>
+
+    <footer>
+      <p><a href="mailto:danieljamesharvey@gmail.com">Contact</a> |
+      <a href="https://github.com/danieljharvey">Github</a></p>
+      <p>Links for nerds:
+        <a href="/atom.xml">atom</a>
+        <a href="/rss.xml">rss</a></p>
+
+    </footer>
+</body>
+
+</html>

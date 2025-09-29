@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - Typeclasses - Monad</title>
+    <link rel="stylesheet" href="https://danieljharvey.github.io/main.css">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="/">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="/">Posts</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        
+<h1 class="title">
+  Typeclasses - Monad
+</h1>
+<p class="subtitle"><strong>2019-03-18</strong></p>
+<p>
+ <p class="blog-meta">
+        
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/haskell/"
+          >#haskell</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/typeclasses/"
+          >#typeclasses</a
+        >
+         
+      </p>
+
+<p>The <code>Monad</code> is one of the most infamous things around Haskell, and indeed functional programming, and so writing tutorials around them has become something of a cliche. Let me be clear - I really did try and avoid writing one, but it's gotten to the point that it's difficult to talk about the other more interesting stuff without at least mentioning it.</p>
+<p>To try and avoid falling into the regular pitfalls, we are instead going to define the simplest possible <code>Monad</code>, and then look at some examples of them in action. Hopefully you'll see that <code>Monads</code> aren't that complicated or interesting - it's actually the properties of the different datatypes that provide all the different behaviours and make it interesting.</p>
+<h3 id="id">Id</h3>
+<p>So. This is <code>Id</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">newtype </span><span style="color:#d08770;">Id</span><span> a
+</span><span>  = </span><span style="color:#d08770;">Id</span><span> { getId :: a}
+</span></code></pre>
+<p>It is a container that contains any value that we give it.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">val </span><span style="color:#b48ead;">:: Id Int
+</span><span>val = </span><span style="color:#d08770;">Id 7
+</span></code></pre>
+<p>Which we can take out at any time with <code>getId</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">plainVal </span><span style="color:#b48ead;">:: Int
+</span><span>plainVal = getId val
+</span><span style="color:#65737e;">-- plainVal = 7
+</span></code></pre>
+<p>Every <code>Monad</code> must first be a <code>Functor</code>, so let's define that for <code>Id</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">instance Functor Id where
+</span><span>  fmap f (</span><span style="color:#d08770;">Id</span><span> a) = </span><span style="color:#d08770;">Id</span><span> (f a)
+</span><span>
+</span><span style="color:#8fa1b3;">doubled </span><span style="color:#b48ead;">:: Id Int
+</span><span>doubled = fmap (\*</span><span style="color:#d08770;">2</span><span>) val
+</span><span style="color:#65737e;">-- doubled == Id 14
+</span></code></pre>
+<p>It must also be an <code>Applicative</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">instance Applicative Id where
+</span><span>  pure = </span><span style="color:#d08770;">Id
+</span><span>  (</span><span style="color:#d08770;">Id</span><span> f) &lt;*&gt; (</span><span style="color:#d08770;">Id</span><span> a) = </span><span style="color:#d08770;">Id</span><span> (f a)
+</span><span>
+</span><span style="color:#8fa1b3;">idValue </span><span style="color:#b48ead;">:: Id String
+</span><span>idValue = pure &quot;</span><span style="color:#a3be8c;">Hello!</span><span>&quot;
+</span><span style="color:#65737e;">-- idValue = Id &quot;Hello!&quot;
+</span><span>
+</span><span style="color:#8fa1b3;">getLength </span><span style="color:#b48ead;">:: Id Int
+</span><span>getLength = </span><span style="color:#d08770;">Id</span><span> length &lt;\*&gt; </span><span style="color:#d08770;">Id </span><span>&quot;</span><span style="color:#a3be8c;">Dogs</span><span>&quot;
+</span><span style="color:#65737e;">-- getLength == Id 4
+</span></code></pre>
+<p>Great stuff. Now we've got <code>Functor</code> and <code>Applicative</code>, we only need one more function to make a <code>Monad</code> instance, and thats <code>bind</code> (or <code>&gt;&gt;=</code>). <code>Bind</code> takes an <code>Id a</code> value, and a function of signature <code>(a -&gt; Id b)</code> that takes the value inside, does something to it, and adds another layer of <code>Id</code>. It then removes the extra layer, leaving us with <code>Id b</code>. In some places it's called <code>flatMap</code>, as it maps over the value and then flattens it.</p>
+<p>For <code>Id</code>, it takes the value out, and then runs the function on it.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">instance Monad Id where
+</span><span>  (</span><span style="color:#d08770;">Id</span><span> m) &gt;&gt;= k = k m
+</span></code></pre>
+<p>Pretty dull. Let's plop a few <code>bind</code> functions together. We're using Do Notation, which is a way of making using <code>Monad</code> values easier.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">doubleAndWrap </span><span style="color:#b48ead;">:: Int -&gt; Id Int
+</span><span>doubleAndWrap i
+</span><span>  = pure (i \* </span><span style="color:#d08770;">2</span><span>)
+</span><span>
+</span><span style="color:#65737e;">-- doubleAndWrap 1 = Id 2
+</span><span>
+</span><span style="color:#8fa1b3;">doubleAFewTimes </span><span style="color:#b48ead;">:: Int -&gt; Id Int
+</span><span>doubleAFewTimes i = </span><span style="color:#b48ead;">do
+</span><span>  j &lt;- doubleAndWrap i
+</span><span>  k &lt;- doubleAndWrap j
+</span><span>  l &lt;- doubleAndWrap k
+</span><span>  doubleAndWrap l
+</span><span>
+</span><span style="color:#65737e;">-- doubleAFewTimes 10 = 160
+</span></code></pre>
+<p>OK! Not very interesting to be honest. <code>Id</code> doesn't really <em>do</em> anything other than make adding numbers up more confusing. Let's look at other <code>Monad</code> instances and try and see what they do.</p>
+<h3 id="maybe">Maybe</h3>
+<p>We're going to use the <code>Maybe</code> monad to chain together a <code>head</code>-type function that returns the first item <em>if</em> it's there.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">firstItem </span><span style="color:#b48ead;">::</span><span> [</span><span style="color:#bf616a;">a</span><span>] </span><span style="color:#b48ead;">-&gt; Maybe </span><span style="color:#bf616a;">a
+</span><span>firstItem </span><span style="color:#d08770;">[] </span><span>= </span><span style="color:#d08770;">Nothing
+</span><span>firstItem (a:\_) = </span><span style="color:#d08770;">Just</span><span> a
+</span><span>
+</span><span style="color:#8fa1b3;">head3 </span><span style="color:#b48ead;">::</span><span> [[[</span><span style="color:#bf616a;">a</span><span>]]] </span><span style="color:#b48ead;">-&gt; Maybe </span><span style="color:#bf616a;">a
+</span><span>head3 aaas = </span><span style="color:#b48ead;">do
+</span><span>aas &lt;- firstItem aaas
+</span><span>as &lt;- firstItem aas
+</span><span>a &lt;- firstItem as
+</span><span>pure a
+</span><span>
+</span><span style="color:#65737e;">-- head3 []          -- Nothing
+</span><span style="color:#65737e;">-- head3 [[[1,2,3]]] -- Just 1
+</span></code></pre>
+<p>Note that as soon as we get a <code>Nothing</code>, the calculation stops, as such.</p>
+<h3 id="either">Either</h3>
+<p>We're going to use <code>Either</code> to do some string validation. Here is our error type:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">Error
+</span><span>  = </span><span style="color:#d08770;">TooLong
+</span><span>  | </span><span style="color:#d08770;">ContainsHorse
+</span><span>  | </span><span style="color:#d08770;">IsEmpty
+</span><span>  </span><span style="color:#b48ead;">deriving</span><span> (</span><span style="color:#a3be8c;">Show</span><span>, </span><span style="color:#a3be8c;">Eq</span><span>, </span><span style="color:#a3be8c;">Ord</span><span>)
+</span></code></pre>
+<p>And here are a series of string validation functions that all return either <code>Right String</code> if the string is OK, or <code>Left Error</code> if not.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">isEmpty </span><span style="color:#b48ead;">:: String -&gt; Either Error String
+</span><span>isEmpty s
+</span><span>  = </span><span style="color:#b48ead;">if</span><span> null s
+</span><span>  </span><span style="color:#b48ead;">then </span><span style="color:#d08770;">Left IsEmpty
+</span><span>  </span><span style="color:#b48ead;">else </span><span style="color:#d08770;">Right</span><span> s
+</span><span>
+</span><span style="color:#8fa1b3;">tooLong </span><span style="color:#b48ead;">:: String -&gt; Either Error String
+</span><span>tooLong s
+</span><span>  = </span><span style="color:#b48ead;">if</span><span> length s &gt; </span><span style="color:#d08770;">10
+</span><span>  </span><span style="color:#b48ead;">then </span><span style="color:#d08770;">Left TooLong
+</span><span>  </span><span style="color:#b48ead;">else </span><span style="color:#d08770;">Right</span><span> s
+</span><span>
+</span><span style="color:#8fa1b3;">containsHorse </span><span style="color:#b48ead;">:: String -&gt; Either Error String
+</span><span>containsHorse s
+</span><span>  = </span><span style="color:#b48ead;">if </span><span>&quot;</span><span style="color:#a3be8c;">horse</span><span>&quot; </span><span style="color:#8fa1b3;">`</span><span>isInfixOf</span><span style="color:#8fa1b3;">`</span><span> s
+</span><span>  </span><span style="color:#b48ead;">then </span><span style="color:#d08770;">Left ContainsHorse
+</span><span>  </span><span style="color:#b48ead;">else </span><span style="color:#d08770;">Right</span><span> s
+</span></code></pre>
+<p>This <code>validate</code> function chains all the validations, returning either the <code>String</code> or the first <code>Error</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">validate </span><span style="color:#b48ead;">:: String -&gt; Either Error String
+</span><span>validate s = </span><span style="color:#b48ead;">do
+</span><span>  t &lt;- isEmpty s
+</span><span>  u &lt;- tooLong t
+</span><span>  containsHorse u
+</span><span>
+</span><span style="color:#65737e;">-- validate &quot;&quot;                   == Left IsEmpty
+</span><span style="color:#65737e;">-- validate &quot;bah horse&quot;          == Left ContainsHorse
+</span><span style="color:#65737e;">-- validate &quot;really long string&quot; == Left TooLong
+</span><span style="color:#65737e;">-- validate &quot;Hello&quot;              == Right &quot;Hello&quot;
+</span></code></pre>
+<h3 id="list">List</h3>
+<p>The <code>List</code> monad is interesting because the flattening effect of <code>bind</code> means functions that turn values into more lists get flattened into one big list.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">moreList </span><span style="color:#b48ead;">:: Int -&gt;</span><span> [</span><span style="color:#b48ead;">Int</span><span>]
+</span><span>moreList a = [a - </span><span style="color:#d08770;">1</span><span>, a, a + </span><span style="color:#d08770;">1</span><span>]
+</span><span style="color:#65737e;">-- moreList 1 == [0, 1, 2]
+</span><span>
+</span><span style="color:#8fa1b3;">lotsMoreList </span><span style="color:#b48ead;">:: Int -&gt;</span><span> [</span><span style="color:#b48ead;">Int</span><span>]
+</span><span>lotsMoreList a = </span><span style="color:#b48ead;">do
+</span><span>  b &lt;- moreList a
+</span><span>  moreList b
+</span><span style="color:#65737e;">-- lotsMoreList 1 == [-1,0,1,0,1,2,1,2,3]
+</span></code></pre>
+<h3 id="reader">Reader</h3>
+<p>The <code>Reader</code> monad is used to pass configuration around a program. Here we will define a type for <code>Config</code> and a value for it.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">Config
+</span><span>  = </span><span style="color:#d08770;">Config</span><span> { ipAddress :: </span><span style="color:#d08770;">String
+</span><span>           , name :: </span><span style="color:#d08770;">String
+</span><span>           }
+</span><span>
+</span><span style="color:#8fa1b3;">config </span><span style="color:#b48ead;">:: Config
+</span><span>config = </span><span style="color:#d08770;">Config</span><span> { ipAddress = &quot;</span><span style="color:#a3be8c;">127.0.0.1</span><span>&quot;
+</span><span>                , name = &quot;</span><span style="color:#a3be8c;">localhost</span><span>&quot;
+</span><span>                }
+</span></code></pre>
+<p>These functions use the <code>Config</code> value in the <code>Reader</code> to make strings, using the <code>ask</code> function to access the config.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">printName </span><span style="color:#b48ead;">:: Reader Config String
+</span><span>printName = </span><span style="color:#b48ead;">do
+</span><span>  config &lt;- ask
+</span><span>  pure (&quot;</span><span style="color:#a3be8c;">the name is </span><span>&quot; &lt;&gt; name config)
+</span><span>
+</span><span style="color:#8fa1b3;">printIp </span><span style="color:#b48ead;">:: Reader Config String
+</span><span>printIp = </span><span style="color:#b48ead;">do
+</span><span>  config &lt;- ask
+</span><span>  pure (&quot;</span><span style="color:#a3be8c;">The ip address is </span><span>&quot; &lt;&gt; ipAddress config)
+</span></code></pre>
+<p>The <code>configReader</code> function shows how we can combine different <code>Reader</code> instances with <code>bind</code></p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">configReader </span><span style="color:#b48ead;">:: Reader Config String
+</span><span>configReader = </span><span style="color:#b48ead;">do
+</span><span>  ip &lt;- printIp
+</span><span>  name &lt;- printName
+</span><span>  pure (ip &lt;&gt; &quot;</span><span style="color:#a3be8c;">, </span><span>&quot; &lt;&gt; name)
+</span><span>
+</span><span style="color:#8fa1b3;">withConfig </span><span style="color:#b48ead;">:: String
+</span><span>withConfig = runReader configReader config
+</span><span style="color:#65737e;">-- withConfig == &quot;The ip address is 127.0.0.1, the name is localhost&quot;
+</span></code></pre>
+<h3 id="writer">Writer</h3>
+<p>The <code>Writer</code> monad accumulates a log as it does computations, by using the <code>tell</code> function to add items.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">addOne </span><span style="color:#b48ead;">:: Int -&gt; Writer String Int
+</span><span>addOne i = </span><span style="color:#b48ead;">do
+</span><span>  tell &quot;</span><span style="color:#a3be8c;">Add one </span><span>&quot;
+</span><span>  pure (i + </span><span style="color:#d08770;">1</span><span>)
+</span><span>
+</span><span style="color:#8fa1b3;">timesTwo </span><span style="color:#b48ead;">:: Int -&gt; Writer String Int
+</span><span>timesTwo i = </span><span style="color:#b48ead;">do
+</span><span>  tell &quot;</span><span style="color:#a3be8c;">times two </span><span>&quot;
+</span><span>  pure (i \* </span><span style="color:#d08770;">2</span><span>)
+</span><span>
+</span><span style="color:#8fa1b3;">maths </span><span style="color:#b48ead;">:: Int -&gt; Writer String Int
+</span><span>maths i = </span><span style="color:#b48ead;">do
+</span><span>  j &lt;- addOne i
+</span><span>  k &lt;- timesTwo j
+</span><span>  pure k
+</span><span style="color:#65737e;">-- runWriter maths 10 == (22, &quot;Add one times two&quot;)
+</span></code></pre>
+<h3 id="io">IO</h3>
+<p>The <code>IO</code> monad is a very interesting one. Each time we run <code>bind</code>, the value that comes out can be affected by stuff like user input, system time, or other side effects. This is how we can write effectful code in a relatively safe manner. This is how we write code like this that actually interacts with users.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">things </span><span style="color:#b48ead;">:: IO Unit
+</span><span>things = </span><span style="color:#b48ead;">do
+</span><span>  \_ &lt;- putStrLn &quot;</span><span style="color:#a3be8c;">Hello! What is your name?</span><span>&quot;
+</span><span>  name &lt;- readLn
+</span><span>  putStrLn (&quot;</span><span style="color:#a3be8c;">Hello, </span><span>&quot; ++ name)
+</span></code></pre>
+<p>That is all. I feel this somewhat rushes things a lot, and there is a lot to chew on, but hopefully these examples will help you build up an intuition for how these work.</p>
+<p>Further Reading:</p>
+<p><a href="https://egghead.io/lessons/javascript-you-ve-been-using-monads">You've Been Using Monads</a></p>
+<p><a href="https://www.google.com/search?q=monad+tutorial">Lots More Of This Kind Of Thing</a></p>
+
+
+    </main>
+
+    <footer>
+      <p><a href="mailto:danieljamesharvey@gmail.com">Contact</a> |
+      <a href="https://github.com/danieljharvey">Github</a></p>
+      <p>Links for nerds:
+        <a href="/atom.xml">atom</a>
+        <a href="/rss.xml">rss</a></p>
+
+    </footer>
+</body>
+
+</html>

@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - Free like pizza, not like jazz</title>
+    <link rel="stylesheet" href="https://danieljharvey.github.io/main.css">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="/">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="/">Posts</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        
+<h1 class="title">
+  Free like pizza, not like jazz
+</h1>
+<p class="subtitle"><strong>2019-09-07</strong></p>
+<p>
+ <p class="blog-meta">
+        
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/haskell/"
+          >#haskell</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/free/"
+          >#free</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/monad/"
+          >#monad</a
+        >
+         
+      </p>
+
+<p>When I first started working at a <em>Serious Software Place</em>, I remember being very excited about the idea of testing things and dependency injection and purity and all such things. One day, I was spouting about this (presuming, I suppose, that everybody else was also so new to and thus enamoured with the topic), as well as these <code>Functors</code> I had been reading about, and one of the more senior engineers said, "Well <em>(raises eyebrows suggestively)</em>...you're going to <strong>LOVE</strong> Free Monads!".</p>
+<p>Now, many people that know me would agree I am a fairly jaded man, but I have to admit that even my interest was piqued. However, it's taken me absolutely fucking ages to work out what they are and how they relate to this original promise, and I <em>think</em> they do, just not how I thought.</p>
+<h3 id="the-intuition-for-free-monads">The Intuition For Free Monads</h3>
+<p>So, the thing that took me the longest time to lose was this assumption I had made that a <code>Free Monad</code> was a wild monad, from the edges of abstract math. It's Ornette Coleman! It's John Zorn! It's a saxophone played with a hoover! It can do anything, at any time! Needless to say, this was a very exciting idea, so I set out to read about, framing everything I read with this wild (but admittedly very attractive) mis-assumption. Needless to say, I was very confused and wasted a lot of time that I could have spent doing fun things instead.</p>
+<p>The reality is that the <code>Free</code> in <code>Free Monad</code> is not free like <em>"jazz"</em> or <em>"thinking"</em>, but free as in <em>"pizza, at a tech meetup, knowing that of course the real price is listening through the following recruitment messages"</em>. They are still very good, but <em>(in my humble opinion, etc)</em>, not half as fun as I had originally promised myself they would be.</p>
+<p>With this crushing piece of disappointment aside, let's look at what they actually are.</p>
+<h3 id="dogs-disguised-as-people-by-way-of-wearing-a-coat-and-hat">Dogs Disguised As People By Way Of Wearing A Coat And Hat</h3>
+<p><img src="/images/dogs-in-coat.png" alt="Bear with me here." title="Bear with me here." /></p>
+<p>Let's start with the idea of a <code>Functor</code>. If this is confusing to you I have written a <a href="http://localhost:8000/posts/2018-11-16-typeclasses-functor.html">vague explanation</a> and so have much more <a href="http://www.tomharding.me/2017/03/27/fantas-eel-and-specification-6/">competent</a> <a href="http://adit.io/posts/2013-04-17-functors,_applicatives,_and_monads_in_pictures.html">people</a> which are probably worth digesting before we go on.</p>
+<p>A functor is a data structure which contains some other data, and we can "map over" the data inside it to change that without fucking up the functor itself. For example, we can use the <code>map</code> function on a <code>Maybe</code> value, and it will change the <code>a</code> on a <code>Just</code>, and do nothing on <code>Nothing</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">Maybe
+</span><span>  = </span><span style="color:#d08770;">Just</span><span> a
+</span><span>  | </span><span style="color:#d08770;">Nothing
+</span><span>
+</span><span>fmap (+</span><span style="color:#d08770;">1</span><span>) (</span><span style="color:#d08770;">Just 1</span><span>) </span><span style="color:#65737e;">-- Just 2
+</span><span>fmap (+</span><span style="color:#d08770;">1</span><span>) </span><span style="color:#d08770;">Nothing  </span><span style="color:#65737e;">-- Nothing
+</span></code></pre>
+<p>Now, there is already a <code>Monad</code> instance for <code>Maybe</code>, and this means we can use <code>do notation</code> and all sorts of great stuff with it, like this:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#65737e;">-- get the first item of the first list
+</span><span style="color:#65737e;">-- and the first item of the second list
+</span><span style="color:#65737e;">-- and then smash them together using append
+</span><span style="color:#65737e;">-- from their semigroup instance
+</span><span>firstAndSecondCombine 
+</span><span>  :: (</span><span style="color:#d08770;">Semigroup</span><span> a) 
+</span><span>  =&gt; [a] 
+</span><span>  -&gt; [a] 
+</span><span>  -&gt; </span><span style="color:#d08770;">Maybe</span><span> a
+</span><span>firstAndSecondCombine firstList secondList = </span><span style="color:#b48ead;">do
+</span><span>  a &lt;- first&#39; firstList
+</span><span>  b &lt;- first&#39; secondList
+</span><span>  pure (a &lt;&gt; b)
+</span><span>
+</span><span style="color:#65737e;">-- helper that returns the first item of a list if it exists
+</span><span style="color:#8fa1b3;">first&#39; </span><span style="color:#b48ead;">::</span><span> [</span><span style="color:#bf616a;">a</span><span>] </span><span style="color:#b48ead;">-&gt; Maybe </span><span style="color:#bf616a;">a
+</span><span>first&#39; stuff 
+</span><span>    = </span><span style="color:#b48ead;">case</span><span> stuff </span><span style="color:#b48ead;">of
+</span><span>        (x:_) -&gt; </span><span style="color:#d08770;">Just</span><span> x
+</span><span>        _     -&gt; </span><span style="color:#d08770;">Nothing
+</span></code></pre>
+<p>Let's try them with the <code>Product</code> monoid <em>(which multiplies its contents together when combined)</em>, to satisfy ourselves that this function does a thing that we vaguely like and approve of.</p>
+<p>This fails as it should....</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">nah </span><span style="color:#b48ead;">:: Maybe</span><span> (</span><span style="color:#b48ead;">Product Int</span><span>)
+</span><span>nah = firstAndSecondCombine </span><span style="color:#d08770;">[] []
+</span><span style="color:#65737e;">-- nah == Nothing
+</span></code></pre>
+<p>...and this gives us an answer.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">yeah </span><span style="color:#b48ead;">:: Maybe</span><span> (</span><span style="color:#b48ead;">Product Int</span><span>)
+</span><span>yeah = firstAndSecondCombine 
+</span><span>          [</span><span style="color:#d08770;">Product 10</span><span>, </span><span style="color:#d08770;">Product 11</span><span>]
+</span><span>          [</span><span style="color:#d08770;">Product 20</span><span>, </span><span style="color:#d08770;">Product 5</span><span>]
+</span><span style="color:#65737e;">-- yeah == Just (Product 200)
+</span></code></pre>
+<p><em>(Isn't <code>Monoid</code> such a nice thing?)</em></p>
+<h3 id="that-didn-t-mention-dogs-or-hats-what-gives">That Didn't Mention Dogs Or Hats, What Gives?</h3>
+<p>Ahh shit, yes.</p>
+<p>So.</p>
+<p>What if there isn't a <code>Monad</code> instance? Or we want to write programs like this, but don't want to commit to using <code>Maybe</code>? (or perhaps <code>Maybe</code> is <strong>TOO</strong> safe, and we want the option of throwing loads of exceptions instead). Could this be a job for...a <code>Free Monad</code>?</p>
+<p><em>(note for readers with subtext disabled in their browser: yes)</em></p>
+<p>OK. Let's make a datatype that's like <code>Maybe</code>, but isn't.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">MoybeF</span><span> a
+</span><span>  = </span><span style="color:#d08770;">Jost</span><span> a
+</span><span>  | </span><span style="color:#d08770;">Nothong
+</span></code></pre>
+<p>Let's make an instance of <code>Functor</code> for it to prove there is no funny business at hand.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">instance Functor MoybeF where
+</span><span>  fmap _ </span><span style="color:#d08770;">Nothong  </span><span>= </span><span style="color:#d08770;">Nothong
+</span><span>  fmap f (</span><span style="color:#d08770;">Jost</span><span> a) = </span><span style="color:#d08770;">Jost</span><span> (f a)
+</span></code></pre>
+<p>Map the <code>f</code> function over an <code>a</code> if there is one, if not, do nothing. Good?</p>
+<h3 id="still-no-dogs-what-gives">Still No Dogs, What Gives?</h3>
+<p>Right. In this example, <code>MoybeF</code> is our dog. It's a plain old functor that doesn't really do anything except contain an <code>a</code> inside <code>Jost</code>, or contain nothing at all inside <code>Nothong</code>. What <code>Free</code> does for us (and by that, I mean <code>Free</code> from <a href="http://hackage.haskell.org/package/free-3.3.1/docs/Control-Monad-Free.html">Control.Monad.Free</a>) is gives us a coat to wrap about this <code>Functor</code> to let us use it like a <code>Monad</code>.</p>
+<p><em>(In this tenuous analogy, the <code>Monad</code> represents a human adult, or at least some impression of one)</em></p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#65737e;">-- Free turns MoybeF (a mere functor)
+</span><span style="color:#65737e;">-- into Moybe (a mighty monad)
+</span><span style="color:#b48ead;">type </span><span style="color:#d08770;">Moybe</span><span> a = </span><span style="color:#d08770;">Free MoybeF</span><span> a
+</span></code></pre>
+<p><em>(An aside: this metaphor felt a lot more powerful in my mind, but a cursory image search came up with a lot less than I had expected, and quite frankly this picture creeps me the fuck out).</em></p>
+<p><img src="/images/free-structure.png" alt="You deserve better than this." title="You deserve better than this." /></p>
+<p>OK. So now, by use of the <code>liftF</code> functor from <code>Control.Monad.Free</code>, we can change any <code>MoybeF</code> value into a <code>Moybe</code> monad value instead. Let's define some helper functions that do this:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#65737e;">-- lift a into the Moybe monad
+</span><span style="color:#8fa1b3;">jost </span><span style="color:#b48ead;">:: </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; Moybe </span><span style="color:#bf616a;">a 
+</span><span>jost = liftF . </span><span style="color:#d08770;">Jost
+</span><span>
+</span><span style="color:#65737e;">-- create an empty Moybe value
+</span><span style="color:#8fa1b3;">nothong </span><span style="color:#b48ead;">:: Moybe </span><span style="color:#bf616a;">a
+</span><span>nothong = liftF </span><span style="color:#d08770;">Nothong
+</span></code></pre>
+<p>Now, we can redefine our function from above to our our new exciting <code>Moybe</code> type too!</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#65737e;">-- get first item (if there is one)
+</span><span style="color:#8fa1b3;">fFirst&#39; </span><span style="color:#b48ead;">::</span><span> [</span><span style="color:#bf616a;">a</span><span>] </span><span style="color:#b48ead;">-&gt; Moybe </span><span style="color:#bf616a;">a
+</span><span>fFirst&#39; stuff 
+</span><span>    = </span><span style="color:#b48ead;">case</span><span> stuff </span><span style="color:#b48ead;">of
+</span><span>        (x:_) -&gt; jost x
+</span><span>        _     -&gt; nothong
+</span></code></pre>
+<p>(We could just have used <code>liftF</code> directly, and avoided the helpers, but this way hopefully we can see better how equivalent the two <code>first'</code> functions are)</p>
+<p>Now, let's remake our list smashing function from earlier using <code>Moybe</code>....</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span>fFirstAndSecondCombine 
+</span><span>  :: (</span><span style="color:#d08770;">Semigroup</span><span> a) 
+</span><span>  =&gt; [a] 
+</span><span>  -&gt; [a] 
+</span><span>  -&gt; </span><span style="color:#d08770;">Moybe</span><span> a
+</span><span>fFirstAndSecondCombine as bs = </span><span style="color:#b48ead;">do
+</span><span>  a &lt;- fFirst&#39; as
+</span><span>  b &lt;- fFirst&#39; bs
+</span><span>  pure (a &lt;&gt; b)
+</span></code></pre>
+<p>Hopefully, you can see it's pretty much the same. But how do we use it? If we run <code>fFirstAndSecondCombine [] []</code>, for instance, what we get back is a <code>MoybeF</code> again. So what the hell use is that? I went to all of this trouble to create a <code>Monad</code> (admittedly as cheaply as possible) - but it doesn't do anything!</p>
+<h3 id="interpreting-the-computation">Interpreting The Computation</h3>
+<p>So what is <code>MoybeF</code>? Essentially, it's a data structure describing a monadic computation. Therefore, if we want to turn into something that does things, we need to <em>interpret</em> it.</p>
+<p>Let's turn it back into our original <code>Maybe</code> computation:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">interpretMaybe </span><span style="color:#b48ead;">:: Moybe </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; Maybe </span><span style="color:#bf616a;">a
+</span><span>interpretMaybe
+</span><span>  = foldFree interpret
+</span><span>  </span><span style="color:#b48ead;">where
+</span><span>    </span><span style="color:#8fa1b3;">interpret </span><span style="color:#b48ead;">:: MoybeF </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; Maybe </span><span style="color:#bf616a;">a
+</span><span>    interpret prog&#39;
+</span><span>      = </span><span style="color:#b48ead;">case</span><span> prog&#39; </span><span style="color:#b48ead;">of
+</span><span>          </span><span style="color:#d08770;">Jost</span><span> a  -&gt; </span><span style="color:#d08770;">Just</span><span> a
+</span><span>          </span><span style="color:#d08770;">Nothong </span><span>-&gt; </span><span style="color:#d08770;">Nothing
+</span></code></pre>
+<p>As you can see, we're just substituting <code>Jost</code> for <code>Just</code> and <code>Nothong</code> for the inferior <code>Nothing</code>.</p>
+<p>Now we can use our function to actually do things like before:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">ans2 </span><span style="color:#b48ead;">:: Maybe</span><span> (</span><span style="color:#b48ead;">Product Int</span><span>)
+</span><span>ans2 = interpretMaybe (fFirstAndSecondCombine [</span><span style="color:#d08770;">Product 10</span><span>] [</span><span style="color:#d08770;">Product 5</span><span>, </span><span style="color:#d08770;">Product 20</span><span>])
+</span><span style="color:#65737e;">-- ans2 == Just (Product 200)
+</span><span>
+</span><span style="color:#8fa1b3;">ans3 </span><span style="color:#b48ead;">:: Maybe</span><span> (</span><span style="color:#b48ead;">Product Int</span><span>)
+</span><span>ans3 = interpretMaybe (fFirstAndSecondCombine </span><span style="color:#d08770;">[]</span><span> [</span><span style="color:#d08770;">Product 5</span><span>, </span><span style="color:#d08770;">Product 20</span><span>])
+</span><span style="color:#65737e;">-- ans3 == Nothing
+</span></code></pre>
+<h3 id="i-see-that-once-again-we-re-doing-something-easy-the-difficult-way">I See That Once Again We're Doing Something Easy The Difficult Way</h3>
+<p>OK, fair point. Where is the value in all this indirection?</p>
+<p>How about if we want to interpret this computation differently? Perhaps we need to return an <code>Either</code> instead? Changing the interpreter is pretty straightforward:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">interpretEither </span><span style="color:#b48ead;">:: Moybe </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; Either String </span><span style="color:#bf616a;">a
+</span><span>interpretEither
+</span><span>  = foldFree interpret
+</span><span>  </span><span style="color:#b48ead;">where
+</span><span>    </span><span style="color:#8fa1b3;">interpret </span><span style="color:#b48ead;">:: MoybeF </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; Either String </span><span style="color:#bf616a;">a
+</span><span>    interpret prog&#39;
+</span><span>      = </span><span style="color:#b48ead;">case</span><span> prog&#39; </span><span style="color:#b48ead;">of
+</span><span>          </span><span style="color:#d08770;">Jost</span><span> a  -&gt; </span><span style="color:#d08770;">Right</span><span> a
+</span><span>          </span><span style="color:#d08770;">Nothong </span><span>-&gt; </span><span style="color:#d08770;">Left </span><span>&quot;</span><span style="color:#a3be8c;">Nah, that didn&#39;t work</span><span>&quot;
+</span><span>
+</span><span style="color:#8fa1b3;">ans4 </span><span style="color:#b48ead;">:: Either String</span><span> (</span><span style="color:#b48ead;">Product Int</span><span>)
+</span><span>ans4 = interpretEither (fFirstAndSecondCombine [</span><span style="color:#d08770;">Product 10</span><span>] [</span><span style="color:#d08770;">Product 5</span><span>, </span><span style="color:#d08770;">Product 20</span><span>])
+</span><span style="color:#65737e;">-- ans4 == Right (Product 200)
+</span><span>
+</span><span style="color:#8fa1b3;">ans5 </span><span style="color:#b48ead;">:: Either String</span><span> (</span><span style="color:#b48ead;">Product Int</span><span>)
+</span><span>ans5 = interpretEither (fFirstAndSecondCombine </span><span style="color:#d08770;">[]</span><span> [</span><span style="color:#d08770;">Product 5</span><span>, </span><span style="color:#d08770;">Product 20</span><span>])
+</span><span style="color:#65737e;">-- ans5 == Left &quot;Nah, that didn&#39;t work&quot;
+</span></code></pre>
+<h3 id="is-this-a-domain-specific-language">Is This...A Domain Specific Language?</h3>
+<p>That's right. One of the main strengths of <code>Free</code> is in creating small little sub-languages for writing logic, that can be interpreted in a number of different ways (such as <em>"what even is this doing?"</em> and <em>"i don't understand this code"</em>)</p>
+<h3 id="how-does-this-relate-to-testing">How Does This Relate To Testing?</h3>
+<p>So, this example is pointedly very simple indeed, and involve swapping one pure thing for another, but a much more common use of this pattern is to take some code that does effectful things (like save files, write to a database, etc) and write them in a way where they can be run in the program using <code>IO</code>, but then testing by turning them into something pure like <code>Writer</code>, and looking at the output.</p>
+<h3 id="do-you-have-an-example-of-exactly-that-preferably-centered-about-reading-and-writing-to-a-terminal-window-perchance">Do You Have An Example Of Exactly That, Preferably Centered About Reading And Writing To A Terminal Window, Perchance?</h3>
+<p>Why yes, I do.</p>
+<p>So <code>ConsoleF</code> is a <code>Functor</code> with two commands for input and output from a terminal.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">ConsoleF</span><span> next
+</span><span>  = </span><span style="color:#d08770;">Write String</span><span> next
+</span><span>  | </span><span style="color:#d08770;">Read</span><span> (</span><span style="color:#d08770;">String </span><span>-&gt; next)
+</span><span>
+</span><span style="color:#b48ead;">instance Functor ConsoleF where
+</span><span>    fmap f (</span><span style="color:#d08770;">Write</span><span> s next) = </span><span style="color:#d08770;">Write</span><span> s (f next)
+</span><span>    fmap f (</span><span style="color:#d08770;">Read</span><span> next)    = </span><span style="color:#d08770;">Read</span><span> (f . next)
+</span></code></pre>
+<p>We power it up into a <code>Free Monad</code>...</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">type </span><span style="color:#d08770;">Console</span><span> a = </span><span style="color:#d08770;">Free ConsoleF</span><span> a
+</span></code></pre>
+<p>...and then we write our helpers with <code>liftF</code>...</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#65737e;">-- write to the console
+</span><span style="color:#8fa1b3;">fWrite </span><span style="color:#b48ead;">:: String -&gt; Console </span><span>()
+</span><span>fWrite str = liftF $ </span><span style="color:#d08770;">Write</span><span> str </span><span style="color:#d08770;">()
+</span><span>
+</span><span style="color:#65737e;">-- await user input
+</span><span style="color:#8fa1b3;">fRead </span><span style="color:#b48ead;">:: Console String
+</span><span>fRead = liftF $ </span><span style="color:#d08770;">Read</span><span> id
+</span></code></pre>
+<p>...then we write our program with it...</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">consoleProg </span><span style="color:#b48ead;">:: Console </span><span>()
+</span><span>consoleProg = </span><span style="color:#b48ead;">do
+</span><span>    fWrite &quot;</span><span style="color:#a3be8c;">What is your name?</span><span>&quot;
+</span><span>    a &lt;- fRead
+</span><span>    fWrite $ &quot;</span><span style="color:#a3be8c;">Sure? </span><span>&quot; ++ a
+</span><span>    b &lt;- fRead
+</span><span>    fWrite &quot;</span><span style="color:#a3be8c;">Great.</span><span>&quot;
+</span></code></pre>
+<p>...then we interpret in <code>IO</code> to make a working program...</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">interpretIO </span><span style="color:#b48ead;">:: Console </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; IO </span><span style="color:#bf616a;">a
+</span><span>interpretIO
+</span><span>  = foldFree interpret
+</span><span>  </span><span style="color:#b48ead;">where
+</span><span>    </span><span style="color:#8fa1b3;">interpret </span><span style="color:#b48ead;">:: ConsoleF </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; IO </span><span style="color:#bf616a;">a
+</span><span>    interpret prog&#39;
+</span><span>      = </span><span style="color:#b48ead;">case</span><span> prog&#39; </span><span style="color:#b48ead;">of
+</span><span>          </span><span style="color:#d08770;">Write</span><span> s a -&gt; </span><span style="color:#d08770;">Prelude</span><span>.putStrLn s &gt;&gt; pure a
+</span><span>          </span><span style="color:#d08770;">Read</span><span> a    -&gt; a &lt;$&gt; </span><span style="color:#d08770;">Prelude</span><span>.getLine
+</span></code></pre>
+<p>...then we interpret it in <code>Writer</code> for testing...</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">interpretWrite </span><span style="color:#b48ead;">:: Console </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; Writer</span><span> [</span><span style="color:#b48ead;">String</span><span>] </span><span style="color:#bf616a;">a
+</span><span>interpretWrite = foldFree interpretConsoleWrite
+</span><span>  </span><span style="color:#b48ead;">where
+</span><span>    interpretConsoleWrite prog&#39;
+</span><span>      = </span><span style="color:#b48ead;">case</span><span> prog&#39; </span><span style="color:#b48ead;">of
+</span><span>          </span><span style="color:#d08770;">Write</span><span> s a -&gt; </span><span style="color:#b48ead;">do
+</span><span>            _ &lt;- tell [s]
+</span><span>            pure a
+</span><span>          </span><span style="color:#d08770;">Read</span><span> a -&gt; </span><span style="color:#b48ead;">do
+</span><span>            _ &lt;- tell [&quot;</span><span style="color:#a3be8c;">[wait for input]</span><span>&quot;]
+</span><span>            pure (a &quot;</span><span style="color:#a3be8c;">[user input]</span><span>&quot;)
+</span></code></pre>
+<p>...run it...</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">output </span><span style="color:#b48ead;">::</span><span> [</span><span style="color:#b48ead;">String</span><span>]
+</span><span>output = (snd . runWriter . interpretWrite ) consoleProg
+</span><span style="color:#65737e;">-- output == [&quot;What is your name?&quot;,&quot;[wait for input]&quot;,&quot;Sure? [user input]&quot;,&quot;[wait for input]&quot;,&quot;Great.&quot;]
+</span></code></pre>
+<p>...and we go home for a nice sit down.</p>
+<h3 id="isn-t-this-the-point-of-typeclasses">Isn't This The Point Of Typeclasses?</h3>
+<p>Aye, <a href="https://markkarpov.com/post/free-monad-considered-harmful.html">some would say so</a>. But what's the point of Haskell if there isn't 10 ways of doing the same thing, and endless bloody fights to the death about the minor differences between them?</p>
+<h3 id="that-is-true-you-are-so-right-any-other-helpful-links">That Is True, You Are So Right. Any Other Helpful Links?</h3>
+<p>The thing that finally made all this click for me was this video by <a href="https://www.youtube.com/watch?v=eKkxmVFcd74">Nate Faubion</a>. Once I did understand it wasn't about jazz, this by <a href="https://www.parsonsmatt.org/2017/09/22/what_does_free_buy_us.html">Matt Parsons</a> was really great too.</p>
+
+
+    </main>
+
+    <footer>
+      <p><a href="mailto:danieljamesharvey@gmail.com">Contact</a> |
+      <a href="https://github.com/danieljharvey">Github</a></p>
+      <p>Links for nerds:
+        <a href="/atom.xml">atom</a>
+        <a href="/rss.xml">rss</a></p>
+
+    </footer>
+</body>
+
+</html>

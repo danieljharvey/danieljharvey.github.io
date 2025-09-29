@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - Let's write a database (part 3)</title>
+    <link rel="stylesheet" href="https://danieljharvey.github.io/main.css">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="/">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="/">Posts</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        
+<h1 class="title">
+  Let&#x27;s write a database (part 3)
+</h1>
+<p class="subtitle"><strong>2025-08-24</strong></p>
+<p>
+ <p class="blog-meta">
+        
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/database/"
+          >#database</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/query-engine/"
+          >#query-engine</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/rust/"
+          >#rust</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/joins/"
+          >#joins</a
+        >
+         
+      </p>
+
+<p>Well, well, well, if it isn't part 3. Last time we tidied up a bit so that we're ready to tackle joins. As ever, all the code lives <a href="https://github.com/danieljharvey/lets-build-a-database">right here</a>.</p>
+<h2 id="what-is-a-join-then">What is a join then?</h2>
+<p>Say we have a table of Albums that looks something like:</p>
+<pre data-lang="json" style="background-color:#2b303b;color:#c0c5ce;" class="language-json "><code class="language-json" data-lang="json"><span>{
+</span><span>  &quot;</span><span style="color:#a3be8c;">albumId</span><span>&quot;: </span><span style="color:#d08770;">1</span><span>,
+</span><span>  &quot;</span><span style="color:#a3be8c;">title</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">Best of the Beatles</span><span>&quot;,
+</span><span>  &quot;</span><span style="color:#a3be8c;">artistId</span><span>&quot;: </span><span style="color:#d08770;">1
+</span><span>},
+</span><span>{
+</span><span>  &quot;</span><span style="color:#a3be8c;">albumId</span><span>&quot;: </span><span style="color:#d08770;">2</span><span>,
+</span><span>  &quot;</span><span style="color:#a3be8c;">title</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">Horses</span><span>&quot;,
+</span><span>  &quot;</span><span style="color:#a3be8c;">artistId</span><span>&quot;: </span><span style="color:#d08770;">2
+</span><span>}
+</span></code></pre>
+<p>...and another table full of Artists like:</p>
+<pre data-lang="json" style="background-color:#2b303b;color:#c0c5ce;" class="language-json "><code class="language-json" data-lang="json"><span>{
+</span><span>  &quot;</span><span style="color:#a3be8c;">artistId</span><span>&quot;: </span><span style="color:#d08770;">1</span><span>,
+</span><span>  &quot;</span><span style="color:#a3be8c;">name</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">The Beatles</span><span>&quot;
+</span><span>},
+</span><span>{
+</span><span>  &quot;</span><span style="color:#a3be8c;">artistId</span><span>&quot;: </span><span style="color:#d08770;">2</span><span>,
+</span><span>  &quot;</span><span style="color:#a3be8c;">name</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">Patti Smith</span><span>&quot;
+</span><span>}
+</span></code></pre>
+<p>A join is what lets us look up the artist name for a given album.</p>
+<pre data-lang="sql" style="background-color:#2b303b;color:#c0c5ce;" class="language-sql "><code class="language-sql" data-lang="sql"><span style="color:#b48ead;">select </span><span style="color:#bf616a;">* </span><span style="color:#b48ead;">from</span><span> Albums
+</span><span style="color:#b48ead;">left join</span><span> Artists on artistId
+</span></code></pre>
+<p>Will return something like:</p>
+<pre data-lang="json" style="background-color:#2b303b;color:#c0c5ce;" class="language-json "><code class="language-json" data-lang="json"><span>[
+</span><span>  {&quot;</span><span style="color:#a3be8c;">albumId</span><span>&quot;: </span><span style="color:#d08770;">1</span><span>, &quot;</span><span style="color:#a3be8c;">title</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">Best of the Beatles</span><span>&quot;, &quot;</span><span style="color:#a3be8c;">name</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">The Beatles</span><span>&quot;},
+</span><span>  {&quot;</span><span style="color:#a3be8c;">albumId</span><span>&quot;: </span><span style="color:#d08770;">2</span><span>, &quot;</span><span style="color:#a3be8c;">title</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">Horses</span><span>&quot;, &quot;</span><span style="color:#a3be8c;">name</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">Patti Smith</span><span>&quot;}
+</span><span>]
+</span></code></pre>
+<p>What makes it a 'join' is that for each row on the left hand side we attach the rows from the right hand table where the <code>join condition</code> (here, <code>Albums.artistId = Artists.artistId</code>). Where one row matches from each side like this, it's all very neat.</p>
+<pre data-lang="sql" style="background-color:#2b303b;color:#c0c5ce;" class="language-sql "><code class="language-sql" data-lang="sql"><span style="color:#b48ead;">select </span><span style="color:#bf616a;">* </span><span style="color:#b48ead;">from</span><span> Artists
+</span><span style="color:#b48ead;">left join</span><span> Albums on artistId
+</span></code></pre>
+<p>Now, each artist may have zero or more albums, so our result will look like</p>
+<pre data-lang="json" style="background-color:#2b303b;color:#c0c5ce;" class="language-json "><code class="language-json" data-lang="json"><span>[
+</span><span>  {&quot;</span><span style="color:#a3be8c;">artistId</span><span>&quot;:</span><span style="color:#d08770;">1</span><span>, &quot;</span><span style="color:#a3be8c;">name</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">The Beatles</span><span>&quot;, &quot;</span><span style="color:#a3be8c;">title</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">Best of the Beatles</span><span>&quot;},
+</span><span>  {&quot;</span><span style="color:#a3be8c;">artistId</span><span>&quot;:</span><span style="color:#d08770;">1</span><span>, &quot;</span><span style="color:#a3be8c;">name</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">The Beatles</span><span>&quot;, &quot;</span><span style="color:#a3be8c;">title</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">Revolver</span><span>&quot;},
+</span><span>  {&quot;</span><span style="color:#a3be8c;">artistId</span><span>&quot;:</span><span style="color:#d08770;">1</span><span>, &quot;</span><span style="color:#a3be8c;">name</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">The Beatles</span><span>&quot;, &quot;</span><span style="color:#a3be8c;">title</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">Help</span><span>&quot;},
+</span><span>  {&quot;</span><span style="color:#a3be8c;">artistId</span><span>&quot;:</span><span style="color:#d08770;">2</span><span>, &quot;</span><span style="color:#a3be8c;">name</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">Patti Smith</span><span>&quot;, &quot;</span><span style="color:#a3be8c;">title</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">Horses</span><span>&quot;},
+</span><span>  {&quot;</span><span style="color:#a3be8c;">artistId</span><span>&quot;: </span><span style="color:#d08770;">3</span><span>, &quot;</span><span style="color:#a3be8c;">name</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">Johnny Noalbums</span><span>&quot;}
+</span><span>]
+</span></code></pre>
+<p>Because <code>The Beatles</code> have multiple albums, we make a copy of each left hand side for each right hand side. What about our old friend <code>Johnny Noalbums</code> though? He has no matching albums, but we still include the left hand side. If we didn't want to include him though, we could use an <code>inner join</code> instead:</p>
+<pre data-lang="sql" style="background-color:#2b303b;color:#c0c5ce;" class="language-sql "><code class="language-sql" data-lang="sql"><span style="color:#b48ead;">select </span><span style="color:#bf616a;">* </span><span style="color:#b48ead;">from</span><span> Artists
+</span><span style="color:#b48ead;">inner join</span><span> Albums on artistId
+</span></code></pre>
+<p>Here we'd only include items where there is a match on both sides, so our result would look like:</p>
+<pre data-lang="json" style="background-color:#2b303b;color:#c0c5ce;" class="language-json "><code class="language-json" data-lang="json"><span>[
+</span><span>  {&quot;</span><span style="color:#a3be8c;">artistId</span><span>&quot;:</span><span style="color:#d08770;">1</span><span>, &quot;</span><span style="color:#a3be8c;">name</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">The Beatles</span><span>&quot;, &quot;</span><span style="color:#a3be8c;">title</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">Best of the Beatles</span><span>&quot;},
+</span><span>  {&quot;</span><span style="color:#a3be8c;">artistId</span><span>&quot;:</span><span style="color:#d08770;">1</span><span>, &quot;</span><span style="color:#a3be8c;">name</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">The Beatles</span><span>&quot;, &quot;</span><span style="color:#a3be8c;">title</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">Revolver</span><span>&quot;},
+</span><span>  {&quot;</span><span style="color:#a3be8c;">artistId</span><span>&quot;:</span><span style="color:#d08770;">1</span><span>, &quot;</span><span style="color:#a3be8c;">name</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">The Beatles</span><span>&quot;, &quot;</span><span style="color:#a3be8c;">title</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">Help</span><span>&quot;},
+</span><span>  {&quot;</span><span style="color:#a3be8c;">artistId</span><span>&quot;:</span><span style="color:#d08770;">2</span><span>, &quot;</span><span style="color:#a3be8c;">name</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">Patti Smith</span><span>&quot;, &quot;</span><span style="color:#a3be8c;">title</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">Horses</span><span>&quot;}
+</span><span>]
+</span></code></pre>
+<p>There are a bunch of other kinds of joins too, but we'll stick with these two for now.</p>
+<h2 id="implementing-the-joins">Implementing the joins</h2>
+<p>We'll be using the <a href="https://en.wikipedia.org/wiki/Hash_join">classic hash join</a> to join our tables.</p>
+<p>So in our <code>Artists -&gt; Albums</code> join, we start by creating a <code>HashMap</code> and adding an empty array for each <code>artistId</code> found in the <code>Artists</code> table (as <code>artistId</code> is the column we are joining on). It should look like:</p>
+<pre data-lang="json" style="background-color:#2b303b;color:#c0c5ce;" class="language-json "><code class="language-json" data-lang="json"><span>{
+</span><span>  </span><span style="background-color:#bf616a;color:#2b303b;">1</span><span>: [],
+</span><span>  </span><span style="background-color:#bf616a;color:#2b303b;">2</span><span>: [],
+</span><span>  </span><span style="background-color:#bf616a;color:#2b303b;">3</span><span>: []
+</span><span>}
+</span></code></pre>
+<p>Then we go through the <code>Albums</code> table, and for every row with an <code>artistId</code>, add the entire row's values under the key in the <code>HashMap</code>. Our <code>HashMap</code> should now look like:</p>
+<pre data-lang="json" style="background-color:#2b303b;color:#c0c5ce;" class="language-json "><code class="language-json" data-lang="json"><span>{
+</span><span>  </span><span style="background-color:#bf616a;color:#2b303b;">1</span><span>: [
+</span><span>    {&quot;</span><span style="color:#a3be8c;">artistId</span><span>&quot;:</span><span style="color:#d08770;">1</span><span>,&quot;</span><span style="color:#a3be8c;">name</span><span>&quot;:&quot;</span><span style="color:#a3be8c;">Best of the Beatles</span><span>&quot;},
+</span><span>    {&quot;</span><span style="color:#a3be8c;">artistId</span><span>&quot;:</span><span style="color:#d08770;">1</span><span>,&quot;</span><span style="color:#a3be8c;">name</span><span>&quot;:&quot;</span><span style="color:#a3be8c;">Revolver</span><span>&quot;},
+</span><span>    {&quot;</span><span style="color:#a3be8c;">artistId</span><span>&quot;:</span><span style="color:#d08770;">1</span><span>,&quot;</span><span style="color:#a3be8c;">name</span><span>&quot;:&quot;</span><span style="color:#a3be8c;">Help</span><span>&quot;}
+</span><span>  ],
+</span><span>  </span><span style="background-color:#bf616a;color:#2b303b;">2</span><span>: [
+</span><span>    {&quot;</span><span style="color:#a3be8c;">artistId</span><span>&quot;:</span><span style="color:#d08770;">2</span><span>,&quot;</span><span style="color:#a3be8c;">name</span><span>&quot;:&quot;</span><span style="color:#a3be8c;">Horses</span><span>&quot;}
+</span><span>  ],
+</span><span>  </span><span style="background-color:#bf616a;color:#2b303b;">3</span><span>: []
+</span><span>}
+</span></code></pre>
+<p>The final step is to put everything together. For each row in the <code>Artist</code> table, we:</p>
+<ol>
+<li>
+<p>Look up the <code>artistId</code> in the <code>HashMap</code>.</p>
+</li>
+<li>
+<p>For each entry we find, output a new row combining the <code>Artist</code> row with the <code>Album</code> entry from the <code>HashMap</code>.</p>
+</li>
+<li>
+<p>if we don't find any entries, then</p>
+</li>
+</ol>
+<ul>
+<li>
+<p>for <code>left outer join</code>, emit a new row containing the <code>Artist</code> row columns only, with <code>null</code> for any other columns in <code>Album</code>.</p>
+</li>
+<li>
+<p>for <code>inner join</code>, don't emit a row.</p>
+</li>
+</ul>
+<h2 id="in-code">In code</h2>
+<p>We have a new <code>Query::Join</code> item.</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">pub struct </span><span>Join {
+</span><span>    </span><span style="color:#b48ead;">pub </span><span style="color:#bf616a;">join_type</span><span>: JoinType,
+</span><span>    </span><span style="color:#b48ead;">pub </span><span style="color:#bf616a;">left_from</span><span>: Box&lt;Query&gt;,
+</span><span>    </span><span style="color:#b48ead;">pub </span><span style="color:#bf616a;">right_from</span><span>: Box&lt;Query&gt;,
+</span><span>    </span><span style="color:#b48ead;">pub </span><span style="color:#bf616a;">on</span><span>: JoinOn,
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">pub struct </span><span>JoinOn {
+</span><span>    </span><span style="color:#b48ead;">pub </span><span style="color:#bf616a;">left</span><span>: Column,
+</span><span>    </span><span style="color:#b48ead;">pub </span><span style="color:#bf616a;">right</span><span>: Column,
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">pub enum </span><span>JoinType {
+</span><span>    Inner,
+</span><span>    LeftOuter,
+</span><span>}
+</span></code></pre>
+<p>We deal with these in <code>run_query</code> as follows:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span>Query::Join(Join {
+</span><span>    left_from,
+</span><span>    right_from,
+</span><span>    join_type,
+</span><span>    on,
+</span><span>}) =&gt; {
+</span><span>    </span><span style="color:#65737e;">// get the left-hand side items
+</span><span>    </span><span style="color:#b48ead;">let</span><span> QueryStep {
+</span><span>        schema: left_schema,
+</span><span>        rows: left_rows,
+</span><span>    } = </span><span style="color:#96b5b4;">run_query</span><span>(left_from)?;
+</span><span>
+</span><span>    </span><span style="color:#65737e;">// get the right-hand side items
+</span><span>    </span><span style="color:#b48ead;">let</span><span> QueryStep {
+</span><span>        schema: right_schema,
+</span><span>        rows: right_rows,
+</span><span>    } = </span><span style="color:#96b5b4;">run_query</span><span>(right_from)?;
+</span><span>
+</span><span>    </span><span style="color:#65737e;">// join the left and right hand sides
+</span><span>    join::hash_join(
+</span><span>        left_rows,
+</span><span>        &amp;left_schema,
+</span><span>        right_rows,
+</span><span>        &amp;right_schema,
+</span><span>        on,
+</span><span>        join_type,
+</span><span>    )
+</span><span>}
+</span></code></pre>
+<p>Here is the <code>hash_join</code> function:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">pub fn </span><span style="color:#8fa1b3;">hash_join</span><span>(
+</span><span>    </span><span style="color:#bf616a;">left_rows</span><span>: Vec&lt;Row&gt;,
+</span><span>    </span><span style="color:#bf616a;">left_schema</span><span>: &amp;Schema,
+</span><span>    </span><span style="color:#bf616a;">right_rows</span><span>: Vec&lt;Row&gt;,
+</span><span>    </span><span style="color:#bf616a;">right_schema</span><span>: &amp;Schema,
+</span><span>    </span><span style="color:#bf616a;">on</span><span>: &amp;JoinOn,
+</span><span>    </span><span style="color:#bf616a;">join_type</span><span>: &amp;JoinType,
+</span><span>) -&gt; Result&lt;QueryStep, QueryError&gt; {
+</span><span>    </span><span style="color:#b48ead;">let mut</span><span> build_items = HashMap::new();
+</span><span>
+</span><span>    </span><span style="color:#65737e;">// add all the relevant `on` values to map,
+</span><span>    </span><span style="color:#b48ead;">for</span><span> left_row in &amp;left_rows {
+</span><span>        </span><span style="color:#b48ead;">let</span><span> value = 
+</span><span>          left_row
+</span><span>            .</span><span style="color:#96b5b4;">get_column</span><span>(&amp;on.left, left_schema)
+</span><span>            .</span><span style="color:#96b5b4;">ok_or_else</span><span>(|| {
+</span><span>              QueryError::ColumnNotFoundInSchema {
+</span><span>                  column_name: on.left.</span><span style="color:#96b5b4;">clone</span><span>(),
+</span><span>              }
+</span><span>            })?;
+</span><span>
+</span><span>        build_items.</span><span style="color:#96b5b4;">insert</span><span>(</span><span style="color:#96b5b4;">calculate_hash</span><span>(value), vec![]);
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#65737e;">// collect all the different right side values
+</span><span>    </span><span style="color:#b48ead;">for</span><span> right_row in right_rows {
+</span><span>        </span><span style="color:#b48ead;">let</span><span> value = right_row
+</span><span>            .</span><span style="color:#96b5b4;">get_column</span><span>(&amp;on.right, right_schema)
+</span><span>            .</span><span style="color:#96b5b4;">ok_or_else</span><span>(|| QueryError::ColumnNotFoundInSchema {
+</span><span>                column_name: on.right.</span><span style="color:#96b5b4;">clone</span><span>(),
+</span><span>            })?;
+</span><span>
+</span><span>        </span><span style="color:#65737e;">// this assumes left or inner join and 
+</span><span>        </span><span style="color:#65737e;">// ignores where there&#39;s no left match
+</span><span>        </span><span style="color:#b48ead;">if let </span><span>Some(items) = build_items.</span><span style="color:#96b5b4;">get_mut</span><span>(&amp;</span><span style="color:#96b5b4;">calculate_hash</span><span>(value)) {
+</span><span>            items.</span><span style="color:#96b5b4;">push</span><span>(right_row.</span><span style="color:#96b5b4;">clone</span><span>());
+</span><span>        }
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">let mut</span><span> output_rows = vec![];
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">for</span><span> left_row in left_rows {
+</span><span>        </span><span style="color:#b48ead;">let</span><span> value = 
+</span><span>          left_row
+</span><span>            .</span><span style="color:#96b5b4;">get_column</span><span>(&amp;on.left, left_schema)
+</span><span>            .</span><span style="color:#96b5b4;">ok_or_else</span><span>(|| {
+</span><span>              QueryError::ColumnNotFoundInSchema {
+</span><span>                  column_name: on.left.</span><span style="color:#96b5b4;">clone</span><span>(),
+</span><span>              }
+</span><span>            })?;
+</span><span>
+</span><span>        </span><span style="color:#b48ead;">if let </span><span>Some(rhs) = build_items.</span><span style="color:#96b5b4;">get</span><span>(&amp;</span><span style="color:#96b5b4;">calculate_hash</span><span>(value)) {
+</span><span>            </span><span style="color:#b48ead;">if</span><span> rhs.</span><span style="color:#96b5b4;">is_empty</span><span>() {
+</span><span>                </span><span style="color:#65737e;">// if left outer join
+</span><span>                </span><span style="color:#b48ead;">if let </span><span>JoinType::LeftOuter = join_type {
+</span><span>                    </span><span style="color:#b48ead;">let mut</span><span> whole_row = left_row.</span><span style="color:#96b5b4;">clone</span><span>();
+</span><span>
+</span><span>                    </span><span style="color:#65737e;">// we can&#39;t find value, so add a bunch of nulls
+</span><span>                    </span><span style="color:#b48ead;">for </span><span>_ in &amp;right_schema.columns {
+</span><span>                        whole_row.items.</span><span style="color:#96b5b4;">push</span><span>(serde_json::Value::Null);
+</span><span>                    }
+</span><span>                    output_rows.</span><span style="color:#96b5b4;">push</span><span>(whole_row);
+</span><span>                }
+</span><span>            } </span><span style="color:#b48ead;">else </span><span>{
+</span><span>                </span><span style="color:#b48ead;">for</span><span> item in rhs {
+</span><span>                    </span><span style="color:#b48ead;">let mut</span><span> whole_row = left_row.</span><span style="color:#96b5b4;">clone</span><span>();
+</span><span>                    whole_row.</span><span style="color:#96b5b4;">extend</span><span>(item.</span><span style="color:#96b5b4;">clone</span><span>());
+</span><span>                    output_rows.</span><span style="color:#96b5b4;">push</span><span>(whole_row);
+</span><span>                }
+</span><span>            }
+</span><span>        }
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">let mut</span><span> schema = left_schema.</span><span style="color:#96b5b4;">clone</span><span>();
+</span><span>    schema.</span><span style="color:#96b5b4;">extend</span><span>(right_schema.</span><span style="color:#96b5b4;">clone</span><span>());
+</span><span>
+</span><span>    Ok(QueryStep {
+</span><span>        rows: output_rows,
+</span><span>        schema,
+</span><span>    })
+</span><span>}
+</span></code></pre>
+<h2 id="is-that-it">Is that it?</h2>
+<p>Well yeah, sorta. We only handle two kinds of joins here, <code>left outer</code> and <code>inner</code>, and so there's a bunch more we can do here. Really with joins the trick is optimising them right - ideally we want the smaller table on the left hand side, for instance. We'll get to that once we start implementing some optimisations.</p>
+<h2 id="what-s-next">What's next?</h2>
+<p>Haven't really decided yet actually. Perhaps some nice optimisations? Let's see what takes our fancy.</p>
+<p>Make sense? If not, <a href="/contact.html">get in touch</a>!</p>
+
+
+    </main>
+
+    <footer>
+      <p><a href="mailto:danieljamesharvey@gmail.com">Contact</a> |
+      <a href="https://github.com/danieljharvey">Github</a></p>
+      <p>Links for nerds:
+        <a href="/atom.xml">atom</a>
+        <a href="/rss.xml">rss</a></p>
+
+    </footer>
+</body>
+
+</html>

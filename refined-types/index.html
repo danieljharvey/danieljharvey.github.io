@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - Refine, fine, fine</title>
+    <link rel="stylesheet" href="https://danieljharvey.github.io/main.css">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="/">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="/">Posts</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        
+<h1 class="title">
+  Refine, fine, fine
+</h1>
+<p class="subtitle"><strong>2019-07-05</strong></p>
+<p>
+ <p class="blog-meta">
+        
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/haskell/"
+          >#haskell</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/purescript/"
+          >#purescript</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/refined/"
+          >#refined</a
+        >
+         
+      </p>
+
+<p>About a month ago I gave a talk about <code>Refined</code> types at a React meetup.
+Needless to say, it was a resounding success so I thought I would share an
+adapted version of the slides so that you can all learn to be as learned as me
+when it comes to such a topic.</p>
+<p>Let's start by listing some things that we as programmers generally agree we don't particularly like:</p>
+<h3 id="runtime-errors-caused-by-javascript-yolo">Runtime errors caused by Javascript YOLO</h3>
+<p>Here is some classic code written in the Javascript programming language:</p>
+<pre data-lang="javascript" style="background-color:#2b303b;color:#c0c5ce;" class="language-javascript "><code class="language-javascript" data-lang="javascript"><span style="color:#b48ead;">function </span><span style="color:#8fa1b3;">makeBig</span><span>(</span><span style="color:#bf616a;">thing</span><span>) {
+</span><span>  </span><span style="color:#b48ead;">return </span><span style="color:#bf616a;">thing</span><span>.</span><span style="color:#96b5b4;">toUpperCase</span><span>()
+</span><span>}
+</span></code></pre>
+<p>At a casual glance, it would appear to be some rather convoluted code for
+making a string uppercase.</p>
+<p>Therefore, this seems fine:</p>
+<pre data-lang="javascript" style="background-color:#2b303b;color:#c0c5ce;" class="language-javascript "><code class="language-javascript" data-lang="javascript"><span style="color:#8fa1b3;">makeBig</span><span>(&#39;</span><span style="color:#a3be8c;">horse</span><span>&#39;) </span><span style="color:#65737e;">// &#39;HORSE&#39;
+</span></code></pre>
+<p>But this isn't so great:</p>
+<pre data-lang="javascript" style="background-color:#2b303b;color:#c0c5ce;" class="language-javascript "><code class="language-javascript" data-lang="javascript"><span style="color:#8fa1b3;">makeBig</span><span>(</span><span style="color:#d08770;">12</span><span>) </span><span style="color:#65737e;">// Error: toUpperCase is not defined
+</span></code></pre>
+<p>What happened? Well it wasn't really a function for making strings uppercase,
+it was a function that takes any piece of data, then makes it uppercase if it's
+a string, and just breaks weirdly with anything else.</p>
+<p>Another thing we don't really like doing as programmers is...</p>
+<h3 id="overly-defensive-code-around-user-input">Overly defensive code around user input</h3>
+<p>So if your start in programming involved more than a sprinkling of PHP, then
+you'll be used to starting all your functions with the <code>manual typechecking dance</code>.</p>
+<pre data-lang="javascript" style="background-color:#2b303b;color:#c0c5ce;" class="language-javascript "><code class="language-javascript" data-lang="javascript"><span style="color:#b48ead;">function </span><span style="color:#8fa1b3;">printName</span><span>(</span><span style="color:#bf616a;">name</span><span>) {
+</span><span>  </span><span style="color:#b48ead;">if </span><span>(</span><span style="color:#bf616a;">name </span><span>&amp;&amp; </span><span style="color:#bf616a;">name</span><span>.length &gt; </span><span style="color:#d08770;">0 </span><span>&amp;&amp; typeof </span><span style="color:#bf616a;">name </span><span>=== &#39;</span><span style="color:#a3be8c;">string</span><span>&#39;) </span><span style="color:#bf616a;">then </span><span>{
+</span><span>    </span><span style="color:#b48ead;">return </span><span style="color:#bf616a;">name
+</span><span>  } </span><span style="color:#b48ead;">else </span><span>{
+</span><span>    </span><span style="color:#b48ead;">return </span><span>&quot;</span><span style="color:#a3be8c;">No name!</span><span>&quot;
+</span><span>}
+</span></code></pre>
+<h3 id="defense-against-the-dark-arts">Defense against the dark arts</h3>
+<p>Another favourite is manually checking our values to check basic mathematical
+operators aren't going to explode the whole computer.</p>
+<pre data-lang="javascript" style="background-color:#2b303b;color:#c0c5ce;" class="language-javascript "><code class="language-javascript" data-lang="javascript"><span style="color:#b48ead;">function </span><span style="color:#8fa1b3;">divide</span><span>(</span><span style="color:#bf616a;">a</span><span>, </span><span style="color:#bf616a;">b</span><span>) {
+</span><span>  </span><span style="color:#b48ead;">if </span><span>(</span><span style="color:#bf616a;">b </span><span>== </span><span style="color:#d08770;">0 </span><span>|| </span><span style="color:#96b5b4;">isNaN</span><span>(</span><span style="color:#bf616a;">a</span><span>) || </span><span style="color:#96b5b4;">isNaN</span><span>(</span><span style="color:#bf616a;">b</span><span>)) </span><span style="color:#bf616a;">then </span><span>{
+</span><span>    </span><span style="color:#b48ead;">return </span><span style="color:#d08770;">0</span><span>; </span><span style="color:#65737e;">// would have caused error
+</span><span>  } </span><span style="color:#b48ead;">else </span><span>{
+</span><span>    </span><span style="color:#b48ead;">return </span><span style="color:#bf616a;">a </span><span>/ </span><span style="color:#bf616a;">b
+</span><span>  }
+</span><span>}
+</span><span>
+</span></code></pre>
+<h3 id="how-far-does-something-like-typescript-get-us">How far does something like Typescript get us?</h3>
+<p>So we can change our weird uppercasing function...</p>
+<pre data-lang="javascript" style="background-color:#2b303b;color:#c0c5ce;" class="language-javascript "><code class="language-javascript" data-lang="javascript"><span style="color:#b48ead;">function </span><span style="color:#8fa1b3;">makeBig</span><span>(</span><span style="color:#bf616a;">thing</span><span>) {
+</span><span>  </span><span style="color:#b48ead;">return </span><span style="color:#bf616a;">thing</span><span>.</span><span style="color:#96b5b4;">toUpperCase</span><span>()
+</span><span>}
+</span></code></pre>
+<p>...to only take a string like we intended.</p>
+<pre data-lang="typescript" style="background-color:#2b303b;color:#c0c5ce;" class="language-typescript "><code class="language-typescript" data-lang="typescript"><span style="color:#b48ead;">function </span><span style="color:#8fa1b3;">makeBig</span><span>(</span><span style="color:#bf616a;">thing</span><span>: string) {
+</span><span>  </span><span style="color:#b48ead;">return </span><span style="color:#bf616a;">thing</span><span>.</span><span style="color:#96b5b4;">toUpperCase</span><span>()
+</span><span>}
+</span></code></pre>
+<p>Let's give it a smash:</p>
+<pre data-lang="typescript" style="background-color:#2b303b;color:#c0c5ce;" class="language-typescript "><code class="language-typescript" data-lang="typescript"><span style="color:#8fa1b3;">makeBig</span><span>(&#39;</span><span style="color:#a3be8c;">horse</span><span>&#39;) </span><span style="color:#65737e;">// &#39;HORSE&#39;
+</span></code></pre>
+<p>Excellent stuff.</p>
+<p>And now, if we try and do some wild type stupidity, our code doesn't even compile:</p>
+<pre data-lang="typescript" style="background-color:#2b303b;color:#c0c5ce;" class="language-typescript "><code class="language-typescript" data-lang="typescript"><span style="color:#8fa1b3;">makeBig</span><span>(</span><span style="color:#d08770;">12</span><span>) 
+</span><span style="color:#65737e;">// Argument of type &#39;6&#39; is not assignable to parameter of type &#39;string&#39;.
+</span></code></pre>
+<p>+1</p>
+<h3 id="what-about-this-potentially-malformed-user-input">What about this potentially malformed user input?</h3>
+<p>This Wild West Cowboy Javascript...</p>
+<pre data-lang="javascript" style="background-color:#2b303b;color:#c0c5ce;" class="language-javascript "><code class="language-javascript" data-lang="javascript"><span style="color:#b48ead;">function </span><span style="color:#8fa1b3;">printName</span><span>(</span><span style="color:#bf616a;">name</span><span>) {
+</span><span>  </span><span style="color:#b48ead;">if </span><span>(</span><span style="color:#bf616a;">name </span><span>&amp;&amp; </span><span style="color:#bf616a;">name</span><span>.length &gt; </span><span style="color:#d08770;">0 </span><span>&amp;&amp; typeof </span><span style="color:#bf616a;">name </span><span>=== &#39;</span><span style="color:#a3be8c;">string</span><span>&#39;) </span><span style="color:#bf616a;">then </span><span>{
+</span><span>    </span><span style="color:#b48ead;">return </span><span style="color:#bf616a;">name
+</span><span>  } </span><span style="color:#b48ead;">else </span><span>{
+</span><span>    </span><span style="color:#b48ead;">return </span><span>&quot;</span><span style="color:#a3be8c;">No name!</span><span>&quot;
+</span><span>}
+</span></code></pre>
+<p>...gets a string type, which means we don't have to check that <code>name</code> exists...</p>
+<pre data-lang="typescript" style="background-color:#2b303b;color:#c0c5ce;" class="language-typescript "><code class="language-typescript" data-lang="typescript"><span style="color:#b48ead;">function </span><span style="color:#8fa1b3;">printName</span><span>(</span><span style="color:#bf616a;">name</span><span>: string) {
+</span><span>  </span><span style="color:#b48ead;">if </span><span>(</span><span style="color:#bf616a;">name</span><span>.length &gt; </span><span style="color:#d08770;">0</span><span>) </span><span style="color:#bf616a;">then </span><span>{
+</span><span>    </span><span style="color:#b48ead;">return </span><span style="color:#bf616a;">name
+</span><span>  } </span><span style="color:#b48ead;">else </span><span>{
+</span><span>    </span><span style="color:#b48ead;">return </span><span>&quot;</span><span style="color:#a3be8c;">No name!</span><span>&quot;
+</span><span>}
+</span></code></pre>
+<p>...but we still need to check whether <code>name</code> is long enough and return a default if not.</p>
+<h3 id="what-about-that-classic-divide-by-zero-problem">What about that classic divide by zero problem?</h3>
+<p>What can basic types give us here?</p>
+<pre data-lang="javascript" style="background-color:#2b303b;color:#c0c5ce;" class="language-javascript "><code class="language-javascript" data-lang="javascript"><span style="color:#b48ead;">function </span><span style="color:#8fa1b3;">divide</span><span>(</span><span style="color:#bf616a;">a</span><span>, </span><span style="color:#bf616a;">b</span><span>) {
+</span><span>  </span><span style="color:#b48ead;">if </span><span>(</span><span style="color:#bf616a;">b </span><span>== </span><span style="color:#d08770;">0 </span><span>|| </span><span style="color:#96b5b4;">isNaN</span><span>(</span><span style="color:#bf616a;">a</span><span>) || </span><span style="color:#96b5b4;">isNaN</span><span>(</span><span style="color:#bf616a;">b</span><span>)) </span><span style="color:#bf616a;">then </span><span>{
+</span><span>    </span><span style="color:#b48ead;">return </span><span style="color:#d08770;">0</span><span>; </span><span style="color:#65737e;">// would have caused error
+</span><span>  } </span><span style="color:#b48ead;">else </span><span>{
+</span><span>    </span><span style="color:#b48ead;">return </span><span style="color:#bf616a;">a </span><span>/ </span><span style="color:#bf616a;">b
+</span><span>  }
+</span><span>}
+</span></code></pre>
+<p>We can get rid of the number checks...</p>
+<pre data-lang="typescript" style="background-color:#2b303b;color:#c0c5ce;" class="language-typescript "><code class="language-typescript" data-lang="typescript"><span style="color:#b48ead;">function </span><span style="color:#8fa1b3;">divide</span><span>(</span><span style="color:#bf616a;">a</span><span>: number, </span><span style="color:#bf616a;">b</span><span>: number) {
+</span><span>  </span><span style="color:#b48ead;">if </span><span>(</span><span style="color:#bf616a;">b </span><span>== </span><span style="color:#d08770;">0</span><span>) </span><span style="color:#bf616a;">then </span><span>{
+</span><span>    </span><span style="color:#b48ead;">return </span><span style="color:#d08770;">0</span><span>; </span><span style="color:#65737e;">// would have caused error
+</span><span>  } </span><span style="color:#b48ead;">else </span><span>{
+</span><span>    </span><span style="color:#b48ead;">return </span><span style="color:#bf616a;">a </span><span>/ </span><span style="color:#bf616a;">b
+</span><span>  }
+</span><span>}
+</span></code></pre>
+<p>...but we've still got to check for that zero value. Better, but not great. What if I told you we could do better than this?</p>
+<h3 id="refined">Refined</h3>
+<p>Enter <code>Refined</code> types. A Refined type looks like this:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">newtype </span><span style="color:#d08770;">Refined</span><span> predicate value = </span><span style="color:#d08770;">Refined</span><span> value
+</span></code></pre>
+<p>As it is a <code>newtype</code> it is a wrapper around a value that is used for type
+purposes at compile time but then erased at run time (so when the program runs,
+<code>Refined 100</code> is just <code>100</code> as far as memory etc is concerned)</p>
+<p><code>value</code> is the type of actual data we are refining, for example <code>Int</code> or <code>Number</code>.</p>
+<p><code>predicate</code> is a type that lets us better describe the <code>value</code>.</p>
+<p>The most interesting thing to note here is that <code>predicate</code> only exists on the type side (ie before the <code>=</code>) and not after - this makes it a <code>phantom type</code> which is only used to add contextual information. Let's see what that actually means...</p>
+<h3 id="making-refined-values">Making Refined values</h3>
+<p>There are a few ways to make <code>Refined</code> values, especially in the Haskell
+library - we'll concentrate on two. I'm going to use the types from the
+Purescript version because a) they're simpler and b) I made them and am thus
+less likely to get it wrong.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span>refine 
+</span><span>  :: value 
+</span><span>  -&gt; </span><span style="color:#d08770;">Either RefinedError</span><span> (</span><span style="color:#d08770;">Refined</span><span> predicate value)
+</span></code></pre>
+<p>This is the regular way to make <code>Refined</code> value - you pass it a plain value and
+it returns either <code>Left</code> with a <code>RefinedError</code> describing the problem, or <code>Right</code> with
+the <code>Refined</code> value inside.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span>unsafeRefine 
+</span><span>  :: value 
+</span><span>  -&gt; </span><span style="color:#d08770;">Refined</span><span> predicate value
+</span></code></pre>
+<p>This ignores the <code>predicate</code> and leaves it to the programmer to go full YOLO
+and decide whether the predicate will be fine. I have used this to make
+<code>Monoid</code> classes where I want to add two positive numbers without checking
+that the outcome will still be positive.</p>
+<h3 id="id">Id</h3>
+<p>The most basic predicate is <code>id</code>, which doesn't really do anything.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#d08770;">Refined Id Int
+</span></code></pre>
+<p>It's named after the <code>id</code> (or <code>identity</code>) function - the function that returns whatever it
+receives, basically doing nothing.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">identity </span><span style="color:#b48ead;">:: </span><span style="color:#bf616a;">x </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">x
+</span><span>identity x = x
+</span></code></pre>
+<p>For example, any value that is a value <code>Int</code> can be made into a valid <code>Refined Id Int</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">id1 </span><span style="color:#b48ead;">:: Either RefinedError</span><span> (</span><span style="color:#b48ead;">Refined Id Int</span><span>)
+</span><span>id1 = refine </span><span style="color:#d08770;">11233
+</span><span style="color:#65737e;">-- id1 == Right (Refined 11233)
+</span></code></pre>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">id2 </span><span style="color:#b48ead;">:: Either RefinedError</span><span> (</span><span style="color:#b48ead;">Refined Id Int</span><span>)
+</span><span>id2 = refine (-</span><span style="color:#d08770;">213123</span><span>)
+</span><span style="color:#65737e;">-- id2 == Right (Refined (-213123)
+</span></code></pre>
+<h3 id="positive">Positive</h3>
+<p>The <code>Positive</code> predicate, which only allows numbers over 0.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#d08770;">Refined Positive Int
+</span></code></pre>
+<p>This refinement would pass the predicate:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">positive1 </span><span style="color:#b48ead;">:: Either RefinedError</span><span> (</span><span style="color:#b48ead;">Refined Positive Int</span><span>)
+</span><span>positive1 = refine </span><span style="color:#d08770;">10
+</span><span style="color:#65737e;">-- positive1 == Right (Refined 10)
+</span></code></pre>
+<p>This clearly very negative number clearly won't fly. Nice try, ding dongs!</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">positive2 </span><span style="color:#b48ead;">:: Either RefinedError</span><span> (</span><span style="color:#b48ead;">Refined Positive Int</span><span>)
+</span><span>positive2 = refine (-</span><span style="color:#d08770;">10</span><span>)
+</span><span style="color:#65737e;">-- positive2 == Left (GreaterThanError 0 (-10))
+</span></code></pre>
+<h3 id="from">From</h3>
+<p>We can be even more specific with these types too. The <code>From</code> predicate takes an integer and only allows values equal to or above
+it.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#d08770;">Refined</span><span> (</span><span style="color:#d08770;">From D10</span><span>) </span><span style="color:#d08770;">Int
+</span></code></pre>
+<p>(A note here - that <code>D10</code> is a type-level <code>10</code>. It is provided by the <a href="https://github.com/bodil/purescript-typelevel">purescript-typelevel</a> package.)</p>
+<p>Therefore this <code>9</code> is clearly taking the piss and totally won't <code>refine</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">from1 </span><span style="color:#b48ead;">:: Either RefinedError</span><span> (</span><span style="color:#b48ead;">Refined</span><span> (</span><span style="color:#b48ead;">From D10</span><span>) </span><span style="color:#b48ead;">Int</span><span>)
+</span><span>from1 = refine </span><span style="color:#d08770;">9
+</span><span style="color:#65737e;">-- from1 == Left (FromError 10 9) 
+</span></code></pre>
+<p>However this <code>100</code> is cool with me, and will happily <code>refine</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">from2 </span><span style="color:#b48ead;">:: Either RefinedError</span><span> (</span><span style="color:#b48ead;">Refined</span><span> (</span><span style="color:#b48ead;">From D10</span><span>) </span><span style="color:#b48ead;">Int</span><span>)
+</span><span>from2 = refine </span><span style="color:#d08770;">100
+</span><span style="color:#65737e;">-- from2 == Right (Refined 100)
+</span></code></pre>
+<h3 id="to">To</h3>
+<p>Hopefully it should be fairly intuitive how the <code>To</code> predicate works...</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">to1 </span><span style="color:#b48ead;">:: Either RefinedError</span><span> (</span><span style="color:#b48ead;">Refined</span><span> (</span><span style="color:#b48ead;">To D20</span><span>) </span><span style="color:#b48ead;">Int</span><span>)
+</span><span>to1 = refine </span><span style="color:#d08770;">21
+</span><span style="color:#65737e;">-- to1 == Left (ToError 20 21)
+</span></code></pre>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">to2 </span><span style="color:#b48ead;">:: Either RefinedError</span><span> (</span><span style="color:#b48ead;">Refined</span><span> (</span><span style="color:#b48ead;">To D20</span><span>) </span><span style="color:#b48ead;">Int</span><span>)
+</span><span>to2 = refine </span><span style="color:#d08770;">17
+</span><span style="color:#65737e;">-- to2 == Right (Refined 17)
+</span></code></pre>
+<h3 id="sizeequalto-sizegreaterthan-sizelessthan">SizeEqualTo, SizeGreaterThan, SizeLessThan</h3>
+<p>Refinements don't have to just be about numbers - we can use them on <code>foldable</code>
+structures too, such as <code>Lists</code>. The refinements let us be specific about sizes
+of said structure. Therefore we could make a non-empty <code>List</code> of <code>Boolean</code>
+values with <code>Refined (SizeGreaterThan D0) (List Boolean)</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#d08770;">Refined</span><span> (</span><span style="color:#d08770;">SizeGreaterThan 3</span><span>) (</span><span style="color:#d08770;">List Number</span><span>)
+</span></code></pre>
+<p>Therefore this list does not <code>refine</code>...</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">size1 </span><span style="color:#b48ead;">:: Refined RefinedError</span><span> (</span><span style="color:#b48ead;">Refined</span><span> (</span><span style="color:#b48ead;">SizeGreaterThan D3</span><span>) (</span><span style="color:#b48ead;">List Number</span><span>))
+</span><span>size1 = refine [</span><span style="color:#d08770;">1</span><span>, </span><span style="color:#d08770;">2</span><span>]
+</span><span style="color:#65737e;">-- size1 == Left (SizeGreaterThanError 3 [1, 2])
+</span></code></pre>
+<p>...but this one is fine.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">size2 </span><span style="color:#b48ead;">:: Refined RefinedError</span><span> (</span><span style="color:#b48ead;">Refined</span><span> (</span><span style="color:#b48ead;">SizeGreaterThan D3</span><span>) (</span><span style="color:#b48ead;">List Number</span><span>))
+</span><span>size2 = refine [</span><span style="color:#d08770;">1</span><span>, </span><span style="color:#d08770;">2</span><span>, </span><span style="color:#d08770;">3</span><span>, </span><span style="color:#d08770;">4</span><span>]
+</span><span style="color:#65737e;">-- size2 == Right (Refined [1, 2, 3, 4])
+</span></code></pre>
+<h3 id="and-or">And, Or</h3>
+<p>These type signatures are starting to get pretty hefty, but we can do better
+than that - we've also got <code>And</code> and <code>Or</code> for combining them.</p>
+<p>Let's only allow whole numbers from <code>1</code> to <code>100</code>...</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#d08770;">Refined</span><span> ((</span><span style="color:#d08770;">From D1</span><span>) </span><span style="color:#d08770;">And</span><span> (</span><span style="color:#d08770;">To D100</span><span>)) </span><span style="color:#d08770;">Int
+</span></code></pre>
+<p>Or indeed, allow all whole numbers EXCEPT <code>1</code> to <code>100</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#d08770;">Refined</span><span> ((</span><span style="color:#d08770;">To D0</span><span>) </span><span style="color:#d08770;">Or</span><span> (</span><span style="color:#d08770;">From D101</span><span>)) </span><span style="color:#d08770;">Int
+</span></code></pre>
+<p>This type describes the roll of a dice.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">type </span><span style="color:#d08770;">Dice </span><span>= </span><span style="color:#d08770;">Refined</span><span> ((</span><span style="color:#d08770;">From D1</span><span>) </span><span style="color:#d08770;">And</span><span> (</span><span style="color:#d08770;">To D6</span><span>)) </span><span style="color:#d08770;">Int
+</span></code></pre>
+<p>Or this one, which describes the first bunch of prime numbers, and is all a bit silly
+to be honest.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">type </span><span style="color:#d08770;">Prime 
+</span><span>  = </span><span style="color:#d08770;">Refined 
+</span><span>      (</span><span style="color:#d08770;">Or</span><span> (</span><span style="color:#d08770;">Equal D2</span><span>) 
+</span><span>        (</span><span style="color:#d08770;">Or</span><span> (</span><span style="color:#d08770;">Equal D3</span><span>) 
+</span><span>          (</span><span style="color:#d08770;">Or</span><span> (</span><span style="color:#d08770;">Equal D5</span><span>) 
+</span><span>            (</span><span style="color:#d08770;">Or</span><span> (</span><span style="color:#d08770;">Equal D7</span><span>) 
+</span><span>              (</span><span style="color:#d08770;">Or</span><span> (</span><span style="color:#d08770;">Equal D11</span><span>) 
+</span><span>                (</span><span style="color:#d08770;">Or</span><span> (</span><span style="color:#d08770;">Equal D13</span><span>) (</span><span style="color:#d08770;">Equal D17</span><span>))
+</span><span>              )
+</span><span>            )
+</span><span>          )
+</span><span>        )
+</span><span>      ) </span><span style="color:#d08770;">Int
+</span></code></pre>
+<h3 id="back-to-our-stupid-contrived-problems">Back to our stupid contrived problems...</h3>
+<p>Now with the power of <code>Refined</code> types, our defensive <code>printName</code> function is pretty much unnecessary...</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">type </span><span style="color:#d08770;">Name </span><span>= </span><span style="color:#d08770;">Refined</span><span> (</span><span style="color:#d08770;">SizeFrom 1</span><span>) </span><span style="color:#d08770;">String
+</span><span>
+</span><span style="color:#8fa1b3;">printName </span><span style="color:#b48ead;">:: Name -&gt; String
+</span><span>printName name = unrefine name
+</span></code></pre>
+<p>Plus we can make a type to make division safe from fear, at last..</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">type </span><span style="color:#d08770;">Divide </span><span>= </span><span style="color:#d08770;">Refined</span><span> (</span><span style="color:#d08770;">Not</span><span> (</span><span style="color:#d08770;">Equal 0</span><span>)) </span><span style="color:#d08770;">Number
+</span><span>
+</span><span style="color:#8fa1b3;">divide </span><span style="color:#b48ead;">:: Number -&gt; Divide -&gt; Number
+</span><span>divide a b = a / (unrefine b)
+</span></code></pre>
+<h3 id="automatic-json-validation">Automatic JSON validation</h3>
+<p>So let's say we have this data type using <code>Refined</code>...</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">type </span><span style="color:#d08770;">AlcoholUser
+</span><span>  = { name :: </span><span style="color:#d08770;">Refined</span><span> (</span><span style="color:#d08770;">SizeFrom 1</span><span>) </span><span style="color:#d08770;">String
+</span><span>    , age  :: </span><span style="color:#d08770;">Refined</span><span> (</span><span style="color:#d08770;">From 18</span><span>) </span><span style="color:#d08770;">Int
+</span><span>    }
+</span></code></pre>
+<p>...if we want to use it as an API request, sounds like a lot of work right?
+Maybe not! Because <code>refined</code> instances have <code>fromJSON</code> and <code>toJSON</code> instances
+for <code>Aeson</code> (or for <code>Argonaut</code> in Purescript) then we can automatically decode
+them from <code>JSON</code> and make the decoding fail if the <code>predicate</code> does not pass.</p>
+<p>This way, anywhere in our app, <code>name</code> will always be non-empty. and <code>age</code> will
+always be <code>18</code> or more.</p>
+<h3 id="well-shit">Well, shit.</h3>
+<p>Yep. For more details, check out the <a href="http://hackage.haskell.org/package/refined">Refined Haskell
+library</a> or indeed the
+<a href="https://github.com/danieljharvey/purescript-refined">purescript-refined</a>
+library which I ported from the Haskell one.</p>
+
+
+    </main>
+
+    <footer>
+      <p><a href="mailto:danieljamesharvey@gmail.com">Contact</a> |
+      <a href="https://github.com/danieljharvey">Github</a></p>
+      <p>Links for nerds:
+        <a href="/atom.xml">atom</a>
+        <a href="/rss.xml">rss</a></p>
+
+    </footer>
+</body>
+
+</html>

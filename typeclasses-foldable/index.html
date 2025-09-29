@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - Typeclasses - Foldable</title>
+    <link rel="stylesheet" href="https://danieljharvey.github.io/main.css">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="/">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="/">Posts</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        
+<h1 class="title">
+  Typeclasses - Foldable
+</h1>
+<p class="subtitle"><strong>2018-12-03</strong></p>
+<p>
+ <p class="blog-meta">
+        
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/haskell/"
+          >#haskell</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/typeclasses/"
+          >#typeclasses</a
+        >
+         
+      </p>
+
+<p>Let's think about sets of things that we want to make into one thing.</p>
+<p>A classic example might be a list of numbers that we want to add up.</p>
+<p>In Javascript we might do something like this:</p>
+<pre data-lang="javascript" style="background-color:#2b303b;color:#c0c5ce;" class="language-javascript "><code class="language-javascript" data-lang="javascript"><span style="color:#b48ead;">const </span><span style="color:#bf616a;">added </span><span>= [</span><span style="color:#d08770;">1</span><span>, </span><span style="color:#d08770;">2</span><span>, </span><span style="color:#d08770;">3</span><span>, </span><span style="color:#d08770;">4</span><span>].</span><span style="color:#8fa1b3;">reduce</span><span>((</span><span style="color:#bf616a;">total</span><span>, </span><span style="color:#bf616a;">item</span><span>) </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>  </span><span style="color:#b48ead;">return </span><span style="color:#bf616a;">total </span><span>+ </span><span style="color:#bf616a;">item</span><span>;
+</span><span>}, </span><span style="color:#d08770;">0</span><span>);
+</span><span style="color:#65737e;">// added == 10
+</span></code></pre>
+<p>Or perhaps we could get the maximum of the same list.</p>
+<pre data-lang="javascript" style="background-color:#2b303b;color:#c0c5ce;" class="language-javascript "><code class="language-javascript" data-lang="javascript"><span style="color:#b48ead;">const </span><span style="color:#bf616a;">maxNo </span><span>= [</span><span style="color:#d08770;">1</span><span>, </span><span style="color:#d08770;">2</span><span>, </span><span style="color:#d08770;">3</span><span>, </span><span style="color:#d08770;">4</span><span>].</span><span style="color:#8fa1b3;">reduce</span><span>((</span><span style="color:#bf616a;">highest</span><span>, </span><span style="color:#bf616a;">item</span><span>) </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>  </span><span style="color:#b48ead;">return </span><span style="color:#bf616a;">highest </span><span>&gt; </span><span style="color:#bf616a;">item </span><span>? </span><span style="color:#bf616a;">highest </span><span>: </span><span style="color:#bf616a;">item</span><span>;
+</span><span>}, </span><span style="color:#d08770;">0</span><span>);
+</span><span style="color:#65737e;">// maxNo == 4
+</span></code></pre>
+<h3 id="definition">Definition</h3>
+<p>So in Haskell we have the very similar <code>foldr</code> with the following signature:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#d08770;">Prelude</span><span>&gt; :i </span><span style="color:#d08770;">Foldable
+</span></code></pre>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">class </span><span style="color:#ebcb8b;">Foldable</span><span> (</span><span style="color:#bf616a;">t</span><span> :: * -&gt; *) </span><span style="color:#b48ead;">where
+</span><span>  </span><span style="color:#8fa1b3;">foldMap </span><span style="color:#b48ead;">:: Monoid </span><span style="color:#bf616a;">m </span><span style="color:#b48ead;">=&gt;</span><span> (</span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">m</span><span>) </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">t a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">m
+</span><span>  </span><span style="color:#8fa1b3;">foldr </span><span style="color:#b48ead;">::</span><span> (</span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">b </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">b</span><span>) </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">b </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">t a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">b
+</span><span>  {-# </span><span style="color:#b48ead;">MINIMAL</span><span> foldMap | foldr #-}
+</span></code></pre>
+<p>(there is actually loads more but these are the key ones)</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">foldr </span><span style="color:#b48ead;">:: Foldable </span><span style="color:#bf616a;">t </span><span style="color:#b48ead;">=&gt;</span><span> (</span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">b </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">b</span><span>) </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">b </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">t a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">b
+</span><span style="color:#8fa1b3;">foldMap </span><span style="color:#b48ead;">::</span><span> (</span><span style="color:#b48ead;">Foldable </span><span style="color:#bf616a;">t</span><span>, </span><span style="color:#b48ead;">Monoid </span><span style="color:#bf616a;">m</span><span>) </span><span style="color:#b48ead;">=&gt;</span><span> (</span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">m</span><span>) </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">t a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">m
+</span></code></pre>
+<p>Here are the above JS functions using <code>foldr</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">added </span><span style="color:#b48ead;">:: Int
+</span><span>added = foldr (\a b -&gt; a + b) </span><span style="color:#d08770;">0</span><span> [</span><span style="color:#d08770;">1</span><span>,</span><span style="color:#d08770;">2</span><span>,</span><span style="color:#d08770;">3</span><span>,</span><span style="color:#d08770;">4</span><span>]
+</span><span style="color:#65737e;">-- added = 10
+</span></code></pre>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">maxNo </span><span style="color:#b48ead;">:: Int
+</span><span>maxNo = foldr (\a b -&gt; </span><span style="color:#b48ead;">if</span><span> a &gt; b </span><span style="color:#b48ead;">then</span><span> a </span><span style="color:#b48ead;">else</span><span> b) </span><span style="color:#d08770;">0</span><span> [</span><span style="color:#d08770;">1</span><span>,</span><span style="color:#d08770;">2</span><span>,</span><span style="color:#d08770;">3</span><span>,</span><span style="color:#d08770;">4</span><span>]
+</span><span style="color:#65737e;">-- maxNo = 4
+</span></code></pre>
+<p>Not hugely different from the Javascript equivalent really. If you squint you can see the combining function, the initial value, and the data itself.</p>
+<p><code>foldMap</code> works a little differently. Instead of taking a custom combining function and using that to combine the items together, it takes a <code>a -&gt; m</code> function (where the <code>m</code> in question is any <code>Monoid</code> instance). It uses this to turn each item into a <code>Monoid</code>, and then uses the <code>&lt;&gt;</code> and <code>mempty</code> functions for that Monoid to combine the items.</p>
+<p>Here's a <code>newtype</code> I made earlier: <code>MySum</code>. It's <code>Monoid</code> instance adds numbers together when combined.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">newtype </span><span style="color:#d08770;">MySum</span><span> a = </span><span style="color:#d08770;">MySum</span><span> { getMySum :: a }
+</span><span>
+</span><span style="color:#65737e;">-- Semigroup instance
+</span><span style="color:#b48ead;">instance</span><span> (</span><span style="color:#b48ead;">Num </span><span style="color:#bf616a;">a</span><span>) </span><span style="color:#b48ead;">=&gt; Semigroup</span><span> (</span><span style="color:#b48ead;">MySum </span><span style="color:#bf616a;">a</span><span>) </span><span style="color:#b48ead;">where
+</span><span>    </span><span style="color:#d08770;">MySum</span><span> a &lt;&gt; </span><span style="color:#d08770;">MySum</span><span> b = </span><span style="color:#d08770;">MySum</span><span> (a + b)
+</span><span>
+</span><span style="color:#65737e;">-- Monoid instance
+</span><span style="color:#b48ead;">instance</span><span> (</span><span style="color:#b48ead;">Num </span><span style="color:#bf616a;">a</span><span>) </span><span style="color:#b48ead;">=&gt; Monoid</span><span> (</span><span style="color:#b48ead;">MySum </span><span style="color:#bf616a;">a</span><span>) </span><span style="color:#b48ead;">where
+</span><span>    mempty = </span><span style="color:#d08770;">MySum 0
+</span></code></pre>
+<p>Now we can use <code>foldMap</code> with the <code>MySum</code> constructor to add up a list of numbers.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">addTwo </span><span style="color:#b48ead;">:: MySum Int
+</span><span>addTwo = foldMap </span><span style="color:#d08770;">MySum</span><span> [</span><span style="color:#d08770;">1</span><span>,</span><span style="color:#d08770;">2</span><span>,</span><span style="color:#d08770;">3</span><span>,</span><span style="color:#d08770;">4</span><span>]
+</span><span style="color:#65737e;">-- addTwo = MySum 10
+</span></code></pre>
+<p>Great stuff! Now our answer is still wrapped up in a <code>MySum</code>, but it's easy enough to take it out.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">addTwoUnwrapped </span><span style="color:#b48ead;">:: MySum Int
+</span><span>addTwoUnwrapped = getMySum $ foldMap </span><span style="color:#d08770;">MySum</span><span> [</span><span style="color:#d08770;">1</span><span>,</span><span style="color:#d08770;">2</span><span>,</span><span style="color:#d08770;">3</span><span>,</span><span style="color:#d08770;">4</span><span>]
+</span><span style="color:#65737e;">-- addTwoUnwrapped = 10
+</span></code></pre>
+<p>Excellent!</p>
+<p>This seems laborious, but actually <code>MySum</code> isn't my invention, I've just stolen a thing called <code>Sum</code> that comes with the Haskell Prelude. Therefore we can just do <code>getSum $ foldMap Sum [1,2,3,4,5,6]</code> to Monoidally combine the list items.</p>
+<p>It also provides a similar invention for multiplying numbers called <code>Product</code> that works like this:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">twentyFour </span><span style="color:#b48ead;">:: Int
+</span><span>twentyFour = getProduct $ foldMap </span><span style="color:#d08770;">Product</span><span> [</span><span style="color:#d08770;">1</span><span>,</span><span style="color:#d08770;">2</span><span>,</span><span style="color:#d08770;">3</span><span>,</span><span style="color:#d08770;">4</span><span>]
+</span><span style="color:#65737e;">-- twentyFour == 24
+</span></code></pre>
+<p>Folding can also capture logic, here we are using <code>foldMap</code> to check all of a list is true.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">newtype </span><span style="color:#d08770;">MyAll </span><span>= </span><span style="color:#d08770;">MyAll</span><span> { getMyAll :: </span><span style="color:#d08770;">Bool</span><span> }
+</span><span>
+</span><span style="color:#b48ead;">instance Semigroup MyAll where
+</span><span>    </span><span style="color:#d08770;">MyAll</span><span> a &lt;&gt; </span><span style="color:#d08770;">MyAll</span><span> b = </span><span style="color:#d08770;">MyAll</span><span> (a &amp;&amp; b)
+</span><span>
+</span><span style="color:#b48ead;">instance Monoid MyAll where
+</span><span>    mempty = </span><span style="color:#d08770;">MyAll True
+</span><span>
+</span><span style="color:#8fa1b3;">allOfThem </span><span style="color:#b48ead;">:: Bool
+</span><span>allOfThem = getMyAll $ foldMap </span><span style="color:#d08770;">MyAll</span><span> [</span><span style="color:#d08770;">True</span><span>,</span><span style="color:#d08770;">True</span><span>,</span><span style="color:#d08770;">True</span><span>]
+</span><span style="color:#65737e;">-- allOfThem == True
+</span><span>
+</span><span style="color:#8fa1b3;">notAll </span><span style="color:#b48ead;">:: Bool
+</span><span>notAll = getMyAll $ foldMap </span><span style="color:#d08770;">MyAll</span><span> [</span><span style="color:#d08770;">False</span><span>, </span><span style="color:#d08770;">True</span><span>, </span><span style="color:#d08770;">True</span><span>]
+</span><span style="color:#65737e;">-- notAll == False
+</span></code></pre>
+<p>(I have also stolen <code>MyAll</code>, it is usually called just <code>All</code>. You can see the pattern here.)</p>
+<p>We could also very easily make a <code>MyAny</code> type which uses or (ie, <code>||</code>) which we could use to return a <code>True</code> whenever a single one of a collection of <code>Bool</code>s happens to be <code>True</code>. You might want to have a think about what the <code>mempty</code> value would be for that to work though. That's up to you.</p>
+<p>Anyhow. I'm bored of typing now so I guess this is it for this one.</p>
+<p>Make sense? If not, why not <a href="/contact.html">get in touch</a>?</p>
+<p>Further reading:</p>
+<p><a href="http://hackage.haskell.org/package/base-4.12.0.0/docs/Data-Foldable.html">Data.Foldable</a></p>
+
+
+    </main>
+
+    <footer>
+      <p><a href="mailto:danieljamesharvey@gmail.com">Contact</a> |
+      <a href="https://github.com/danieljharvey">Github</a></p>
+      <p>Links for nerds:
+        <a href="/atom.xml">atom</a>
+        <a href="/rss.xml">rss</a></p>
+
+    </footer>
+</body>
+
+</html>

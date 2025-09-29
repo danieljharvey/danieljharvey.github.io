@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - Typeclasses - Monoid</title>
+    <link rel="stylesheet" href="https://danieljharvey.github.io/main.css">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="/">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="/">Posts</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        
+<h1 class="title">
+  Typeclasses - Monoid
+</h1>
+<p class="subtitle"><strong>2019-01-04</strong></p>
+<p>
+ <p class="blog-meta">
+        
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/haskell/"
+          >#haskell</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/typeclasses/"
+          >#typeclasses</a
+        >
+         
+      </p>
+
+<p>In an exciting previous episode, we talked about the <a href="https://danieljharvey.github.io/typeclasses-monoid/./posts/2019-01-03-typeclasses-semigroup.markdown">Semigroup</a> type class that is used for smashing two things together.</p>
+<p>Today we're going to talk about the <code>Monoid</code> typeclass, which is a way of generalising a collection of things that can be combined together. Seems very similar, but the important difference between combining two things, and combining any number of things, is that that number of things might be zero things.</p>
+<p>Therefore as well as the <code>append</code> function <code>&lt;&gt;</code> we will need a way of expressing what no items looks like. Seems weird? Yeah, it kind of is. Some examples may help.</p>
+<h3 id="combining-lists">Combining Lists</h3>
+<p>We need to combine a <code>List</code> of other <code>List</code> values, and we're all functional programmers, so let's go ahead and make a function for doing that.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">combineList </span><span style="color:#b48ead;">::</span><span> [[</span><span style="color:#bf616a;">a</span><span>]] </span><span style="color:#b48ead;">-&gt;</span><span> [</span><span style="color:#bf616a;">a</span><span>]
+</span><span>combineList (a:as) = a ++ (combineList as)
+</span></code></pre>
+<p>If we use it on an actual value, then great job.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">great </span><span style="color:#b48ead;">::</span><span> [</span><span style="color:#b48ead;">Int</span><span>]
+</span><span>great = combineList [[</span><span style="color:#d08770;">1</span><span>,</span><span style="color:#d08770;">2</span><span>,</span><span style="color:#d08770;">3</span><span>],[</span><span style="color:#d08770;">4</span><span>,</span><span style="color:#d08770;">5</span><span>,</span><span style="color:#d08770;">6</span><span>]]
+</span><span style="color:#65737e;">-- great == [1,2,3,4,5,6]
+</span></code></pre>
+<p>But what about if we use it on an empty list?</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">error </span><span style="color:#b48ead;">::</span><span> [</span><span style="color:#b48ead;">Int</span><span>]
+</span><span>error = combineList </span><span style="color:#d08770;">[]
+</span></code></pre>
+<p>Ahh shit! We get this:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span>uncaught exception: </span><span style="color:#d08770;">PatternMatchFail
+</span></code></pre>
+<p>That's not great. Looks like we're going to need an empty value to use for empty lists.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">combineList1 </span><span style="color:#b48ead;">::</span><span> [[</span><span style="color:#bf616a;">a</span><span>]] </span><span style="color:#b48ead;">-&gt;</span><span> [</span><span style="color:#bf616a;">a</span><span>]
+</span><span>combineList1 </span><span style="color:#d08770;">[] </span><span>= </span><span style="color:#d08770;">[]
+</span><span>combineList1 (a:as) = a ++ (combineList1 as)
+</span></code></pre>
+<pre data-lang="Haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-Haskell "><code class="language-Haskell" data-lang="Haskell"><span style="color:#8fa1b3;">ok </span><span style="color:#b48ead;">::</span><span> [</span><span style="color:#b48ead;">Int</span><span>]
+</span><span>ok = combineList1 </span><span style="color:#d08770;">[]
+</span><span style="color:#65737e;">-- ok == []
+</span></code></pre>
+<p>So here the empty value is <code>[]</code> - and having this value is what means we have a <code>Monoid</code> as well as a <code>Semigroup</code>.</p>
+<h3 id="definition">Definition</h3>
+<p>What does <code>ghci</code> say about <code>Monoid</code>?</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#bf616a;">Prelude</span><span>&gt; :i Monoid
+</span></code></pre>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">class </span><span style="color:#a3be8c;">Semigroup </span><span style="color:#bf616a;">a</span><span> =&gt; </span><span style="color:#ebcb8b;">Monoid </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">where
+</span><span>  </span><span style="color:#8fa1b3;">mempty </span><span style="color:#b48ead;">:: </span><span style="color:#bf616a;">a
+</span><span>  </span><span style="color:#8fa1b3;">mappend </span><span style="color:#b48ead;">:: </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">a
+</span><span>  </span><span style="color:#8fa1b3;">mconcat </span><span style="color:#b48ead;">::</span><span> [</span><span style="color:#bf616a;">a</span><span>] </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">a
+</span><span>  {-# </span><span style="color:#b48ead;">MINIMAL</span><span> mempty #-}
+</span></code></pre>
+<p>OK. So firstly, whatever we want to make a <code>Monoid</code> must also be a <code>Semigroup</code>.</p>
+<p>(Incidentally, the terminology of the relationship between these two is that <code>Semigroup</code> is a <code>superclass</code> of <code>Monoid</code>, meaning anything that is a <code>Monoid</code> is also a <code>Semigroup</code>. Conversely <code>Monoid</code> is a <code>subclass</code> of <code>Semigroup</code>. You'll notice many of these relationships amongst Haskell classes, like between <code>Eq</code> and <code>Ord</code>, and between <code>Functor</code> and <code>Applicative</code>. More words! More confusion! Great!)</p>
+<p>Secondly, the only function we need to define (because of <code>MINIMAL</code>) is <code>mempty</code> - which defines our empty element (we also need <code>mappend</code>, but this is the same as <code>&lt;&gt;</code> and is supplied by our <code>Semigroup</code> unless we have a burning desire to write another one).</p>
+<p>Therefore, if we take a <code>Semigroup</code> and plop an <code>mempty</code> function on it too we can have a <code>Monoid</code>. Clear as mud!</p>
+<h3 id="more-about-mempty">More about mempty</h3>
+<p>The important test for this <code>mempty</code> value is that when we <code>mappend</code> it onto our <code>Monoid</code> it does nothing whatsoever.</p>
+<p>Here's an empty element for <code>List</code>...</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">emptyList </span><span style="color:#b48ead;">::</span><span> [</span><span style="color:#b48ead;">Int</span><span>]
+</span><span>emptyList = </span><span style="color:#d08770;">[]
+</span></code></pre>
+<p>...and here it combined with another <code>List</code> and achieving absolutely nothing.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">addNothing </span><span style="color:#b48ead;">::</span><span> [</span><span style="color:#b48ead;">Int</span><span>]
+</span><span>addNothing = [</span><span style="color:#d08770;">1</span><span>,</span><span style="color:#d08770;">2</span><span>,</span><span style="color:#d08770;">3</span><span>] ++ emptyList
+</span><span style="color:#65737e;">-- addNothing == [1,2,3]
+</span></code></pre>
+<h3 id="defining-a-list-monoid">Defining a List Monoid</h3>
+<p>So we need to make a <code>List Monoid</code> then?</p>
+<ol>
+<li>An operation called <code>mappend</code> for combining two values - here <code>++</code> will do the trick.</li>
+<li>An empty value called <code>mempty</code> - here we would use <code>[]</code>.</li>
+</ol>
+<p>Here goes:</p>
+<pre data-lang="Haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-Haskell "><code class="language-Haskell" data-lang="Haskell"><span style="color:#b48ead;">instance Semigroup</span><span> [</span><span style="color:#bf616a;">a</span><span>] </span><span style="color:#b48ead;">where
+</span><span>  a &lt;&gt; b = a ++ b
+</span><span>
+</span><span style="color:#b48ead;">instance Monoid</span><span> [</span><span style="color:#bf616a;">a</span><span>] </span><span style="color:#b48ead;">where
+</span><span>  mempty = </span><span style="color:#d08770;">[]
+</span></code></pre>
+<p>Great stuff!</p>
+<h3 id="we-get-mconcat-for-free">We get mconcat for free</h3>
+<p>Once we've defined that, we get <code>mconcat</code> (or rather our nice <code>combineList1</code>) for free! All it does is a fold, starting with <code>mempty</code> and then applying <code>mappend</code> to each element in the list. Great!</p>
+<h3 id="combining-numbers">Combining Numbers</h3>
+<p>The empty element is interesting on our number <code>Semigroup</code> instances from before too.</p>
+<p>Addition works like this, with an empty element of <code>0</code>.</p>
+<pre data-lang="Haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-Haskell "><code class="language-Haskell" data-lang="Haskell"><span style="color:#b48ead;">newtype </span><span style="color:#d08770;">MySum</span><span> a = </span><span style="color:#d08770;">MySum</span><span> {
+</span><span>    </span><span style="color:#8fa1b3;">getMySum </span><span style="color:#b48ead;">:: </span><span style="color:#bf616a;">a
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">instance</span><span> (</span><span style="color:#b48ead;">Num </span><span style="color:#bf616a;">a</span><span>) </span><span style="color:#b48ead;">=&gt; Semigroup</span><span> (</span><span style="color:#b48ead;">MySum </span><span style="color:#bf616a;">a</span><span>) </span><span style="color:#b48ead;">where
+</span><span>    </span><span style="color:#d08770;">MySum</span><span> a &lt;&gt; </span><span style="color:#d08770;">MySum</span><span> b = </span><span style="color:#d08770;">MySum</span><span> (a + b)
+</span><span>
+</span><span style="color:#b48ead;">instance</span><span> (</span><span style="color:#b48ead;">Num </span><span style="color:#bf616a;">a</span><span>) </span><span style="color:#b48ead;">=&gt; Monoid</span><span> (</span><span style="color:#b48ead;">MySum </span><span style="color:#bf616a;">a</span><span>) </span><span style="color:#b48ead;">where
+</span><span>    mempty = </span><span style="color:#d08770;">MySum 0
+</span><span>
+</span><span style="color:#8fa1b3;">ten </span><span style="color:#b48ead;">:: Int
+</span><span>ten = getMySum $ </span><span style="color:#d08770;">MySum 1 </span><span>&lt;&gt; </span><span style="color:#d08770;">MySum 7 </span><span>&lt;&gt; </span><span style="color:#d08770;">MySum 2
+</span><span style="color:#65737e;">-- ten == 10
+</span></code></pre>
+<p>Why zero? Because adding 0 to a number does nothing!</p>
+<p>Multiplication is not the same though.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">newtype </span><span style="color:#d08770;">MyProduct</span><span> a = </span><span style="color:#d08770;">MyProduct</span><span> {
+</span><span>    </span><span style="color:#8fa1b3;">getMyProduct </span><span style="color:#b48ead;">:: </span><span style="color:#bf616a;">a
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">instance</span><span> (</span><span style="color:#b48ead;">Num </span><span style="color:#bf616a;">a</span><span>) </span><span style="color:#b48ead;">=&gt; Semigroup</span><span> (</span><span style="color:#b48ead;">MyProduct </span><span style="color:#bf616a;">a</span><span>) </span><span style="color:#b48ead;">where
+</span><span>    </span><span style="color:#d08770;">MyProduct</span><span> a &lt;&gt; </span><span style="color:#d08770;">MyProduct</span><span> b = </span><span style="color:#d08770;">MyProduct</span><span> (a * b)
+</span><span>
+</span><span style="color:#b48ead;">instance</span><span> (</span><span style="color:#b48ead;">Num </span><span style="color:#bf616a;">a</span><span>) </span><span style="color:#b48ead;">=&gt; Monoid</span><span> (</span><span style="color:#b48ead;">MyProduct </span><span style="color:#bf616a;">a</span><span>) </span><span style="color:#b48ead;">where
+</span><span>    mempty = </span><span style="color:#d08770;">MyProduct 1
+</span><span>
+</span><span style="color:#8fa1b3;">sixtySix </span><span style="color:#b48ead;">:: Int
+</span><span>sixtySix = getMyProduct $ </span><span style="color:#d08770;">MyProduct 11 </span><span>&lt;&gt; </span><span style="color:#d08770;">MyProduct 2 </span><span>&lt;&gt; </span><span style="color:#d08770;">MyProduct 3
+</span><span style="color:#65737e;">-- sixtySix == 66
+</span></code></pre>
+<p>Here the <code>mempty</code> value must be 1, because multiplying anything by <code>1</code> changes nothing.</p>
+<h3 id="so-what-does-it-all-mean">So What Does It All Mean?</h3>
+<p>This all seems a lot of work to get a free <code>mconcat</code> function, but the <code>Monoid</code> typeclass really comes into it's own when used with stuff like <a href="https://danieljharvey.github.io/typeclasses-monoid/./posts/2018-12-03-typeclasses-foldable.markdown">Foldable</a>. Just by adding this empty value we get a hell of a lot more "for free", as such.</p>
+<p>Make sense? If not, why not <a href="/contact.html">get in touch</a>?</p>
+<p>Further reading:</p>
+<p><a href="http://hackage.haskell.org/package/base-4.12.0.0/docs/Data-Monoid.html">Data.Monoid on Hackage</a></p>
+<p><a href="https://medium.com/@sjsyrek/five-minutes-to-monoid-fe6f364d0bba">5 minutes to Monoids</a></p>
+<p><a href="https://www.schoolofhaskell.com/user/mgsloan/monoids-tour">Monoids tour on School of Haskell</a></p>
+
+
+    </main>
+
+    <footer>
+      <p><a href="mailto:danieljamesharvey@gmail.com">Contact</a> |
+      <a href="https://github.com/danieljharvey">Github</a></p>
+      <p>Links for nerds:
+        <a href="/atom.xml">atom</a>
+        <a href="/rss.xml">rss</a></p>
+
+    </footer>
+</body>
+
+</html>

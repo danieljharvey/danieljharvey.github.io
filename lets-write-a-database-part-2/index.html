@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - Let's write a database (part 2)</title>
+    <link rel="stylesheet" href="https://danieljharvey.github.io/main.css">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="/">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="/">Posts</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        
+<h1 class="title">
+  Let&#x27;s write a database (part 2)
+</h1>
+<p class="subtitle"><strong>2025-08-05</strong></p>
+<p>
+ <p class="blog-meta">
+        
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/database/"
+          >#database</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/query-engine/"
+          >#query-engine</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/rust/"
+          >#rust</a
+        >
+         
+      </p>
+
+<p>Hello, hello, hello. Welcome to part two of this adventure where we're making a database by hand. In part one we stole a SQL parser, did some table scans, filtered some results, and projected the ones we're interested in. I promised we'd look at joins today, but first we need to do a bit of housekeeping.</p>
+<p>If you'd like to look at the code, it's <a href="https://github.com/danieljharvey/lets-build-a-database">right here</a>.</p>
+<h2 id="storing-our-rows-better">Storing our rows better</h2>
+<p>Previously we passed our rows around as <code>Vec&lt;serde_json::Value&gt;</code> so each row was a JSON value that looked like this:</p>
+<pre data-lang="json" style="background-color:#2b303b;color:#c0c5ce;" class="language-json "><code class="language-json" data-lang="json"><span>{ 
+</span><span>  &quot;</span><span style="color:#a3be8c;">id</span><span>&quot;: </span><span style="color:#d08770;">1</span><span>,
+</span><span>  &quot;</span><span style="color:#a3be8c;">name</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">Mr Horse</span><span>&quot;,
+</span><span>  &quot;</span><span style="color:#a3be8c;">age</span><span>&quot;: </span><span style="color:#d08770;">100
+</span><span>}
+</span></code></pre>
+<p>This is poor for two reasons:</p>
+<ol>
+<li>
+<p>Having the column names in every row is wasteful</p>
+</li>
+<li>
+<p>If we want to rename columns (or disambiguate the "name" column from two tables that have been joined), we have to change every row</p>
+</li>
+</ol>
+<p>Instead we have a <code>Row</code> type that contains a <code>Vec</code> full of individual <code>serde_json::Value</code> types for each column entry:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">pub struct </span><span>Row {
+</span><span>    </span><span style="color:#b48ead;">pub </span><span style="color:#bf616a;">items</span><span>: Vec&lt;serde_json::Value&gt;,
+</span><span>}
+</span></code></pre>
+<p>And we pass around a single <code>Schema</code> type that holds all the column names:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">pub struct </span><span>Schema {
+</span><span>    </span><span style="color:#b48ead;">pub </span><span style="color:#bf616a;">columns</span><span>: Vec&lt;Column&gt;,
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">pub struct </span><span>Column {
+</span><span>    </span><span style="color:#b48ead;">pub </span><span style="color:#bf616a;">name</span><span>: String,
+</span><span>}
+</span></code></pre>
+<h2 id="changes-to-our-query-functions">Changes to our query functions</h2>
+<p>Previously we just returned a big pile of rows from each query function, but now each one returns a <code>QueryStep</code> type:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">pub struct </span><span>QueryStep {
+</span><span>    </span><span style="color:#b48ead;">pub </span><span style="color:#bf616a;">schema</span><span>: Schema,
+</span><span>    </span><span style="color:#b48ead;">pub </span><span style="color:#bf616a;">rows</span><span>: Vec&lt;Row&gt;,
+</span><span>}
+</span></code></pre>
+<p>Now we have a bunch of rows, and a <code>Schema</code> so we know what's in them.</p>
+<h3 id="from">From</h3>
+<p>When selecting fields, we grab all the rows, and then return a schema too. These are hardcoded for now:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">schema</span><span>(</span><span style="color:#bf616a;">table_name</span><span>: &amp;TableName) -&gt; Vec&lt;Column&gt; {
+</span><span>    </span><span style="color:#b48ead;">match</span><span> table_name.</span><span style="color:#d08770;">0.</span><span style="color:#96b5b4;">as_str</span><span>() {
+</span><span>        &quot;</span><span style="color:#a3be8c;">Album</span><span>&quot; =&gt; vec![&quot;</span><span style="color:#a3be8c;">AlbumId</span><span>&quot;.</span><span style="color:#96b5b4;">into</span><span>(), &quot;</span><span style="color:#a3be8c;">Title</span><span>&quot;.</span><span style="color:#96b5b4;">into</span><span>(), &quot;</span><span style="color:#a3be8c;">ArtistId</span><span>&quot;.</span><span style="color:#96b5b4;">into</span><span>()],
+</span><span>        &quot;</span><span style="color:#a3be8c;">Artist</span><span>&quot; =&gt; vec![&quot;</span><span style="color:#a3be8c;">ArtistId</span><span>&quot;.</span><span style="color:#96b5b4;">into</span><span>(), &quot;</span><span style="color:#a3be8c;">Name</span><span>&quot;.</span><span style="color:#96b5b4;">into</span><span>()],
+</span><span>        &quot;</span><span style="color:#a3be8c;">Track</span><span>&quot; =&gt; vec![
+</span><span>            &quot;</span><span style="color:#a3be8c;">TrackId</span><span>&quot;.</span><span style="color:#96b5b4;">into</span><span>(),
+</span><span>            &quot;</span><span style="color:#a3be8c;">Name</span><span>&quot;.</span><span style="color:#96b5b4;">into</span><span>(),
+</span><span>            &quot;</span><span style="color:#a3be8c;">AlbumId</span><span>&quot;.</span><span style="color:#96b5b4;">into</span><span>(),
+</span><span>            &quot;</span><span style="color:#a3be8c;">MediaTypeId</span><span>&quot;.</span><span style="color:#96b5b4;">into</span><span>(),
+</span><span>            &quot;</span><span style="color:#a3be8c;">GenreId</span><span>&quot;.</span><span style="color:#96b5b4;">into</span><span>(),
+</span><span>            &quot;</span><span style="color:#a3be8c;">Composer</span><span>&quot;.</span><span style="color:#96b5b4;">into</span><span>(),
+</span><span>            &quot;</span><span style="color:#a3be8c;">Milliseconds</span><span>&quot;.</span><span style="color:#96b5b4;">into</span><span>(),
+</span><span>            &quot;</span><span style="color:#a3be8c;">Bytes</span><span>&quot;.</span><span style="color:#96b5b4;">into</span><span>(),
+</span><span>            &quot;</span><span style="color:#a3be8c;">UnitPrice</span><span>&quot;.</span><span style="color:#96b5b4;">into</span><span>(),
+</span><span>        ],
+</span><span>        _ =&gt; todo!(&quot;</span><span style="color:#a3be8c;">unknown schema</span><span>&quot;),
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<h3 id="filtering">Filtering</h3>
+<p>For instance, this means our filtering now looks like this, passing the schema through unchanged from whatever <code>Query</code> it wraps:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span>Query::Filter(Filter { from, filter }) =&gt; {
+</span><span>    </span><span style="color:#b48ead;">let</span><span> QueryStep {
+</span><span>        schema,
+</span><span>        rows,
+</span><span>    } = </span><span style="color:#96b5b4;">run_query</span><span>(from)?;
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">let mut</span><span> filtered_rows = vec![];
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">for</span><span> row in rows {
+</span><span>        </span><span style="color:#b48ead;">if </span><span>filter::apply_predicate(&amp;row, &amp;schema, filter)? {
+</span><span>            filtered_rows.</span><span style="color:#96b5b4;">push</span><span>(row);
+</span><span>        }
+</span><span>    }
+</span><span>
+</span><span>    Ok(QueryStep {
+</span><span>        schema,
+</span><span>        rows: filtered_rows
+</span><span>    })
+</span><span>}
+</span></code></pre>
+<h3 id="projections">Projections</h3>
+<p>Our projections let us drop and reorder fields, so they'll change the schemas as well as the rows:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span>Query::Project(Project { from, fields }) =&gt; {
+</span><span>    </span><span style="color:#b48ead;">let</span><span> QueryStep {
+</span><span>        schema,
+</span><span>        rows,
+</span><span>    } = </span><span style="color:#96b5b4;">run_query</span><span>(from)?;
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">let mut</span><span> projected_rows = vec![];
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">for</span><span> row in &amp;rows {
+</span><span>        projected_rows.</span><span style="color:#96b5b4;">push</span><span>(project::project_fields(row, &amp;schema, fields)?);
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">let</span><span> schema = project::project_schema(&amp;schema, fields)?;
+</span><span>
+</span><span>    Ok(QueryStep {
+</span><span>        schema,
+</span><span>        rows: projected_rows,
+</span><span>    })
+</span><span>}
+</span></code></pre>
+<p>As well as a <code>project_fields</code> function we have a matching <code>project_schema</code> function that creates a new schema.</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">pub fn </span><span style="color:#8fa1b3;">project_schema</span><span>(</span><span style="color:#bf616a;">schema</span><span>: &amp;Schema, </span><span style="color:#bf616a;">fields</span><span>: &amp;[Column]) 
+</span><span>  -&gt; Result&lt;Schema, QueryError&gt;
+</span><span>{
+</span><span>  </span><span style="color:#b48ead;">let mut</span><span> columns = vec![];
+</span><span>
+</span><span>  </span><span style="color:#b48ead;">for</span><span> field in fields {
+</span><span>    </span><span style="color:#b48ead;">let</span><span> index = schema.</span><span style="color:#96b5b4;">get_index_for_column</span><span>(field).</span><span style="color:#96b5b4;">ok_or_else</span><span>(|| {
+</span><span>      QueryError::ColumnNotFoundInSchema {
+</span><span>        column_name: field.</span><span style="color:#96b5b4;">clone</span><span>(),
+</span><span>      }
+</span><span>    })?;
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">let</span><span> column = schema
+</span><span>      .columns
+</span><span>      .</span><span style="color:#96b5b4;">get</span><span>(index)
+</span><span>      .</span><span style="color:#96b5b4;">ok_or</span><span>(QueryError::IndexNotFoundInSchema { index })?;
+</span><span>
+</span><span>    columns.</span><span style="color:#96b5b4;">push</span><span>(column.</span><span style="color:#96b5b4;">clone</span><span>());
+</span><span>  }
+</span><span>
+</span><span>  Ok(Schema { columns })
+</span><span>}
+</span></code></pre>
+<h3 id="outputting-everything">Outputting everything</h3>
+<p>We still want to output everything in JSON as before, so our <code>QueryStep</code> has a <code>to_json</code> function that puts everything back as it was before.</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">impl </span><span>QueryStep {
+</span><span>  </span><span style="color:#65737e;">// reconstruct JSON output
+</span><span>  </span><span style="color:#b48ead;">pub fn </span><span style="color:#8fa1b3;">to_json</span><span>(&amp;</span><span style="color:#bf616a;">self</span><span>) -&gt; serde_json::Value {
+</span><span>    </span><span style="color:#b48ead;">let mut</span><span> output_rows = vec![];
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">for</span><span> row in &amp;</span><span style="color:#bf616a;">self</span><span>.rows {
+</span><span>      </span><span style="color:#b48ead;">let mut</span><span> output_row = serde_json::Map::new();
+</span><span>      </span><span style="color:#b48ead;">for</span><span> column in &amp;</span><span style="color:#bf616a;">self</span><span>.schema.columns {
+</span><span>        </span><span style="color:#b48ead;">let</span><span> value = row.</span><span style="color:#96b5b4;">get_column</span><span>(column, &amp;</span><span style="color:#bf616a;">self</span><span>.schema).</span><span style="color:#96b5b4;">unwrap</span><span>();
+</span><span>        output_row.</span><span style="color:#96b5b4;">insert</span><span>(column.</span><span style="color:#96b5b4;">to_string</span><span>(), value.</span><span style="color:#96b5b4;">clone</span><span>());
+</span><span>      }
+</span><span>      output_rows.</span><span style="color:#96b5b4;">push</span><span>(serde_json::Value::Object(output_row));
+</span><span>    }
+</span><span>    serde_json::Value::Array(output_rows)
+</span><span>  }
+</span><span>}
+</span></code></pre>
+<p>After this, all the outputs look the same as before and our tests all pass again. Nice!</p>
+<h2 id="what-s-next">What's next?</h2>
+<p>OK, we've got all our ducks in a row, next time we'll do the joins, I promise.</p>
+<p>Make sense? If not, <a href="/contact.html">get in touch</a>!</p>
+
+
+    </main>
+
+    <footer>
+      <p><a href="mailto:danieljamesharvey@gmail.com">Contact</a> |
+      <a href="https://github.com/danieljharvey">Github</a></p>
+      <p>Links for nerds:
+        <a href="/atom.xml">atom</a>
+        <a href="/rss.xml">rss</a></p>
+
+    </footer>
+</body>
+
+</html>

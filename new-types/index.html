@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - Why The Hell Should I Care About Newtypes?</title>
+    <link rel="stylesheet" href="https://danieljharvey.github.io/main.css">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="/">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="/">Posts</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        
+<h1 class="title">
+  Why The Hell Should I Care About Newtypes?
+</h1>
+<p class="subtitle"><strong>2018-12-19</strong></p>
+<p>
+ <p class="blog-meta">
+        
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/haskell/"
+          >#haskell</a
+        >
+         
+      </p>
+
+<p>Good question. What are <code>newtypes</code>?</p>
+<p>You see them in Haskell a lot. Here's one.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">newtype </span><span style="color:#d08770;">Dog</span><span> a = </span><span style="color:#d08770;">Dog</span><span> { getDog :: a }
+</span></code></pre>
+<p>We can make a <code>Dog</code> as a container for a thing (in this case, a <code>String</code>)</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">frank </span><span style="color:#b48ead;">:: Dog String
+</span><span>frank = </span><span style="color:#d08770;">Dog </span><span>&quot;</span><span style="color:#a3be8c;">Frank</span><span>&quot;
+</span><span style="color:#65737e;">-- frank == Dog &quot;Frank&quot;
+</span></code></pre>
+<p>Or we can unwrap it again and lose nothing along the way (this means the types <code>String</code> and <code>Dog String</code> are <code>isomorphic</code> in maths terms)</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">name </span><span style="color:#b48ead;">:: String
+</span><span>name = getDog frank
+</span><span style="color:#65737e;">-- name == &quot;Frank&quot;
+</span></code></pre>
+<p>In short, they are basically the same thing. Once compiled in fact, they're exactly the same, so there's no cost to all this, computationally.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">itsTheSame </span><span style="color:#b48ead;">:: Bool
+</span><span>itsTheSame = &quot;</span><span style="color:#a3be8c;">Frank</span><span>&quot; == getDog (</span><span style="color:#d08770;">Dog </span><span>&quot;</span><span style="color:#a3be8c;">Frank</span><span>&quot;)
+</span></code></pre>
+<p>So why do this?</p>
+<p>Well, the nice thing about a <code>newtype</code> is that we can use it to pass data around with a bit more contextual information about what it means.</p>
+<p>Let's calculate a salary. That seems like a plausible thing to do with a computer.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">calculateSalaryBad </span><span style="color:#b48ead;">:: Int -&gt; Int
+</span><span>calculateSalaryBad months = months * </span><span style="color:#d08770;">1000
+</span></code></pre>
+<p>This function takes a number of months, and calculates how much this person should get paid, based on a salary of <code>1000</code> (of some unknown unit) a month.</p>
+<p>But what happens if we give it an invalid number of months?</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span>badAmount = calculateSalaryBad (-</span><span style="color:#d08770;">100</span><span>)
+</span><span style="color:#65737e;">-- badAmount == -100000
+</span></code></pre>
+<p>That's crazy talk! Surely this weird minus payment will send even the most well-meaning of accountants into a spin.</p>
+<p>Let's improve it a bit by checking if the number is negative.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">calculateSalaryBetter </span><span style="color:#b48ead;">::</span><span> (</span><span style="color:#b48ead;">Num </span><span style="color:#bf616a;">a</span><span>, </span><span style="color:#b48ead;">Ord </span><span style="color:#bf616a;">a</span><span>) </span><span style="color:#b48ead;">=&gt; </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; Maybe </span><span style="color:#bf616a;">a
+</span><span>calculateSalaryBetter i = </span><span style="color:#b48ead;">if</span><span> i &lt; </span><span style="color:#d08770;">0
+</span><span>                        </span><span style="color:#b48ead;">then </span><span style="color:#d08770;">Nothing
+</span><span>                        </span><span style="color:#b48ead;">else </span><span style="color:#d08770;">Just</span><span> (i * </span><span style="color:#d08770;">1000</span><span>)
+</span></code></pre>
+<p>Note that we're introducing the <code>Ord</code> typeclass here, as we need to compare amounts. We don't mind what <code>a</code> is as long as it is both a valid number (ie, in the <code>Num</code> typeclass) and is orderable (ie, the <code>Ord</code> typeclass).</p>
+<p>So now if we try this on a stupid amount, we get <code>Nothing</code></p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span>safeAmount = calculateSalaryBetter (-</span><span style="color:#d08770;">100</span><span>)
+</span><span style="color:#65737e;">-- safeAmount = Nothing
+</span></code></pre>
+<p>OK. Good stuff. That should stop the accounts department crying into their sensibly priced but ultimately unsatisfying packed lunches.</p>
+<p>The thing is, when we run this, we get this <code>Just</code> wrapped around things.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span>anAmount = calculateSalaryBetter </span><span style="color:#d08770;">12
+</span><span style="color:#65737e;">-- anAmount == Just 12000
+</span></code></pre>
+<p>This is fine in isolation, but if we wanted to do a lot of calculations here we don't want to be wrapping and unwrapping <code>Maybe</code> values all over the place. It means mixing up our validation logic with our actual business logic or whatever, and that's Bad.</p>
+<p>What about a nice <code>newtype</code> solution?</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">newtype </span><span style="color:#d08770;">PositiveNum</span><span> a = </span><span style="color:#d08770;">PositiveNum</span><span> { getPositiveNum :: a } </span><span style="color:#b48ead;">deriving</span><span> (</span><span style="color:#a3be8c;">Eq</span><span>, </span><span style="color:#a3be8c;">Show</span><span>)
+</span></code></pre>
+<p>Nothing to write home about so far, but the trick here is that Haskell allows us to export the type <code>PositiveNum</code> but not the constructor <code>PositiveNum</code>. That means that instead we can provide a function for making a <code>PositiveNum</code> that does some validation. This means that, outside our module itself, there is no way to create a <code>PositiveNum</code> that doesn't make sense.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">makePositiveNum </span><span style="color:#b48ead;">::</span><span> (</span><span style="color:#b48ead;">Num </span><span style="color:#bf616a;">a</span><span>, </span><span style="color:#b48ead;">Ord </span><span style="color:#bf616a;">a</span><span>) </span><span style="color:#b48ead;">=&gt; </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; Maybe</span><span> (</span><span style="color:#b48ead;">PositiveNum </span><span style="color:#bf616a;">a</span><span>)
+</span><span>makePositiveNum i
+</span><span>    | i &lt; </span><span style="color:#d08770;">0 </span><span>= </span><span style="color:#d08770;">Nothing
+</span><span>    | otherwise = </span><span style="color:#d08770;">Just</span><span> (</span><span style="color:#d08770;">PositiveNum</span><span> i)
+</span></code></pre>
+<p>It comes wrapped in a <code>Maybe</code>, sure, but only one. It can be used over and over without needing validation, and once it is available it can be unwrapped with a quick <code>getPositiveNum</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">num </span><span style="color:#b48ead;">:: Int
+</span><span>num = getPositiveNum (</span><span style="color:#d08770;">PositiveNum 10</span><span>)
+</span><span style="color:#65737e;">-- num == 10
+</span></code></pre>
+<p>Great stuff.</p>
+<p>Let's make a nicer salary calculator.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">calculateSalary </span><span style="color:#b48ead;">::</span><span> (</span><span style="color:#b48ead;">Num </span><span style="color:#bf616a;">a</span><span>) </span><span style="color:#b48ead;">=&gt; PositiveNum </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">a
+</span><span>calculateSalary months = </span><span style="color:#d08770;">1000</span><span> * (getPositiveNum months)
+</span></code></pre>
+<p>Pretty OK. Let's bring it all together. First our library functions:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">makePositiveNum </span><span style="color:#b48ead;">::</span><span> (</span><span style="color:#b48ead;">Num </span><span style="color:#bf616a;">a</span><span>, </span><span style="color:#b48ead;">Ord </span><span style="color:#bf616a;">a</span><span>) </span><span style="color:#b48ead;">=&gt; </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; Maybe</span><span> (</span><span style="color:#b48ead;">PositiveNum </span><span style="color:#bf616a;">a</span><span>)
+</span><span>makePositiveNum i
+</span><span>    | i &lt; </span><span style="color:#d08770;">0 </span><span>= </span><span style="color:#d08770;">Nothing
+</span><span>    | otherwise = </span><span style="color:#d08770;">Just</span><span> (</span><span style="color:#d08770;">PositiveNum</span><span> i)
+</span><span>
+</span><span style="color:#8fa1b3;">zero </span><span style="color:#b48ead;">::</span><span> (</span><span style="color:#b48ead;">Num </span><span style="color:#bf616a;">a</span><span>) </span><span style="color:#b48ead;">=&gt; PositiveNum </span><span style="color:#bf616a;">a
+</span><span>zero = </span><span style="color:#d08770;">PositiveNum 0
+</span></code></pre>
+<p>We've added <code>zero</code> that just makes a default <code>PositiveNum</code> with a value of <code>0</code> here, to use as a fallback if the value is ridiculous.</p>
+<p>Now we have a function for getting a <code>PositiveNum</code> for our number of months:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">months </span><span style="color:#b48ead;">::</span><span> (</span><span style="color:#b48ead;">Num </span><span style="color:#bf616a;">a</span><span>, </span><span style="color:#b48ead;">Ord </span><span style="color:#bf616a;">a</span><span>) </span><span style="color:#b48ead;">=&gt; </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; PositiveNum </span><span style="color:#bf616a;">a
+</span><span>months i = fromMaybe zero (makePositiveNum i)
+</span><span>
+</span><span style="color:#8fa1b3;">yes </span><span style="color:#b48ead;">:: PositiveNum Int
+</span><span>yes = months </span><span style="color:#d08770;">12
+</span><span style="color:#65737e;">-- yes = PositiveNum 12
+</span><span>
+</span><span style="color:#8fa1b3;">nope </span><span style="color:#b48ead;">:: PositiveNum Int
+</span><span>nope = months (-</span><span style="color:#d08770;">12</span><span>)
+</span><span style="color:#65737e;">-- nope = PositiveNum 0
+</span></code></pre>
+<p>Which we can use as follows:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span>total = calculateSalary (months </span><span style="color:#d08770;">12</span><span>)
+</span><span style="color:#65737e;">-- total == 12000
+</span></code></pre>
+<p>Nice. By pushing all of the validation concerns into the <code>months</code> function, our actual function is nice and simple and easy to understand. Also we have a nice re-usable tool, <code>PositiveNum</code> that can be used across our project everytime we need some guarantees about a value.</p>
+<h3 id="bonus-credit-functor-instance-for-a-newtype">Bonus credit: Functor instance for a <code>newtype</code>.</h3>
+<p>We can treat <code>newtypes</code> like any other type, and create typeclass instances for them. For instance, we could create a <code>functor</code> instance for <code>PositiveNum</code> and do calculations inside it by mapping instead.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">instance Functor PositiveNum where
+</span><span>    fmap f (</span><span style="color:#d08770;">PositiveNum</span><span> i) = </span><span style="color:#d08770;">PositiveNum</span><span> (f i)
+</span></code></pre>
+<p>This lets us change the value inside <code>PositiveNum</code> with an <code>fmap</code> function.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">calculateSalaryClever </span><span style="color:#b48ead;">::</span><span> (</span><span style="color:#b48ead;">Num </span><span style="color:#bf616a;">a</span><span>) </span><span style="color:#b48ead;">=&gt; PositiveNum </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; PositiveNum </span><span style="color:#bf616a;">a
+</span><span>calculateSalaryClever = fmap (*</span><span style="color:#d08770;">1000</span><span>)
+</span><span style="color:#65737e;">-- calculateSalaryClever 2 == PositiveNum 2000
+</span></code></pre>
+<p>Or the same, but unwrap it afterwards:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">calculateSalaryClever2 </span><span style="color:#b48ead;">::</span><span> (</span><span style="color:#b48ead;">Num </span><span style="color:#bf616a;">a</span><span>) </span><span style="color:#b48ead;">=&gt; PositiveNum </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">a
+</span><span>calculateSalaryClever2 i = getPositiveNum (fmap (*</span><span style="color:#d08770;">1000</span><span>) i)
+</span><span style="color:#65737e;">-- calculateSalaryClever2 20 == 20000
+</span></code></pre>
+<p>That seems pretty OK to me. Anyway, that's enough things, time for bed.</p>
+<p>Make sense? If not, why not <a href="/contact.html">get in touch</a>?</p>
+<p>Further reading:</p>
+<p><a href="https://wiki.haskell.org/Newtype">Newtype in Haskell Wiki</a></p>
+<p><a href="http://degoes.net/articles/newtypes-suck">Newtypes aren't as cool as you think</a></p>
+
+
+    </main>
+
+    <footer>
+      <p><a href="mailto:danieljamesharvey@gmail.com">Contact</a> |
+      <a href="https://github.com/danieljharvey">Github</a></p>
+      <p>Links for nerds:
+        <a href="/atom.xml">atom</a>
+        <a href="/rss.xml">rss</a></p>
+
+    </footer>
+</body>
+
+</html>

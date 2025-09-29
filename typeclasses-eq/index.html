@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - Typeclasses - Eq</title>
+    <link rel="stylesheet" href="https://danieljharvey.github.io/main.css">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="/">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="/">Posts</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        
+<h1 class="title">
+  Typeclasses - Eq
+</h1>
+<p class="subtitle"><strong>2018-11-03</strong></p>
+<p>
+ <p class="blog-meta">
+        
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/haskell/"
+          >#haskell</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/typeclasses/"
+          >#typeclasses</a
+        >
+         
+      </p>
+
+<p>Let's think about horses. There are three kinds of Horse:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">Horse </span><span>= </span><span style="color:#d08770;">SmallHorse </span><span>| </span><span style="color:#d08770;">LargeHorse </span><span>| </span><span style="color:#d08770;">OtherHorse
+</span></code></pre>
+<p>Let's make a function to check whether two Horses are in fact equivalently sized.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">isSameHorse </span><span style="color:#b48ead;">:: Horse -&gt; Horse -&gt; Bool
+</span><span>isSameHorse first second = first == second
+</span></code></pre>
+<p>Looks like a classic. Let's run it!</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span>isSameHorse </span><span style="color:#d08770;">SmallHorse LargeHorse
+</span></code></pre>
+<p>Shit!</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span>• </span><span style="color:#d08770;">No </span><span style="color:#b48ead;">instance </span><span style="color:#bf616a;">for</span><span> (</span><span style="color:#b48ead;">Eq Horse</span><span>) </span><span style="color:#bf616a;">arising from a use of</span><span> ‘==’
+</span><span>• </span><span style="color:#d08770;">In</span><span> the expression: first == second
+</span><span>    </span><span style="color:#d08770;">In</span><span> an equation for ‘isSameHorse’:
+</span><span>        isSameHorse first second = first == second
+</span></code></pre>
+<p>That's terrible news. What's wrong here? Apparently, we need to make an instance of the <code>Eq</code> (short for 'equality') typeclass for <code>Horse</code> before they can be compared. What's the <code>Eq</code> typeclass?</p>
+<p>We can find out more by firing up <code>ghci</code>, the GHC repl.</p>
+<p>You should see a prompt with the following:</p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#bf616a;">Prelude</span><span>&gt;
+</span></code></pre>
+<p>If we enter <code>:info Eq</code>, we get the following:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">class </span><span style="color:#ebcb8b;">Eq </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">where
+</span><span>  </span><span style="color:#8fa1b3;">(==) </span><span style="color:#b48ead;">:: </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; Bool
+</span><span>  </span><span style="color:#8fa1b3;">(/=) </span><span style="color:#b48ead;">:: </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; </span><span style="color:#bf616a;">a </span><span style="color:#b48ead;">-&gt; Bool
+</span><span>  {-# </span><span style="color:#b48ead;">MINIMAL</span><span> (==) | (/=) #-}
+</span></code></pre>
+<p>It shows there are two functions in the <code>Eq</code> typeclass, <code>==</code> and <code>/=</code> (equals and not-equals), and that a "minimal" definition of <code>Eq</code> only needs one of those.</p>
+<p>Let's start again and make a better horse.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">BetterHorse </span><span>= </span><span style="color:#d08770;">Tiny </span><span>| </span><span style="color:#d08770;">Average </span><span>| </span><span style="color:#d08770;">Huge
+</span></code></pre>
+<p>Let's not make the same mistake this time - let's make an instance of the <code>Eq</code> typeclass for them. We are going to implement <code>==</code> which has a type of <code>a -&gt; a -&gt; Bool</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">instance Eq BetterHorse where
+</span><span>    </span><span style="color:#d08770;">Tiny </span><span>== </span><span style="color:#d08770;">Tiny </span><span>= </span><span style="color:#d08770;">True
+</span><span>    </span><span style="color:#d08770;">Average </span><span>== </span><span style="color:#d08770;">Average </span><span>= </span><span style="color:#d08770;">True
+</span><span>    </span><span style="color:#d08770;">Huge </span><span>== </span><span style="color:#d08770;">Huge </span><span>= </span><span style="color:#d08770;">True
+</span><span>    _ == _ = </span><span style="color:#d08770;">False
+</span></code></pre>
+<p>OK, seems fine. We've listed all the times two <code>BetterHorse</code> are the same and used <code>_ == _ = False</code> to mean "anything else is not equal" to save ourselves listing every alternative.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">isSameBetterHorse </span><span style="color:#b48ead;">:: BetterHorse -&gt; BetterHorse -&gt; Bool
+</span><span>isSameBetterHorse first second = first == second
+</span></code></pre>
+<p>Now our <code>BetterHorse</code> comparing function works. Let's give it a go.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">nope </span><span style="color:#b48ead;">:: Bool
+</span><span>nope = isSameBetterHorse </span><span style="color:#d08770;">Tiny Huge
+</span><span style="color:#65737e;">-- nope = False
+</span></code></pre>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">yep </span><span style="color:#b48ead;">:: Bool
+</span><span>yep = isSameBetterHorse </span><span style="color:#d08770;">Average Average
+</span><span style="color:#65737e;">-- yep = True
+</span></code></pre>
+<p>All seems to be fine here. We even get the <code>/=</code> function for free by defining <code>==</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">nice </span><span style="color:#b48ead;">:: Bool
+</span><span>nice = </span><span style="color:#d08770;">Average </span><span>/= </span><span style="color:#d08770;">Tiny
+</span><span style="color:#65737e;">-- nice = True
+</span></code></pre>
+<p>If you're thinking "this seems laborious", you'd be right. Fortunately, for basic data types like this, we can simply auto-generate an <code>Eq</code> instance in the data definition like this:</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">LazyHorse </span><span>= </span><span style="color:#d08770;">LazyTiny </span><span>| </span><span style="color:#d08770;">LazyOther </span><span style="color:#b48ead;">deriving</span><span> (</span><span style="color:#a3be8c;">Eq</span><span>)
+</span></code></pre>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span>workingNow = </span><span style="color:#d08770;">LazyTiny </span><span>== </span><span style="color:#d08770;">LazyTiny
+</span><span style="color:#65737e;">-- workingNow == True
+</span></code></pre>
+<p>Great!</p>
+<p>Make sense? If not, why not <a href="/contact.html">get in touch</a>?</p>
+<p>Further reading:</p>
+<p><a href="http://hackage.haskell.org/package/base-4.12.0.0/docs/Data-Eq.html">Data.Eq</a></p>
+
+
+    </main>
+
+    <footer>
+      <p><a href="mailto:danieljamesharvey@gmail.com">Contact</a> |
+      <a href="https://github.com/danieljharvey">Github</a></p>
+      <p>Links for nerds:
+        <a href="/atom.xml">atom</a>
+        <a href="/rss.xml">rss</a></p>
+
+    </footer>
+</body>
+
+</html>

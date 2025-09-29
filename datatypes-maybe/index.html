@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daniel J. Harvey - Datatypes - Maybe</title>
+    <link rel="stylesheet" href="https://danieljharvey.github.io/main.css">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RKDYZB38Z0"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RKDYZB38Z0');
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <a href="/">Daniel J. Harvey</a>
+        </div>
+        <nav>
+            <a href="/">Posts</a>
+        </nav>
+    </header>
+
+    <main role="main">
+        
+<h1 class="title">
+  Datatypes - Maybe
+</h1>
+<p class="subtitle"><strong>2019-02-17</strong></p>
+<p>
+ <p class="blog-meta">
+        
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/haskell/"
+          >#haskell</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/datatype/"
+          >#datatype</a
+        > 
+        <a href="https:&#x2F;&#x2F;danieljharvey.github.io/tags/maybe/"
+          >#maybe</a
+        >
+         
+      </p>
+
+<p>It's one thing to understand typeclasses individually, but another to see them in context. This is the first in a series where we'll look at some common datatypes and see how their instances of the main typeclasses act. We're starting with one of the simplest, <code>Maybe</code>, and I hope this will help you get a feel for the way it acts. The plan is to move onto <code>Either</code>, <code>List</code> and then <code>Reader</code>, <code>Writer</code> and <code>State</code>.</p>
+<h3 id="it-really-meant-nothing-frank">It Really Meant Nothing, Frank</h3>
+<p>Let's start with a definition. We have used <code>deriving</code> to auto-generate instances of the <code>Eq</code>, <code>Ord</code> and <code>Show</code> typeclasses as we don't need anything special going on with them.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">data </span><span style="color:#d08770;">Maybe</span><span> a = </span><span style="color:#d08770;">Just</span><span> a | </span><span style="color:#d08770;">Nothing
+</span><span>  </span><span style="color:#b48ead;">deriving</span><span> (</span><span style="color:#a3be8c;">Eq</span><span>, </span><span style="color:#a3be8c;">Ord</span><span>, </span><span style="color:#a3be8c;">Show</span><span>)
+</span></code></pre>
+<p>As is hopefully apparently, <code>Maybe</code> can either be a <code>Just</code> with an <code>a</code> wrapped inside, or <code>Nothing</code> which holds no value.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#8fa1b3;">noNinePlease </span><span style="color:#b48ead;">:: Int -&gt; Maybe Int
+</span><span>noNinePlease i
+</span><span>  = </span><span style="color:#b48ead;">if</span><span> i == </span><span style="color:#d08770;">9
+</span><span>    </span><span style="color:#b48ead;">then </span><span style="color:#d08770;">Nothing
+</span><span>    </span><span style="color:#b48ead;">else </span><span style="color:#d08770;">Just</span><span> i
+</span><span>
+</span><span>noNinePlease </span><span style="color:#d08770;">8 </span><span style="color:#65737e;">-- Just 8
+</span><span>noNinePlease </span><span style="color:#d08770;">9 </span><span style="color:#65737e;">-- Nothing
+</span></code></pre>
+<h3 id="functor">Functor</h3>
+<p>Next we'll define a <code>functor</code> instance for <code>Maybe</code>. Essentially, if there is a value inside, let's run the provided function over it, and if not, return the same <code>Nothing</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">instance Functor Maybe where
+</span><span>  fmap f (</span><span style="color:#d08770;">Just</span><span> a) = </span><span style="color:#d08770;">Just</span><span> (f a)
+</span><span>  fmap _ </span><span style="color:#d08770;">Nothing  </span><span>= </span><span style="color:#d08770;">Nothing
+</span><span>
+</span><span>fmap (+</span><span style="color:#d08770;">1</span><span>) (</span><span style="color:#d08770;">Just 1</span><span>) </span><span style="color:#65737e;">-- Just 2
+</span><span>fmap (+</span><span style="color:#d08770;">1</span><span>) </span><span style="color:#d08770;">Nothing  </span><span style="color:#65737e;">-- Nothing
+</span></code></pre>
+<h3 id="applicative">Applicative</h3>
+<p>The <code>applicative</code> instance for <code>Maybe</code> has two functions, <code>pure</code> and <code>&lt;*&gt;</code> (also called <code>ap</code>). We use <code>pure</code> to define a default instance of the datatype, so we just take the value and wrap it in <code>Just</code>. The <code>&lt;*&gt;</code> function is used to apply a function inside a <code>Just</code> to a value wrapped in another <code>Just</code>. Therefore, if either of those are a <code>Nothing</code>, that's not going to work, so we return <code>Nothing</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">instance Applicative Maybe where
+</span><span>  pure a = </span><span style="color:#d08770;">Just</span><span> a
+</span><span>  (</span><span style="color:#d08770;">Just</span><span> f) &lt;*&gt; (</span><span style="color:#d08770;">Just</span><span> a) = </span><span style="color:#d08770;">Just</span><span> (f a)
+</span><span>  _        &lt;*&gt; _        = </span><span style="color:#d08770;">Nothing
+</span><span>
+</span><span>pure </span><span style="color:#d08770;">1                </span><span style="color:#65737e;">-- Just 1
+</span><span style="color:#d08770;">Just</span><span> (+</span><span style="color:#d08770;">1</span><span>) &lt;*&gt; </span><span style="color:#d08770;">Just 1  </span><span style="color:#65737e;">-- Just 2
+</span><span style="color:#d08770;">Just</span><span> (+</span><span style="color:#d08770;">1</span><span>) &lt;*&gt; </span><span style="color:#d08770;">Nothing </span><span style="color:#65737e;">-- Nothing
+</span></code></pre>
+<h3 id="monad">Monad</h3>
+<p>The <code>monad</code> instance for <code>Maybe</code> has only one additional function, <code>&gt;&gt;=</code> (or <code>bind</code>). The most important thing in the <code>Maybe</code> case is that if we start with a <code>Nothing</code>, then we don't bother doing anything, allowing the computation to be shortcircuited, as such.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">instance Monad Maybe where
+</span><span>  (</span><span style="color:#d08770;">Just</span><span> a) &gt;&gt;= k   = k a
+</span><span>  </span><span style="color:#d08770;">Nothing  </span><span>&gt;&gt;= _   = </span><span style="color:#d08770;">Nothing
+</span><span>
+</span><span style="color:#d08770;">Just 1 </span><span>&gt;&gt;= (\a -&gt; </span><span style="color:#d08770;">Just</span><span> (a + </span><span style="color:#d08770;">1</span><span>))  </span><span style="color:#65737e;">-- Just 2
+</span><span style="color:#d08770;">Nothing </span><span>&gt;&gt;= (\a -&gt; </span><span style="color:#d08770;">Just</span><span> (a + </span><span style="color:#d08770;">1</span><span>)) </span><span style="color:#65737e;">-- Nothing
+</span></code></pre>
+<h3 id="semigroup">Semigroup</h3>
+<p>The <code>semigroup</code> instance for <code>Maybe</code> is used to combine multiple <code>Maybe</code> values together. An important thing to note is the constraint <code>Semigroup a</code> - this means that for two <code>Maybe</code> values to be combined, the values inside must also have a <code>semigroup</code> instance, allowing them to be combined as well.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">instance</span><span> (</span><span style="color:#b48ead;">Semigroup </span><span style="color:#bf616a;">a</span><span>) </span><span style="color:#b48ead;">=&gt; Semigroup</span><span> (</span><span style="color:#b48ead;">Maybe </span><span style="color:#bf616a;">a</span><span>) </span><span style="color:#b48ead;">where
+</span><span>  (</span><span style="color:#d08770;">Just</span><span> a) &lt;&gt; (</span><span style="color:#d08770;">Just</span><span> b) = </span><span style="color:#d08770;">Just</span><span> (a &lt;&gt; b)
+</span><span>  </span><span style="color:#d08770;">Nothing  </span><span>&lt;&gt; a        = a
+</span><span>  a        &lt;&gt; </span><span style="color:#d08770;">Nothing  </span><span>= a
+</span><span>
+</span><span style="color:#d08770;">Just</span><span> [</span><span style="color:#d08770;">1</span><span>,</span><span style="color:#d08770;">2</span><span>,</span><span style="color:#d08770;">3</span><span>] &lt;&gt; </span><span style="color:#d08770;">Just</span><span> [</span><span style="color:#d08770;">4</span><span>,</span><span style="color:#d08770;">5</span><span>,</span><span style="color:#d08770;">6</span><span>] </span><span style="color:#65737e;">-- Just [1,2,3,4,5,6]
+</span><span style="color:#d08770;">Nothing </span><span>&lt;&gt; </span><span style="color:#d08770;">Just</span><span> [</span><span style="color:#d08770;">1</span><span>,</span><span style="color:#d08770;">2</span><span>,</span><span style="color:#d08770;">3</span><span>]      </span><span style="color:#65737e;">-- Just [1,2,3]
+</span><span style="color:#d08770;">Just</span><span> [</span><span style="color:#d08770;">1</span><span>,</span><span style="color:#d08770;">2</span><span>,</span><span style="color:#d08770;">3</span><span>] &lt;&gt; </span><span style="color:#d08770;">Nothing      </span><span style="color:#65737e;">-- Just [1,2,3]
+</span><span style="color:#d08770;">Nothing </span><span>&lt;&gt; </span><span style="color:#d08770;">Nothing           </span><span style="color:#65737e;">-- Nothing
+</span></code></pre>
+<h3 id="monoid">Monoid</h3>
+<p>Notice that when a <code>Just</code> is combined with a <code>Nothing</code>, we still get a <code>Just</code> value. This is because <code>Nothing</code> is our <code>empty</code> element, meaning that when it is combined to any value it does not change it. Defining this upgrades our <code>semigroup</code> instance into an exciting <code>Monoid</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">instance</span><span> (</span><span style="color:#b48ead;">Semigroup </span><span style="color:#bf616a;">a</span><span>) </span><span style="color:#b48ead;">=&gt; Monoid</span><span> (</span><span style="color:#b48ead;">Maybe </span><span style="color:#bf616a;">a</span><span>) </span><span style="color:#b48ead;">where
+</span><span>  mempty = </span><span style="color:#d08770;">Nothing
+</span><span>
+</span><span>mempty </span><span style="color:#65737e;">-- Nothing
+</span></code></pre>
+<h3 id="foldable">Foldable</h3>
+<p>Now carrying all these wrapped values around is great, but at some point we may want to extract values from these <code>Maybe</code> values, so we use <code>foldable</code>. Note the <code>a</code> in the <code>Nothing</code> version of the function - this makes the user of the typeclass provide a default value so that we don't end up without a value for <code>Nothing</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">instance Foldable Maybe where
+</span><span>  foldr _ a </span><span style="color:#d08770;">Nothing  </span><span>= a
+</span><span>  foldr f a (</span><span style="color:#d08770;">Just</span><span> b) = f b a
+</span><span>
+</span><span>foldr </span><span style="color:#8fa1b3;">(+) </span><span style="color:#d08770;">1 Nothing   </span><span style="color:#65737e;">-- 1
+</span><span>foldr </span><span style="color:#8fa1b3;">(+) </span><span style="color:#d08770;">1</span><span> (</span><span style="color:#d08770;">Just 10</span><span>) </span><span style="color:#65737e;">-- 11
+</span></code></pre>
+<h3 id="alternative">Alternative</h3>
+<p>A good intuition for the <code>Alternative</code> typeclass is that it's a like the <code>or</code> operator <code>||</code>. Therefore it can be used to return the first out of a list of values that is wrapped in <code>Just</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">instance Alternative Maybe where
+</span><span>  empty                 = </span><span style="color:#d08770;">Nothing
+</span><span>  (</span><span style="color:#d08770;">Just</span><span> a) &lt;|&gt; _        = </span><span style="color:#d08770;">Just</span><span> a
+</span><span>  </span><span style="color:#d08770;">Nothing  </span><span>&lt;|&gt; (</span><span style="color:#d08770;">Just</span><span> b) = </span><span style="color:#d08770;">Just</span><span> b
+</span><span>  </span><span style="color:#d08770;">Nothing  </span><span>&lt;|&gt; </span><span style="color:#d08770;">Nothing  </span><span>= </span><span style="color:#d08770;">Nothing
+</span><span>
+</span><span style="color:#d08770;">Nothing </span><span>&lt;|&gt; </span><span style="color:#d08770;">Nothing </span><span style="color:#65737e;">-- Nothing
+</span><span style="color:#d08770;">Just 1 </span><span>&lt;|&gt; </span><span style="color:#d08770;">Just 2   </span><span style="color:#65737e;">-- Just 1
+</span><span style="color:#d08770;">Nothing </span><span>&lt;|&gt; </span><span style="color:#d08770;">Just 2  </span><span style="color:#65737e;">-- Just 2
+</span></code></pre>
+<h3 id="monadplus">MonadPlus</h3>
+<p>Since we're on a roll with defining typeclasses, let's plop in a quick instance of <code>MonadPlus</code>, which is basically <code>Alternative</code> with a different name, with <code>mzero</code> replacing <code>empty</code> and <code>mplus</code> replacing <code>&lt;|&gt;</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">instance MonadPlus Maybe where
+</span><span>  mzero = </span><span style="color:#d08770;">Nothing
+</span><span>
+</span><span>  mplus (</span><span style="color:#d08770;">Just</span><span> a) _ = </span><span style="color:#d08770;">Just</span><span> a
+</span><span>  mplus (</span><span style="color:#d08770;">Nothing</span><span>) (</span><span style="color:#d08770;">Just</span><span> b) = </span><span style="color:#d08770;">Just</span><span> b
+</span><span>  mplus _ _ = </span><span style="color:#d08770;">Nothing
+</span><span>
+</span><span>
+</span><span style="color:#d08770;">Nothing </span><span style="color:#8fa1b3;">`</span><span>mplus</span><span style="color:#8fa1b3;">` </span><span style="color:#d08770;">Nothing </span><span style="color:#65737e;">-- Nothing
+</span><span style="color:#d08770;">Just 1 </span><span style="color:#8fa1b3;">`</span><span>mplus</span><span style="color:#8fa1b3;">` </span><span style="color:#d08770;">Nothing  </span><span style="color:#65737e;">-- Just 1
+</span><span style="color:#d08770;">Nothing </span><span style="color:#8fa1b3;">`</span><span>mplus</span><span style="color:#8fa1b3;">` </span><span style="color:#d08770;">Just 2  </span><span style="color:#65737e;">-- Just 2
+</span><span>mzero                   </span><span style="color:#65737e;">-- Nothing
+</span></code></pre>
+<h3 id="traversable">Traversable</h3>
+<p>The <code>traversable</code> instance for <code>Maybe</code> isn't too unusual, if <code>traverse</code> is run on a <code>Nothing</code> it wraps a <code>Nothing</code> inside whichever <code>Applicative</code> it is used with (the <code>pure</code> function coming from the other type rather than from <code>Maybe</code>). If we <code>traverse</code> a <code>Just</code> value then the provided function <code>f</code> is run on the value inside <code>Just</code> which wraps the <code>a</code> in an <code>applicative</code> functor, and we then use <code>fmap</code> to make the value inside a <code>Just</code>.</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">instance Traversable Maybe where
+</span><span>  traverse _ </span><span style="color:#d08770;">Nothing  </span><span>= pure </span><span style="color:#d08770;">Nothing
+</span><span>  traverse f (</span><span style="color:#d08770;">Just</span><span> a) = fmap </span><span style="color:#d08770;">Just</span><span> (f a)
+</span><span>
+</span><span>traverse (\a -&gt; [a,a]) </span><span style="color:#d08770;">Nothing   </span><span style="color:#65737e;">-- [Nothing]
+</span><span>traverse (\a -&gt; [a,a]) (</span><span style="color:#d08770;">Just 10</span><span>) </span><span style="color:#65737e;">-- [Just 10, Just 10]
+</span></code></pre>
+<h3 id="monadfail">MonadFail</h3>
+<p>The <code>MonadFail</code> typeclass hasn't come up before, but it's a very generic way of allowing all computations to fail in a similar way. The <code>fail</code> function has the type signature <code>String -&gt; m a</code>. However because we cannot carry around any values inside <code>Nothing</code> we simply discard the <code>String</code> and return <code>Nothing</code>. The usefulness of this typeclass will become much more apparent with <code>Either</code> and monad transformer stacks. (what? - we'll come to it...)</p>
+<pre data-lang="haskell" style="background-color:#2b303b;color:#c0c5ce;" class="language-haskell "><code class="language-haskell" data-lang="haskell"><span style="color:#b48ead;">instance MonadFail Maybe where
+</span><span>  fail _ = </span><span style="color:#d08770;">Nothing
+</span><span>
+</span><span style="color:#d08770;">Just </span><span>&quot;</span><span style="color:#a3be8c;">yes</span><span>&quot; &gt;&gt;= fail </span><span style="color:#65737e;">-- Nothing
+</span></code></pre>
+<h3 id="just-a-great-job">Just "a great job"</h3>
+<p>Anyway. This is quite a laborious post but I hope it is somewhat helpful. I intend to do similar ones for <code>Either</code> and <code>List</code> next. Please note these aren't the same definitions as you'll find in the Haskell Prelude, as I have tried to write them with an emphasis on clarity/simplicity. If you are a purist, or just bloody hate clarity, by all means check out the originals on <a href="http://hackage.haskell.org/package/base-4.12.0.0/docs/src/GHC.Base.html#line-854">Hackage</a>.</p>
+<p>If having skim-read this post you find yourself with strong feelings about it (positive or otherwise) I'd appreciate you shouting them at my face via the <a href="/contact.html">usual channels</a>. It's lonely out here in the bleak abyss of South East London.</p>
+<p>That's all.</p>
+<p>Further reading:</p>
+<p><a href="http://hackage.haskell.org/package/base-4.12.0.0/docs/Data-Maybe.html">Data.Maybe</a></p>
+
+
+    </main>
+
+    <footer>
+      <p><a href="mailto:danieljamesharvey@gmail.com">Contact</a> |
+      <a href="https://github.com/danieljharvey">Github</a></p>
+      <p>Links for nerds:
+        <a href="/atom.xml">atom</a>
+        <a href="/rss.xml">rss</a></p>
+
+    </footer>
+</body>
+
+</html>
